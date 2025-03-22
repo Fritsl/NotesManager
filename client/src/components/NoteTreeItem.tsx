@@ -79,18 +79,37 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         const hoverBoundingRect = ref.current?.getBoundingClientRect();
         
         if (clientOffset && hoverBoundingRect) {
-          // Get horizontal position in the element (0 to 1)
-          const hoverMiddleX = (hoverBoundingRect.right - hoverBoundingRect.left) * 0.7;
+          // Get the position within the note (vertically and horizontally)
+          const noteHeight = hoverBoundingRect.bottom - hoverBoundingRect.top;
+          const noteWidth = hoverBoundingRect.right - hoverBoundingRect.left;
+          
+          // Calculate thresholds
+          const topThreshold = noteHeight * 0.25; // Top 25% = "Above" zone
+          const bottomThreshold = noteHeight * 0.75; // Bottom 25% = "Below" zone
+          const rightThreshold = noteWidth * 0.7; // Right 30% = "Inside" zone
+          
+          // Get mouse position relative to the note
+          const offsetY = clientOffset.y - hoverBoundingRect.top;
           const offsetX = clientOffset.x - hoverBoundingRect.left;
           
-          // If dropped on the right side (> 70% of width), add as child at position 0
-          if (offsetX > hoverMiddleX) {
-            // Add as a child of the current note (Inside) at the top
+          // Check if in the right side zone (Inside, as a child)
+          if (offsetX > rightThreshold) {
+            // Add as a child of the current note (Inside)
             moveNote(draggedItemId, note.id, 0);
-          } else {
-            // Otherwise, insert below this note at the same level (Below)
-            // If this is a root note, the below drop should also be at root level
-            // If this is a child note, we need to drop at the same level (same parent)
+          } 
+          // Check if in the top zone (Above, same level)
+          else if (offsetY < topThreshold) {
+            // Insert above this note at the same level
+            moveNote(draggedItemId, parentId, index);
+          } 
+          // Check if in the bottom zone (Below, same level)
+          else if (offsetY > bottomThreshold) {
+            // Insert below this note at the same level
+            moveNote(draggedItemId, parentId, index + 1);
+          }
+          // Middle area (default to below)
+          else {
+            // Default to below for the middle area
             moveNote(draggedItemId, parentId, index + 1);
           }
         }
@@ -100,23 +119,40 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
       // Check if currently dragging over this note
       const isOver = monitor.isOver({ shallow: true });
       
-      // Determine if hovering over right side of the note
-      let isOverRight = false;
+      // Determine which drop zone we're in
+      let isOverRight = false;  // Inside
+      let isOverTop = false;    // Above 
+      let isOverBottom = false; // Below
+      
       if (isOver && ref.current) {
         const clientOffset = monitor.getClientOffset();
         const hoverBoundingRect = ref.current.getBoundingClientRect();
         
         if (clientOffset) {
-          // Consider it right side if > 70% of node width
-          const hoverMiddleX = (hoverBoundingRect.right - hoverBoundingRect.left) * 0.7;
+          const noteHeight = hoverBoundingRect.bottom - hoverBoundingRect.top;
+          const noteWidth = hoverBoundingRect.right - hoverBoundingRect.left;
+          
+          // Calculate mouse position relative to note
           const offsetX = clientOffset.x - hoverBoundingRect.left;
-          isOverRight = offsetX > hoverMiddleX;
+          const offsetY = clientOffset.y - hoverBoundingRect.top;
+          
+          // Calculate thresholds
+          const topThreshold = noteHeight * 0.25;
+          const bottomThreshold = noteHeight * 0.75;
+          const rightThreshold = noteWidth * 0.7;
+          
+          // Determine which zone we're in
+          isOverRight = offsetX > rightThreshold;
+          isOverTop = offsetY < topThreshold && !isOverRight;
+          isOverBottom = offsetY > bottomThreshold && !isOverRight;
         }
       }
       
       return {
         isOver,
-        isOverRight
+        isOverRight,
+        isOverTop,
+        isOverBottom
       };
     },
   });
@@ -198,11 +234,19 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           )}
           onClick={() => selectNote(note)}
         >
+          {/* Drop zone indicators */}
+          
+          {/* "Above" drop zone indicator - top border */}
+          {isOver && isOverTop && (
+            <div className="absolute left-0 top-0 right-0 h-1 bg-primary"></div>
+          )}
+          
           {/* "Below" drop zone indicator - bottom border */}
-          {isOver && !isOverRight && (
+          {isOver && isOverBottom && (
             <div className="absolute left-0 bottom-0 right-0 h-1 bg-primary"></div>
           )}
-          {/* Add "Inside" drop zone indicator on right edge */}
+          
+          {/* "Inside" drop zone indicator - right edge */}
           <div className={cn(
             "absolute top-0 right-0 bottom-0 w-1 opacity-0 transition-all duration-100",
             // Only show when hovering over the note (not dragging)
