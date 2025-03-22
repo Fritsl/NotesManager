@@ -9,7 +9,9 @@ import {
   ChevronUp, 
   ChevronDown,
   ChevronsUpDown,
-  Info
+  Info,
+  Database,
+  Save
 } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import ImportModal from "@/components/ImportModal";

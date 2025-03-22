@@ -24,6 +24,9 @@ interface NotesContextType {
   expandToLevel: (level: number) => void;
   currentLevel: number;
   maxDepth: number;
+  isLoading: boolean;
+  isSaving: boolean;
+  saveAllNotes: () => Promise<boolean>;
 }
 
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
@@ -531,6 +534,40 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     return maxChildDepth;
   }, []);
   
+  // Save all notes to Supabase
+  const saveAllNotes = useCallback(async (): Promise<boolean> => {
+    setIsSaving(true);
+    try {
+      const notesData = { notes };
+      const result = await notesService.saveNotes(notesData);
+      
+      if (result) {
+        toast({
+          title: "Notes Saved",
+          description: "All notes have been saved to the database",
+        });
+        return true;
+      } else {
+        toast({
+          title: "Save Failed",
+          description: "Failed to save notes to the database",
+          variant: "destructive",
+        });
+        return false;
+      }
+    } catch (error) {
+      console.error("Error saving notes:", error);
+      toast({
+        title: "Save Error",
+        description: "An error occurred while saving notes",
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  }, [notes, toast]);
+  
   // Get the maximum depth of the notes tree (limit to 9)
   const maxDepth = useMemo(() => {
     const depth = calculateMaxDepth(notes);
@@ -606,6 +643,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         expandToLevel,
         currentLevel,
         maxDepth,
+        isLoading,
+        isSaving,
+        saveAllNotes,
       }}
     >
       {children}
