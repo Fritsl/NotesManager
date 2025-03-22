@@ -61,11 +61,18 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         // Get the dragged note ID
         const draggedItemId = item.id;
         
-        // If the note is dropped onto itself or its own child, ignore it
-        const isChild = checkIfChild(note, draggedItemId);
-        if (note.id === draggedItemId || isChild) {
+        // Don't allow dropping onto self
+        if (note.id === draggedItemId) {
           return;
         }
+        
+        // Check if item is a child of the target (to prevent dropping a parent into its own child)
+        const isChild = checkIfChild(note, draggedItemId);
+        if (isChild) {
+          return;
+        }
+        
+        // Allow dropping to reposition at top even if already a child of this parent
         
         // Get drop position relative to the target note
         const clientOffset = monitor.getClientOffset();
@@ -131,11 +138,18 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
       if (item.id !== note.id) {
         const draggedItemId = item.id;
         
-        // If the note is dropped onto itself or its own child, ignore it
-        const isChild = checkIfChild(note, draggedItemId);
-        if (note.id === draggedItemId || isChild) {
+        // Don't allow dropping onto self
+        if (note.id === draggedItemId) {
           return;
         }
+        
+        // Check if item is a child of the target (to prevent dropping a parent into its own child)
+        const isChild = checkIfChild(note, draggedItemId);
+        if (isChild) {
+          return;
+        }
+        
+        // Allow dropping to reposition at top even if already a child of this parent
         
         // Move the dragged note as the first child of the current note
         moveNote(draggedItemId, note.id, 0);
