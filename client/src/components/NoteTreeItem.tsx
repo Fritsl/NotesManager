@@ -289,7 +289,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                 index={idx}
                 isRoot={false}
                 toggleExpand={toggleExpand}
-                isExpanded={isExpanded}
+                isExpanded={expandedNodes.has(child.id)}
               />
               <DropZone index={idx + 1} />
             </div>
