@@ -61,7 +61,18 @@ export default function NoteEditor() {
       }
       
       autoSaveTimerRef.current = setTimeout(() => {
-        handleSave();
+        const updatedNote = {
+          ...selectedNote,
+          content,
+          youtube_url: youtubeUrl || null,
+          url: externalUrl || null,
+          url_display_text: externalUrl ? (urlDisplayText || null) : null,
+          is_discussion: isDiscussion,
+        };
+        
+        updateNote(updatedNote);
+        setHasChanges(false);
+        
         // Show a subtle toast notification for auto-save
         toast({
           title: "Auto-saved",
@@ -70,31 +81,36 @@ export default function NoteEditor() {
         });
       }, 500);
     }
-  }, [selectedNote, hasChanges]);
+  }, [selectedNote, hasChanges, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, updateNote, toast]);
   
-  // Set up change tracking
+  // Set up change tracking with proper state updates
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setContent(e.target.value);
+    const newContent = e.target.value;
+    setContent(newContent);
     setHasChanges(true);
   };
   
   const handleYoutubeUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setYoutubeUrl(e.target.value);
+    const newUrl = e.target.value;
+    setYoutubeUrl(newUrl);
     setHasChanges(true);
   };
   
   const handleExternalUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setExternalUrl(e.target.value);
+    const newUrl = e.target.value;
+    setExternalUrl(newUrl);
     setHasChanges(true);
   };
   
   const handleUrlDisplayTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUrlDisplayText(e.target.value);
+    const newText = e.target.value;
+    setUrlDisplayText(newText);
     setHasChanges(true);
   };
   
   const handleDiscussionChange = (checked: boolean | "indeterminate") => {
-    setIsDiscussion(checked === true);
+    const newValue = checked === true;
+    setIsDiscussion(newValue);
     setHasChanges(true);
   };
 
