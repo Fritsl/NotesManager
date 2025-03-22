@@ -26,6 +26,7 @@ interface NoteTreeItemProps {
   isExpanded: boolean;
   index?: number;
   isRoot?: boolean;
+  parentId?: string | null;
 }
 
 interface DragItem {
@@ -35,7 +36,7 @@ interface DragItem {
   isRoot?: boolean;
 }
 
-export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, index = 0, isRoot = false }: NoteTreeItemProps) {
+export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, index = 0, isRoot = false, parentId = null }: NoteTreeItemProps) {
   const { selectedNote, selectNote, addNote, deleteNote, moveNote, expandedNodes } = useNotes();
   const ref = useRef<HTMLDivElement>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -77,19 +78,13 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           
           // If dropped on the right side (> 70% of width), add as child
           if (offsetX > hoverMiddleX) {
-            // Add as a child of the current note
+            // Add as a child of the current note (Inside)
             moveNote(draggedItemId, note.id, note.children.length);
           } else {
-            // Otherwise, insert below this note
-            if (isRoot && item.isRoot) {
-              // For root-to-root, keep at root level
-              moveNote(draggedItemId, null, index);
-            } else {
-              // Get the parent ID (null for root level)
-              const parentId = isRoot ? null : note.id;
-              // Insert below this note
-              moveNote(draggedItemId, parentId, index + 1);
-            }
+            // Otherwise, insert below this note at the same level (Below)
+            // If this is a root note, the below drop should also be at root level
+            // If this is a child note, we need to drop at the same level (same parent)
+            moveNote(draggedItemId, parentId, index + 1);
           }
         }
       }
@@ -183,13 +178,16 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             // Use the level color themes for consistent styling
             levelColors[Math.min(level, 8)].bg,
             `border-l-[4px] ${levelColors[Math.min(level, 8)].border}`,
-            // Only highlight background when over left side (below)
-            isOver && !isOverRight && "border-primary bg-primary/10",
+            // Don't highlight the entire note, we'll use a bottom border instead
             selectedNote?.id === note.id ? "border-primary ring-2 ring-primary ring-opacity-50" : "border-gray-200 hover:bg-opacity-80",
             isDragging && "opacity-50"
           )}
           onClick={() => selectNote(note)}
         >
+          {/* "Below" drop zone indicator - bottom border */}
+          {isOver && !isOverRight && (
+            <div className="absolute left-0 bottom-0 right-0 h-1 bg-primary"></div>
+          )}
           {/* Add "Inside" drop zone indicator on right edge */}
           <div className={cn(
             "absolute top-0 right-0 bottom-0 w-1 opacity-0 transition-all duration-100",
