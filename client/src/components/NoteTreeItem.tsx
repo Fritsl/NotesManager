@@ -126,7 +126,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           // Check if in the right side zone (Inside, as a child)
           if (offsetX > rightThreshold) {
             // Add as a child of the current note (Inside)
-            moveNote(draggedItemId, note.id, 0);
+            // When adding as a child, default position is at the END of child list
+            moveNote(draggedItemId, note.id, note.children.length);
           } 
           // Check if in the top zone (Above, same level)
           else if (offsetY < topThreshold) {
@@ -188,8 +189,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
     },
   });
 
-  // Create a ref for the child area to get its dimensions
-  const childAreaRef = useRef<HTMLDivElement>(null);
+  // Use a simple variable to store the element rather than a ref
+  let childAreaElement: HTMLDivElement | null = null;
   
   // Set up child area drop
   const [{ isOverChildArea }, dropChildArea] = useDrop<DragItem, void, { isOverChildArea: boolean }>({
@@ -216,7 +217,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         // When dropping directly in the child area (not on a specific child), 
         // determine if we should append the note instead of prepending it
         if (clientOffset && note.children.length > 0) {
-          const childAreaRect = childAreaRef.current?.getBoundingClientRect();
+          const childAreaRect = childAreaElement?.getBoundingClientRect();
           if (childAreaRect) {
             // If we're dropping closer to the bottom of the child area, append as the last child
             const offsetY = clientOffset.y - childAreaRect.top;
@@ -231,8 +232,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           }
         }
         
-        // Default: Move the dragged note as the first child of the current note
-        moveNote(draggedItemId, note.id, 0);
+        // Default: Move the dragged note to be the last child of the current note
+        moveNote(draggedItemId, note.id, note.children.length);
       }
     },
     collect: (monitor) => ({
@@ -427,8 +428,12 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
       {hasChildren && isExpanded && (
         <div 
           ref={(node) => {
+            // Using a callback ref to serve both react-dnd and our own ref
             dropChildArea(node);
-            childAreaRef.current = node;
+            // Safe assignment that avoids the read-only issue
+            if (node) {
+              (childAreaRef as any).current = node;
+            }
           }}
           className={cn(
             "ml-4 mt-1 space-y-1 tree-line relative",
