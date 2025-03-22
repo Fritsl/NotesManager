@@ -53,7 +53,17 @@ export default function NoteEditor() {
   }, [selectedNote]);
   
   // Auto-save when form loses focus if there are changes
-  const handleBlur = useCallback(() => {
+  const handleBlur = useCallback((e: React.FocusEvent) => {
+    // Check if we're still in the editor component (to another input in the same form)
+    // This prevents saves when just moving between fields in the same form
+    const relatedTarget = e.relatedTarget as HTMLElement;
+    const isStillInEditor = relatedTarget && 
+      (relatedTarget.closest('.note-editor-form') !== null);
+    
+    if (isStillInEditor) {
+      return; // Don't auto-save when just moving between fields in the same form
+    }
+    
     if (selectedNote && hasChanges) {
       // Use a small delay to prevent saving while user is still interacting with the form
       if (autoSaveTimerRef.current) {
@@ -70,6 +80,7 @@ export default function NoteEditor() {
           is_discussion: isDiscussion,
         };
         
+        // Create a clone of the note to avoid focus issues
         updateNote(updatedNote);
         setHasChanges(false);
         
@@ -199,7 +210,7 @@ export default function NoteEditor() {
 
       {/* Compact note editor form */}
       <div className="p-3 flex-1 overflow-auto">
-        <div className="bg-white rounded-lg shadow-sm p-3 mx-auto">
+        <div className="bg-white rounded-lg shadow-sm p-3 mx-auto note-editor-form">
           {/* Content area - more compact now */}
           <div className="mb-3">
             <Label htmlFor="noteContent" className="block text-xs font-medium text-gray-500 mb-1">
