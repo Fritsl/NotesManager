@@ -69,7 +69,7 @@ export default function NotesEditor() {
         </main>
       </div>
       
-      <style jsx global>{`
+      <style>{`
         .tree-line {
           border-left: 1px dashed #d1d5db;
           margin-left: 12px;
