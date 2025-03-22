@@ -1,10 +1,21 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { Note } from "@/types/notes";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, Link, Youtube } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface NoteTreeItemProps {
   note: Note;
@@ -25,6 +36,7 @@ interface DragItem {
 export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, index = 0, isRoot = false }: NoteTreeItemProps) {
   const { selectedNote, selectNote, addNote, deleteNote, moveNote } = useNotes();
   const ref = useRef<HTMLDivElement>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Set up drag
   const [{ isDragging }, drag, preview] = useDrag(() => ({
@@ -194,18 +206,43 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             <Plus size={14} />
           </Button>
           
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 text-gray-400 hover:text-red-500 p-1"
-            title="Delete"
-            onClick={(e) => {
-              e.stopPropagation();
-              deleteNote(note.id);
-            }}
-          >
-            <Trash2 size={14} />
-          </Button>
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-gray-400 hover:text-red-500 p-1"
+                title="Delete"
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
+                <Trash2 size={14} />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Note</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete this note?
+                  {hasChildren && 
+                    <span className="font-medium text-red-500 block mt-2">
+                      Warning: This will also delete {note.children.length} child note{note.children.length !== 1 ? 's' : ''}!
+                    </span>
+                  }
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={() => deleteNote(note.id)}
+                  className="bg-red-500 hover:bg-red-600"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
       
