@@ -70,7 +70,9 @@ export default function Header() {
         {/* Level Controls */}
         <div className="flex items-center mr-2 border-r pr-3 border-gray-200 flex-wrap">
           {Array.from({ length: Math.max(1, maxDepth) }, (_, i) => i + 1).map(level => {
-            // Get the color theme for this level (index is 0-based, level is 1-based)
+            // Get the color theme for this level
+            // Use level-1 to match colors with actual hierarchy level (0-based index)
+            // This ensures L1 button shows L1 colors from the levelColors array
             const colorTheme = levelColors[level - 1];
             return (
               <Button 
