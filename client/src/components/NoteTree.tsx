@@ -133,6 +133,42 @@ export default function NoteTree() {
     // Combine both sets
     setExpandedNodes(new Set([...parentIds, ...levelIds]));
   };
+  
+  // Set up keyboard shortcuts for expand/collapse
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle keyboard shortcuts if there are notes
+      if (notes.length === 0) return;
+      
+      // Ctrl+E to expand all
+      if (e.ctrlKey && e.key === 'e') {
+        e.preventDefault();
+        expandAll();
+      }
+      
+      // Ctrl+C to collapse all
+      if (e.ctrlKey && e.key === 'c') {
+        // Skip if the user is trying to copy text
+        if (window.getSelection()?.toString()) return;
+        
+        e.preventDefault();
+        collapseAll();
+      }
+      
+      // Number keys 1-3 with Ctrl to expand to specific levels
+      if (e.ctrlKey && ['1', '2', '3'].includes(e.key)) {
+        e.preventDefault();
+        const level = parseInt(e.key);
+        expandToLevel(level);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [notes, getAllNoteIds, getNoteIdsByLevel]);
 
   return (
     <div className="p-4">
@@ -172,9 +208,25 @@ export default function NoteTree() {
               <ChevronUp className="h-3 w-3 mr-1" />
               Collapse All
             </Button>
-            <kbd className="ml-1 hidden sm:inline-flex text-[10px] font-mono px-1.5 bg-gray-100 text-gray-500 rounded border border-gray-300">
-              Ctrl+E/C
-            </kbd>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <kbd className="ml-1 hidden sm:inline-flex text-[10px] font-mono px-1.5 bg-gray-100 text-gray-500 rounded border border-gray-300 cursor-help">
+                    Ctrl+E/C
+                  </kbd>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs text-xs">
+                  <p className="font-semibold mb-1">Keyboard Shortcuts:</p>
+                  <ul className="list-disc ml-4 space-y-1">
+                    <li><kbd className="px-1 bg-gray-100 rounded text-[10px]">Ctrl+E</kbd> Expand All</li>
+                    <li><kbd className="px-1 bg-gray-100 rounded text-[10px]">Ctrl+C</kbd> Collapse All</li>
+                    <li><kbd className="px-1 bg-gray-100 rounded text-[10px]">Ctrl+1</kbd> Expand to level 1</li>
+                    <li><kbd className="px-1 bg-gray-100 rounded text-[10px]">Ctrl+2</kbd> Expand to level 2</li>
+                    <li><kbd className="px-1 bg-gray-100 rounded text-[10px]">Ctrl+3</kbd> Expand to level 3</li>
+                  </ul>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           
           <div className="flex flex-wrap gap-2 mb-4 text-sm border-t pt-2">
@@ -206,8 +258,12 @@ export default function NoteTree() {
                 size="sm"
                 onClick={() => expandToLevel(level)}
                 className="flex items-center text-xs px-2 py-0 h-6"
+                title={`Expand to level ${level} (Ctrl+${level})`}
               >
                 <span>L{level}</span>
+                <kbd className="ml-1 text-[9px] text-gray-400 font-mono hidden sm:inline-block">
+                  {level}
+                </kbd>
               </Button>
             ))}
           </div>
