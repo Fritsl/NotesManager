@@ -37,7 +37,7 @@ export default function NotesEditor() {
     <div className="flex flex-col h-screen">
       <Header />
       
-      <div className="flex flex-1 h-[calc(100vh-64px)] overflow-hidden">
+      <div className="flex flex-1 h-[calc(100vh-42px)] overflow-hidden">
         {/* Desktop Layout - Tree Takes Priority */}
         {!isMobile && (
           <>
@@ -83,8 +83,8 @@ export default function NotesEditor() {
       <style>{`
         .tree-line {
           border-left: 1px dashed #d1d5db;
-          margin-left: 12px;
-          padding-left: 12px;
+          margin-left: 8px;
+          padding-left: 8px;
         }
         .custom-scrollbar::-webkit-scrollbar {
           width: 8px;

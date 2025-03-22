@@ -232,143 +232,59 @@ export default function NoteTree() {
   }, [notes, getAllNoteIds, getNoteIdsByLevel, currentLevel]);
 
   return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="font-semibold text-gray-700">Notes Structure</h2>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => addNote(null)}
-          title="Add Root Note"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
-      </div>
-      
-      {/* Expand/Collapse Controls */}
-      {notes.length > 0 && (
-        <>
-          <div className="flex items-center gap-2 mb-3 text-sm">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={expandAll}
-              className="flex items-center text-xs"
-              title="Shortcut: Ctrl + E"
-            >
-              <ChevronDown className="h-3 w-3 mr-1" />
-              Expand All
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={collapseAll}
-              className="flex items-center text-xs"
-              title="Shortcut: Ctrl + C"
-            >
-              <ChevronUp className="h-3 w-3 mr-1" />
-              Collapse All
-            </Button>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <kbd className="ml-1 hidden sm:inline-flex text-[10px] font-mono px-1.5 bg-gray-100 text-gray-500 rounded border border-gray-300 cursor-help">
-                    Ctrl+E/C
-                  </kbd>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs text-xs">
-                  <p className="font-semibold mb-1">Keyboard Shortcuts:</p>
-                  <ul className="list-disc ml-4 space-y-1">
-                    <li><kbd className="px-1 bg-gray-100 rounded text-[10px]">Z</kbd> Collapse one level</li>
-                    <li><kbd className="px-1 bg-gray-100 rounded text-[10px]">X</kbd> Expand one more level</li>
-                    <li><kbd className="px-1 bg-gray-100 rounded text-[10px]">Ctrl+1-5</kbd> Jump to specific level</li>
-                    <li><kbd className="px-1 bg-gray-100 rounded text-[10px]">Ctrl+E</kbd> Expand All</li>
-                    <li><kbd className="px-1 bg-gray-100 rounded text-[10px]">Ctrl+C</kbd> Collapse All</li>
-                  </ul>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+    <div className="p-2">
+      <div className="flex justify-between items-center py-1 px-1 border-b">
+        <div className="text-xs text-gray-500 flex items-center">
+          <span className="font-semibold text-gray-700">L{currentLevel}</span>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-5 w-5 p-0 ml-1">
+                  <Info className="h-3 w-3 text-gray-400" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs text-xs">
+                <p className="font-medium mb-1">Keyboard Shortcuts:</p>
+                <ul className="list-disc ml-3 space-y-0.5">
+                  <li><kbd className="px-1 bg-gray-100 rounded text-[9px]">Z</kbd> Collapse one level</li>
+                  <li><kbd className="px-1 bg-gray-100 rounded text-[9px]">X</kbd> Expand one more level</li>
+                  <li><kbd className="px-1 bg-gray-100 rounded text-[9px]">Ctrl+1-5</kbd> Jump to level</li>
+                </ul>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        
+        {/* Compact navigation controls */}
+        <div className="flex items-center gap-1">
+          {/* Level controls */}
+          <div className="flex items-center">
+            {[1, 2, 3].map(level => (
+              <Button
+                key={`level-${level}`}
+                variant={currentLevel === level ? "default" : "ghost"}
+                size="sm"
+                onClick={() => expandToLevel(level)}
+                className="h-6 w-6 p-0"
+                title={`Level ${level} (Ctrl+${level})`}
+              >
+                <span className="text-xs">L{level}</span>
+              </Button>
+            ))}
           </div>
           
-          <div className="flex flex-wrap gap-2 mb-4 text-sm border-t pt-2">
-            <div className="text-xs text-gray-500 w-full mb-1 flex items-center justify-between">
-              <div className="flex items-center">
-                <Layers className="h-3 w-3 mr-1" />
-                <span className="mr-1">Level-based navigation:</span>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
-                        <Info className="h-3 w-3 text-gray-400" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p>Control how much of the tree to show:</p>
-                      <ul className="list-disc ml-4 mt-1 text-xs">
-                        <li><strong>L1</strong>: Show only root notes</li>
-                        <li><strong>L2</strong>: Show root notes and their immediate children</li>
-                        <li><strong>L3+</strong>: Show deeper levels as needed</li>
-                        <li><strong>Z/X</strong>: Collapse/expand one level at a time</li>
-                      </ul>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              
-              <div className="text-xs">
-                <span className="text-gray-500">Current: </span>
-                <span className="font-semibold">L{currentLevel}</span>
-              </div>
-            </div>
-            
-            {/* Level by level navigation */}
-            <div className="flex items-center gap-1 mr-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={collapseOneLevel}
-                className="flex items-center text-xs px-2 py-0 h-6"
-                title="Collapse one level (shortcut: Z)"
-                disabled={currentLevel === 0}
-              >
-                <MinusCircle className="h-3 w-3 mr-1" />
-                <span className="hidden sm:inline">Collapse</span>
-                <span className="sm:hidden">-</span>
-                <kbd className="ml-1 text-[9px] text-gray-400 font-mono hidden sm:inline-block">Z</kbd>
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={expandMoreLevel}
-                className="flex items-center text-xs px-2 py-0 h-6"
-                title="Expand one more level (shortcut: X)"
-              >
-                <PlusCircle className="h-3 w-3 mr-1" />
-                <span className="hidden sm:inline">Expand</span>
-                <span className="sm:hidden">+</span>
-                <kbd className="ml-1 text-[9px] text-gray-400 font-mono hidden sm:inline-block">X</kbd>
-              </Button>
-            </div>
-            
-            {/* Fixed level buttons */}
-            <div className="flex items-center gap-1">
-              {[1, 2, 3, 4, 5].map(level => (
-                <Button
-                  key={`level-${level}`}
-                  variant={currentLevel === level ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => expandToLevel(level)}
-                  className="flex items-center text-xs px-2 py-0 h-6"
-                  title={`Expand to level ${level} (Ctrl+${level})`}
-                >
-                  <span>L{level}</span>
-                </Button>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
+          {/* Add Note */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => addNote(null)}
+            title="Add Root Note"
+            className="h-6 w-6 ml-1"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
       
       <div className="relative">
         {/* First drop zone for moving items to beginning */}

@@ -135,7 +135,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
       <div 
         ref={ref}
         className={cn(
-          "note-card bg-white border rounded-lg p-3 transition flex items-start group shadow-sm hover:shadow",
+          "note-card bg-white border rounded-md p-2 transition flex items-start group shadow-sm hover:shadow",
           isOver && "border-primary bg-primary/5",
           selectedNote?.id === note.id ? "border-primary bg-blue-50" : "border-gray-200 hover:bg-gray-50",
           isDragging && "opacity-50"
@@ -267,8 +267,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         <div 
           ref={dropChildArea}
           className={cn(
-            "ml-6 mt-2 space-y-2 tree-line relative",
-            isOverChildArea && "bg-primary/5 border border-dashed border-primary rounded-md p-2"
+            "ml-4 mt-1 space-y-1 tree-line relative",
+            isOverChildArea && "bg-primary/5 border border-dashed border-primary rounded-md p-1"
           )}
         >
           {/* Initial drop zone for first position */}

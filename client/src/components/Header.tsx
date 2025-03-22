@@ -11,35 +11,28 @@ export default function Header() {
   const [showExportModal, setShowExportModal] = useState(false);
 
   return (
-    <header className="bg-white border-b border-gray-200 py-4 px-6 flex justify-between items-center">
+    <header className="bg-white border-b border-gray-200 py-2 px-4 flex justify-between items-center">
       <div className="flex items-center space-x-2">
-        <PlusCircle className="h-5 w-5 text-primary" />
-        <h1 className="text-xl font-bold text-gray-800">Notes Tree Editor</h1>
+        <h1 className="text-base font-semibold text-gray-800">Notes Tree</h1>
       </div>
-      <div className="flex items-center space-x-3">
+      <div className="flex items-center space-x-2">
         <Button 
-          variant="default" 
+          variant="outline" 
+          size="sm"
           onClick={() => setShowImportModal(true)}
-          className="flex items-center space-x-2"
+          className="flex items-center space-x-1 h-7 text-xs"
         >
-          <FileUp className="h-4 w-4" />
+          <FileUp className="h-3 w-3" />
           <span>Import</span>
         </Button>
         <Button 
           variant="outline" 
+          size="sm"
           onClick={() => setShowExportModal(true)}
-          className="flex items-center space-x-2"
+          className="flex items-center space-x-1 h-7 text-xs"
         >
-          <FileDown className="h-4 w-4" />
+          <FileDown className="h-3 w-3" />
           <span>Export</span>
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => addNote(null)}
-          title="Add Root Note"
-        >
-          <PlusCircle className="h-5 w-5" />
         </Button>
       </div>
 
