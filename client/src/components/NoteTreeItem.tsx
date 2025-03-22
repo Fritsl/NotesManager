@@ -341,6 +341,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                 level={level + 1}
                 index={idx}
                 isRoot={false}
+                parentId={note.id}
                 toggleExpand={toggleExpand}
                 isExpanded={expandedNodes.has(child.id)}
               />
