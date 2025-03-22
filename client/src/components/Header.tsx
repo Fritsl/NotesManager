@@ -36,7 +36,8 @@ export default function Header() {
     expandAll, 
     collapseAll, 
     expandToLevel, 
-    currentLevel 
+    currentLevel,
+    maxDepth
   } = useNotes();
   const [showImportModal, setShowImportModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -68,7 +69,7 @@ export default function Header() {
       <div className="flex items-center space-x-2">
         {/* Level Controls */}
         <div className="flex items-center mr-2 border-r pr-3 border-gray-200 flex-wrap">
-          {Array.from({ length: 9 }, (_, i) => i + 1).map(level => {
+          {Array.from({ length: Math.max(1, maxDepth) }, (_, i) => i + 1).map(level => {
             // Get the color theme for this level (index is 0-based, level is 1-based)
             const colorTheme = levelColors[level - 1];
             return (

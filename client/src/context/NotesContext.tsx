@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode, useCallback } from "react";
+import { createContext, useContext, useState, ReactNode, useCallback, useMemo } from "react";
 import { Note, NotesData } from "@/types/notes";
 import { useToast } from "@/components/ui/use-toast";
 import { v4 as uuidv4 } from "uuid";
@@ -22,6 +22,7 @@ interface NotesContextType {
   collapseAll: () => void;
   expandToLevel: (level: number) => void;
   currentLevel: number;
+  maxDepth: number;
 }
 
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
@@ -372,6 +373,30 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     return ids;
   }, []);
 
+  // Calculate the maximum depth of notes in the tree
+  const calculateMaxDepth = useCallback((notesArray: Note[], currentDepth = 0): number => {
+    if (notesArray.length === 0) {
+      return currentDepth;
+    }
+    
+    let maxChildDepth = currentDepth;
+    
+    notesArray.forEach(note => {
+      if (note.children.length > 0) {
+        const childDepth = calculateMaxDepth(note.children, currentDepth + 1);
+        maxChildDepth = Math.max(maxChildDepth, childDepth);
+      }
+    });
+    
+    return maxChildDepth;
+  }, []);
+  
+  // Get the maximum depth of the notes tree (limit to 9)
+  const maxDepth = useMemo(() => {
+    const depth = calculateMaxDepth(notes);
+    return Math.min(Math.max(depth + 1, 1), 9); // +1 because depth is 0-based, limit to max 9
+  }, [notes, calculateMaxDepth]);
+
   // Expand to a specific level
   const expandToLevel = useCallback((level: number) => {
     // Ensure level is at least 0
@@ -423,6 +448,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         collapseAll,
         expandToLevel,
         currentLevel,
+        maxDepth,
       }}
     >
       {children}
