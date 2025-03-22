@@ -3,16 +3,7 @@ import { useNotes } from "@/context/NotesContext";
 import NoteTreeItem from "./NoteTreeItem";
 import DropZone from "./DropZone";
 import { Button } from "@/components/ui/button";
-import { 
-  Plus, 
-  Info
-} from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Plus } from "lucide-react";
 
 export default function NoteTree() {
   const { 
@@ -102,59 +93,6 @@ export default function NoteTree() {
 
   return (
     <div className="p-2">
-      <div className="flex justify-between items-center py-1 px-1 border-b">
-        <div className="text-xs text-gray-500 flex items-center">
-          <span className="font-semibold text-gray-700">L{currentLevel}</span>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-5 w-5 p-0 ml-1">
-                  <Info className="h-3 w-3 text-gray-400" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-xs text-xs">
-                <p className="font-medium mb-1">Keyboard Shortcuts:</p>
-                <ul className="list-disc ml-3 space-y-0.5">
-                  <li><kbd className="px-1 bg-gray-100 rounded text-[9px]">Z</kbd> Collapse one level</li>
-                  <li><kbd className="px-1 bg-gray-100 rounded text-[9px]">X</kbd> Expand one more level</li>
-                  <li><kbd className="px-1 bg-gray-100 rounded text-[9px]">Ctrl+1-5</kbd> Jump to level</li>
-                </ul>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-        
-        {/* Compact navigation controls */}
-        <div className="flex items-center gap-1">
-          {/* Level controls */}
-          <div className="flex items-center">
-            {[1, 2, 3].map(level => (
-              <Button
-                key={`level-${level}`}
-                variant={currentLevel === level ? "default" : "ghost"}
-                size="sm"
-                onClick={() => expandToLevel(level)}
-                className="h-6 w-6 p-0"
-                title={`Level ${level} (Ctrl+${level})`}
-              >
-                <span className="text-xs">L{level}</span>
-              </Button>
-            ))}
-          </div>
-          
-          {/* Add Note */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => addNote(null)}
-            title="Add Root Note"
-            className="h-6 w-6 ml-1"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-      
       <div className="relative">
         {/* First drop zone for moving items to beginning */}
         {notes.length > 0 && <DropZone index={0} />}

@@ -8,7 +8,8 @@ import {
   PlusCircle, 
   ChevronUp, 
   ChevronDown,
-  ChevronsUpDown
+  ChevronsUpDown,
+  Info
 } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import ImportModal from "@/components/ImportModal";
@@ -20,6 +21,12 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { levelColors } from "@/lib/level-colors";
 
@@ -38,6 +45,25 @@ export default function Header() {
     <header className="bg-white border-b border-gray-200 py-2 px-4 flex justify-between items-center">
       <div className="flex items-center space-x-2">
         <h1 className="text-base font-semibold text-gray-800">Notes Tree</h1>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7 p-0 ml-1">
+                <Info className="h-4 w-4 text-gray-400" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-xs text-xs">
+              <p className="font-medium mb-1">Keyboard Shortcuts:</p>
+              <ul className="list-disc ml-3 space-y-0.5">
+                <li><kbd className="px-1 bg-gray-100 rounded text-[9px]">Z</kbd> Collapse one level</li>
+                <li><kbd className="px-1 bg-gray-100 rounded text-[9px]">X</kbd> Expand one more level</li>
+                <li><kbd className="px-1 bg-gray-100 rounded text-[9px]">Ctrl+1-5</kbd> Jump to level</li>
+                <li><kbd className="px-1 bg-gray-100 rounded text-[9px]">Ctrl+E</kbd> Expand all</li>
+                <li><kbd className="px-1 bg-gray-100 rounded text-[9px]">Ctrl+C</kbd> Collapse all</li>
+              </ul>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
       <div className="flex items-center space-x-2">
         {/* Level Controls */}
