@@ -177,8 +177,11 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         </Button>
         
         <div className="flex-1 overflow-hidden">
-          {/* Title line - larger and more prominent */}
-          <div className={`text-sm font-medium ${levelColors[Math.min(level, 8)].text} truncate`}>{displayContent}</div>
+          {/* Title line - larger and more prominent with position badge */}
+          <div className="flex items-center">
+            <div className={`text-sm font-medium ${levelColors[Math.min(level, 8)].text} truncate flex-1`}>{displayContent}</div>
+            <div className="text-xs text-gray-500 bg-gray-100 rounded px-1.5 py-0.5 ml-2">pos: {note.position}</div>
+          </div>
           
           {/* Multiple preview lines */}
           {previewLines.length > 0 && (
