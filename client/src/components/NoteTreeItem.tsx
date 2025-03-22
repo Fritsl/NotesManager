@@ -188,10 +188,13 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
     },
   });
 
+  // Create a ref for the child area to get its dimensions
+  const childAreaRef = useRef<HTMLDivElement>(null);
+  
   // Set up child area drop
   const [{ isOverChildArea }, dropChildArea] = useDrop<DragItem, void, { isOverChildArea: boolean }>({
     accept: 'NOTE',
-    drop: (item) => {
+    drop: (item, monitor) => {
       if (item.id !== note.id) {
         const draggedItemId = item.id;
         
@@ -207,7 +210,28 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           return;
         }
         
-        // Move the dragged note as the first child of the current note
+        // Get the client offset to determine drop position
+        const clientOffset = monitor.getClientOffset();
+        
+        // When dropping directly in the child area (not on a specific child), 
+        // determine if we should append the note instead of prepending it
+        if (clientOffset && note.children.length > 0) {
+          const childAreaRect = childAreaRef.current?.getBoundingClientRect();
+          if (childAreaRect) {
+            // If we're dropping closer to the bottom of the child area, append as the last child
+            const offsetY = clientOffset.y - childAreaRect.top;
+            const childAreaHeight = childAreaRect.bottom - childAreaRect.top;
+            const dropPosition = offsetY / childAreaHeight;
+            
+            if (dropPosition > 0.8) {
+              // If dropping in the bottom 20% of the child area, add as the last child
+              moveNote(draggedItemId, note.id, note.children.length);
+              return;
+            }
+          }
+        }
+        
+        // Default: Move the dragged note as the first child of the current note
         moveNote(draggedItemId, note.id, 0);
       }
     },
@@ -402,7 +426,10 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
       {/* Children container */}
       {hasChildren && isExpanded && (
         <div 
-          ref={dropChildArea}
+          ref={(node) => {
+            dropChildArea(node);
+            childAreaRef.current = node;
+          }}
           className={cn(
             "ml-4 mt-1 space-y-1 tree-line relative",
             // Instead of adding borders and padding that cause jumping, just change background color subtly
@@ -410,7 +437,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           )}
         >
           {/* Initial drop zone for first position */}
-          <DropZone index={0} />
+          <DropZone index={0} parentId={note.id} />
           
           {note.children.map((child, idx) => (
             <div key={child.id}>
@@ -423,7 +450,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                 toggleExpand={toggleExpand}
                 isExpanded={expandedNodes.has(child.id)}
               />
-              <DropZone index={idx + 1} />
+              <DropZone index={idx + 1} parentId={note.id} />
             </div>
           ))}
           
