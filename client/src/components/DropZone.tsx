@@ -20,8 +20,8 @@ export default function DropZone({ index }: DropZoneProps) {
   const [{ isOver, canDrop }, drop] = useDrop<DragItem, void, { isOver: boolean; canDrop: boolean }>({
     accept: 'NOTE',
     canDrop: (item) => {
-      // Allow dropping if it's a root note (no other restrictions)
-      return !!item.isRoot;
+      // Allow dropping of ANY note, regardless of whether it's currently a root or child
+      return true;
     },
     drop: (item) => {
       // Move the note to the specified position at the root level

@@ -283,9 +283,39 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       const updatedNotes = [...prevNotes];
       
       // Find the note to move and its current parent
-      const { note: noteToMove, parent: sourceParent, index: sourceIndex } = findNoteAndParent(noteId, updatedNotes);
+      const { note: foundNote, parent: sourceParent, index: sourceIndex } = findNoteAndParent(noteId, updatedNotes);
       
-      if (!noteToMove) return updatedNotes;
+      if (!foundNote) {
+        console.error("Note not found:", noteId);
+        return updatedNotes;
+      }
+      
+      // Create a deep copy of the note to move (to avoid reference issues)
+      const noteToMove = JSON.parse(JSON.stringify(foundNote));
+      
+      // Check if trying to move a note to its own child (which would create a cycle)
+      const isMovingToDescendant = (parentId: string | null, potentialChildId: string): boolean => {
+        if (parentId === potentialChildId) return true;
+        
+        const findParent = (nodes: Note[]): boolean => {
+          for (const node of nodes) {
+            if (node.id === parentId) {
+              return true;
+            }
+            if (node.children.length > 0 && findParent(node.children)) {
+              return true;
+            }
+          }
+          return false;
+        };
+        
+        return noteToMove.children.length > 0 && findParent(noteToMove.children);
+      };
+      
+      if (targetParentId && isMovingToDescendant(targetParentId, noteId)) {
+        console.warn("Cannot move a note to one of its own descendants");
+        return updatedNotes;
+      }
       
       // Remove note from its current position
       if (sourceParent) {
