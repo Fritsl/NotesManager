@@ -197,11 +197,6 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             isOver && isOverRight && "bg-primary opacity-50 w-2"
           )}></div>
           
-          {/* Top indicator for "Inside" drop to show it will be at position 0 */}
-          {isOver && isOverRight && (
-            <div className="absolute top-0 left-0 right-0 h-1 bg-primary"></div>
-          )}
-          
           <div className="drag-handle mr-2 text-gray-400 hover:text-gray-600 cursor-grab">
             <GripVertical size={16} />
           </div>
