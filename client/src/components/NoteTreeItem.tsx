@@ -11,27 +11,31 @@ interface NoteTreeItemProps {
   level: number;
   toggleExpand: (noteId: string) => void;
   isExpanded: boolean;
+  index?: number;
+  isRoot?: boolean;
 }
 
 interface DragItem {
   type: string;
   id: string;
+  index?: number;
+  isRoot?: boolean;
 }
 
-export default function NoteTreeItem({ note, level, toggleExpand, isExpanded }: NoteTreeItemProps) {
+export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, index = 0, isRoot = false }: NoteTreeItemProps) {
   const { selectedNote, selectNote, addNote, deleteNote, moveNote } = useNotes();
   const ref = useRef<HTMLDivElement>(null);
 
   // Set up drag
   const [{ isDragging }, drag, preview] = useDrag(() => ({
     type: 'NOTE',
-    item: { type: 'NOTE', id: note.id },
+    item: { type: 'NOTE', id: note.id, index, isRoot },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
   }));
 
-  // Set up drop
+  // Set up drop for moving notes within the tree
   const [{ isOver }, drop] = useDrop<DragItem, void, { isOver: boolean }>({
     accept: 'NOTE',
     drop: (item, monitor) => {
@@ -45,8 +49,14 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded }: 
           return;
         }
         
-        // Move the dragged note as a child of the current note
-        moveNote(draggedItemId, note.id, note.children.length);
+        // Handle dropping differently for root-level reordering
+        if (isRoot && item.isRoot) {
+          // For root-to-root reordering, we want to keep it at the root level but change position
+          moveNote(draggedItemId, null, index);
+        } else {
+          // For non-root items or moving a root to become a child, add as a child of the current note
+          moveNote(draggedItemId, note.id, note.children.length);
+        }
       }
     },
     collect: (monitor) => ({
@@ -208,13 +218,15 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded }: 
             isOverChildArea && "bg-primary/5 border border-dashed border-primary rounded-md p-2"
           )}
         >
-          {note.children.map((child) => (
+          {note.children.map((child, idx) => (
             <NoteTreeItem
               key={child.id}
               note={child}
               level={level + 1}
+              index={idx}
+              isRoot={false}
               toggleExpand={toggleExpand}
-              isExpanded={isExpanded && isExpanded}
+              isExpanded={isExpanded}
             />
           ))}
         </div>

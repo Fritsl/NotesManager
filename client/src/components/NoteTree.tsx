@@ -369,15 +369,23 @@ export default function NoteTree() {
         </>
       )}
       
-      <div className="space-y-2">
-        {notes.map((note) => (
-          <NoteTreeItem
-            key={note.id}
-            note={note}
-            level={0}
-            toggleExpand={toggleExpand}
-            isExpanded={isExpanded(note.id)}
-          />
+      <div className="relative">
+        {/* First drop zone for moving items to beginning */}
+        {notes.length > 0 && <DropZone index={0} />}
+        
+        {/* Map notes and add drop zones between each */}
+        {notes.map((note, index) => (
+          <div key={note.id}>
+            <NoteTreeItem
+              note={note}
+              level={0}
+              toggleExpand={toggleExpand}
+              isExpanded={isExpanded(note.id)}
+              index={index}
+              isRoot={true}
+            />
+            <DropZone index={index + 1} />
+          </div>
         ))}
         
         {notes.length === 0 && (
