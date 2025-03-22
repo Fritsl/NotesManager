@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useNotes } from "@/context/NotesContext";
 import NoteTreeItem from "./NoteTreeItem";
+import DropZone from "./DropZone";
 import { Note } from "@/types/notes";
 import { Button } from "@/components/ui/button";
 import { 
