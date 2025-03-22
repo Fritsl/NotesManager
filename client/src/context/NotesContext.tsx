@@ -293,26 +293,30 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       // Create a deep copy of the note to move (to avoid reference issues)
       const noteToMove = JSON.parse(JSON.stringify(foundNote));
       
-      // Check if trying to move a note to its own child (which would create a cycle)
-      const isMovingToDescendant = (parentId: string | null, potentialChildId: string): boolean => {
-        if (parentId === potentialChildId) return true;
+      // Check if trying to move a note to one of its own descendants (which would create a cycle)
+      const isTargetADescendantOfSource = (sourceId: string, targetParentId: string | null): boolean => {
+        if (targetParentId === null) return false;
+        if (sourceId === targetParentId) return true;
         
-        const findParent = (nodes: Note[]): boolean => {
+        // Helper function to check if targetId is a descendant of any node
+        const isDescendant = (nodes: Note[], targetId: string): boolean => {
           for (const node of nodes) {
-            if (node.id === parentId) {
+            if (node.id === targetId) {
               return true;
             }
-            if (node.children.length > 0 && findParent(node.children)) {
+            
+            if (node.children.length > 0 && isDescendant(node.children, targetId)) {
               return true;
             }
           }
           return false;
         };
         
-        return noteToMove.children.length > 0 && findParent(noteToMove.children);
+        // Check if targetParentId is a descendant of the source note
+        return isDescendant(foundNote.children, targetParentId);
       };
       
-      if (targetParentId && isMovingToDescendant(targetParentId, noteId)) {
+      if (targetParentId && isTargetADescendantOfSource(noteId, targetParentId)) {
         console.warn("Cannot move a note to one of its own descendants");
         return updatedNotes;
       }

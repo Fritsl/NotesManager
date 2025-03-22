@@ -37,7 +37,7 @@ interface DragItem {
 }
 
 export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, index = 0, isRoot = false, parentId = null }: NoteTreeItemProps) {
-  const { selectedNote, selectNote, addNote, deleteNote, moveNote, expandedNodes } = useNotes();
+  const { selectedNote, selectNote, addNote, deleteNote, moveNote, expandedNodes, notes } = useNotes();
   const ref = useRef<HTMLDivElement>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
@@ -49,6 +49,38 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
       isDragging: monitor.isDragging(),
     }),
   }));
+
+  // Helper to check if a note is a descendant of another
+  const isDescendantOf = (sourceId: string, targetId: string): boolean => {
+    // Can't be a descendant of itself
+    if (sourceId === targetId) return false;
+    
+    // Find the source note
+    const findNoteById = (id: string, notesList: Note[]): Note | null => {
+      for (const n of notesList) {
+        if (n.id === id) return n;
+        if (n.children.length > 0) {
+          const found = findNoteById(id, n.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    
+    const sourceNote = findNoteById(sourceId, notes);
+    if (!sourceNote) return false;
+    
+    // Check if targetId is a descendant of sourceNote
+    const checkIfDescendant = (node: Note, targetNodeId: string): boolean => {
+      for (const child of node.children) {
+        if (child.id === targetNodeId) return true;
+        if (checkIfDescendant(child, targetNodeId)) return true;
+      }
+      return false;
+    };
+    
+    return checkIfDescendant(sourceNote, targetId);
+  };
 
   // Set up drop detection with position information
   const [{ isOver, isOverRight, isOverTop, isOverBottom }, drop] = useDrop<DragItem, void, { isOver: boolean, isOverRight: boolean, isOverTop: boolean, isOverBottom: boolean }>({
@@ -66,13 +98,12 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           return;
         }
         
-        // Check if item is a child of the target (to prevent dropping a parent into its own child)
-        const isChild = checkIfChild(note, draggedItemId);
-        if (isChild) {
+        // Check if source is an ancestor of the target - if so, we can't move (would create a cycle)
+        const isSourceAncestorOfTarget = isDescendantOf(draggedItemId, note.id);
+        if (isSourceAncestorOfTarget) {
+          console.warn("Cannot move a note to one of its own descendants - would create a cycle");
           return;
         }
-        
-        // Allow dropping to reposition at top even if already a child of this parent
         
         // Get drop position relative to the target note
         const clientOffset = monitor.getClientOffset();
@@ -100,15 +131,11 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           // Check if in the top zone (Above, same level)
           else if (offsetY < topThreshold) {
             // For "Above" - place it at the same level (sibling) regardless of original level
-            // This means if we're dragging a note from level 3 to above a note at level 1,
-            // it should be placed as a sibling of the level 1 note, not remain at level 3
             moveNote(draggedItemId, parentId, index);
           } 
           // Check if in the bottom zone (Below, same level)
           else if (offsetY > bottomThreshold) {
             // For "Below" - place it at the same level (sibling) regardless of original level
-            // This means if we're dragging a note from level 3 to below a note at level 1,
-            // it should be placed as a sibling of the level 1 note, not remain at level 3
             moveNote(draggedItemId, parentId, index + 1);
           }
           // Middle area (default to below)
@@ -161,16 +188,6 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
     },
   });
 
-  // Helper to check if a note is a child of another
-  const checkIfChild = (parentNote: Note, childId: string): boolean => {
-    for (const child of parentNote.children) {
-      if (child.id === childId || checkIfChild(child, childId)) {
-        return true;
-      }
-    }
-    return false;
-  };
-
   // Set up child area drop
   const [{ isOverChildArea }, dropChildArea] = useDrop<DragItem, void, { isOverChildArea: boolean }>({
     accept: 'NOTE',
@@ -183,13 +200,12 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           return;
         }
         
-        // Check if item is a child of the target (to prevent dropping a parent into its own child)
-        const isChild = checkIfChild(note, draggedItemId);
-        if (isChild) {
+        // Check if source is an ancestor of the target - if so, we can't move (would create a cycle)
+        const isSourceAncestorOfTarget = isDescendantOf(draggedItemId, note.id);
+        if (isSourceAncestorOfTarget) {
+          console.warn("Cannot move a note to one of its own descendants - would create a cycle");
           return;
         }
-        
-        // Allow dropping to reposition at top even if already a child of this parent
         
         // Move the dragged note as the first child of the current note
         moveNote(draggedItemId, note.id, 0);
