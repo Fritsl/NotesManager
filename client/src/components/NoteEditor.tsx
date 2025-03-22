@@ -200,11 +200,11 @@ export default function NoteEditor() {
             </div>
           </div>
 
-          {/* Preview Section - smaller and more compact */}
-          <div className="mt-3 border-t border-gray-100 pt-2">
-            <div className="text-xs text-gray-500 flex justify-between items-center mb-1">
-              <span>Preview</span>
-              {(youtubeUrl || externalUrl) && (
+          {/* Links Section */}
+          {(youtubeUrl || externalUrl) && (
+            <div className="mt-3 border-t border-gray-100 pt-2">
+              <div className="text-xs text-gray-500 flex justify-between items-center mb-1">
+                <span>Links</span>
                 <div className="flex space-x-2">
                   {youtubeUrl && (
                     <a 
@@ -230,18 +230,9 @@ export default function NoteEditor() {
                     </a>
                   )}
                 </div>
-              )}
+              </div>
             </div>
-            <div className="bg-gray-50 rounded p-2 prose prose-sm max-w-none text-xs">
-              {content ? (
-                content.split('\n').map((paragraph, index) => (
-                  <p key={index} className="my-1 text-gray-700">{paragraph}</p>
-                ))
-              ) : (
-                <p className="text-gray-400 italic">No content yet</p>
-              )}
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </>
