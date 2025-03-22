@@ -84,7 +84,7 @@ export default function Header() {
           className="h-7 mr-2"
         >
           <PlusCircle className="h-3.5 w-3.5 mr-1" />
-          Add Root Note
+          Add Note
         </Button>
         
         {/* Menu */}
