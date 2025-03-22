@@ -38,35 +38,46 @@ export default function NotesEditor() {
       <Header />
       
       <div className="flex flex-1 h-[calc(100vh-64px)] overflow-hidden">
-        {/* Desktop Sidebar */}
+        {/* Desktop Layout - Tree Takes Priority */}
         {!isMobile && (
-          <aside className="w-1/3 lg:w-1/4 border-r border-gray-200 bg-white overflow-auto custom-scrollbar">
-            <NoteTree />
-          </aside>
+          <>
+            {/* Tree View - Now much larger */}
+            <div className="w-2/3 xl:w-3/4 border-r border-gray-200 bg-white overflow-auto custom-scrollbar">
+              <NoteTree />
+            </div>
+            
+            {/* Editor Panel - Now smaller, collapsible */}
+            <aside className="w-1/3 xl:w-1/4 bg-gray-50 overflow-auto custom-scrollbar transition-all duration-300 ease-in-out">
+              <NoteEditor />
+            </aside>
+          </>
         )}
         
         {/* Mobile Sidebar */}
         {isMobile && (
-          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-            <SheetTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className="absolute left-4 top-20 z-10"
-              >
-                <Menu />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-[85%] p-0">
+          <>
+            {/* Main tree view for mobile */}
+            <main className="flex-1 flex flex-col bg-white overflow-auto custom-scrollbar">
               <NoteTree />
-            </SheetContent>
-          </Sheet>
+            </main>
+            
+            {/* Sheet/Slide-in editor for mobile */}
+            <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+              <SheetTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="fixed right-4 bottom-4 z-10 rounded-full h-12 w-12 shadow-lg"
+                >
+                  <Menu />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[90%] p-0">
+                <NoteEditor />
+              </SheetContent>
+            </Sheet>
+          </>
         )}
-        
-        {/* Main Content */}
-        <main className="flex-1 flex flex-col bg-gray-50 overflow-auto custom-scrollbar">
-          <NoteEditor />
-        </main>
       </div>
       
       <style>{`

@@ -115,22 +115,27 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
 
   const hasChildren = note.children.length > 0;
 
-  // Truncate content for display in the tree
-  const displayContent = note.content
-    .split('\n')[0]
-    .slice(0, 40)
-    + (note.content.length > 40 ? '...' : '');
-
-  // Get a secondary line if available
-  const secondLine = note.content.split('\n')[1];
-  const displaySecondLine = secondLine ? secondLine.slice(0, 40) + (secondLine.length > 40 ? '...' : '') : null;
+  // Display more content in the tree view
+  const contentLines = note.content.split('\n');
+  
+  // First line is the title (can be a bit longer now)
+  const displayContent = contentLines[0].slice(0, 60) + (contentLines[0].length > 60 ? '...' : '');
+  
+  // Get multiple lines for preview if available
+  const MAX_PREVIEW_LINES = 3;
+  const previewLines = contentLines.slice(1, MAX_PREVIEW_LINES + 1).map(line => 
+    line.slice(0, 60) + (line.length > 60 ? '...' : '')
+  );
+  
+  // Check if there are more lines beyond what we're showing
+  const hasMoreLines = contentLines.length > MAX_PREVIEW_LINES + 1;
 
   return (
     <div className="note-tree-item">
       <div 
         ref={ref}
         className={cn(
-          "note-card bg-white border rounded p-2 transition flex items-start group",
+          "note-card bg-white border rounded-lg p-3 transition flex items-start group shadow-sm hover:shadow",
           isOver && "border-primary bg-primary/5",
           selectedNote?.id === note.id ? "border-primary bg-blue-50" : "border-gray-200 hover:bg-gray-50",
           isDragging && "opacity-50"
@@ -168,9 +173,19 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         </Button>
         
         <div className="flex-1 overflow-hidden">
-          <div className="text-sm font-medium text-gray-700 truncate">{displayContent}</div>
-          {displaySecondLine && (
-            <div className="text-xs text-gray-500 truncate">{displaySecondLine}</div>
+          {/* Title line - larger and more prominent */}
+          <div className="text-sm font-medium text-gray-800 truncate">{displayContent}</div>
+          
+          {/* Multiple preview lines */}
+          {previewLines.length > 0 && (
+            <div className="mt-1 space-y-0.5">
+              {previewLines.map((line, index) => (
+                <div key={index} className="text-xs text-gray-600 truncate leading-snug">{line}</div>
+              ))}
+              {hasMoreLines && (
+                <div className="text-xs text-gray-400 italic">more...</div>
+              )}
+            </div>
           )}
           
           {/* Badges for special attributes */}

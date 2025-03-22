@@ -129,128 +129,125 @@ export default function NoteEditor() {
         </Button>
       </div>
 
-      {/* Note editor form */}
-      <div className="p-6 flex-1 overflow-auto">
-        <div className="bg-white rounded-lg shadow p-6 max-w-4xl mx-auto">
-          <div className="mb-4">
-            <Label htmlFor="noteContent" className="block text-sm font-medium text-gray-700 mb-1">
-              Note Content
+      {/* Compact note editor form */}
+      <div className="p-3 flex-1 overflow-auto">
+        <div className="bg-white rounded-lg shadow-sm p-3 mx-auto">
+          {/* Content area - more compact now */}
+          <div className="mb-3">
+            <Label htmlFor="noteContent" className="block text-xs font-medium text-gray-500 mb-1">
+              Edit Content
             </Label>
             <Textarea 
               id="noteContent" 
-              rows={8} 
-              className="w-full p-3"
+              rows={6} 
+              className="w-full p-2 text-sm"
               placeholder="Enter note content..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
             />
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-            {/* YouTube URL */}
-            <div>
-              <Label htmlFor="youtubeUrl" className="block text-sm font-medium text-gray-700 mb-1">
-                YouTube URL (optional)
-              </Label>
-              <div className="flex">
-                <div className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
-                  <Youtube size={16} />
+          {/* Optional fields in tabs */}
+          <div className="border-t border-gray-100 pt-2 mt-2">
+            <div className="grid grid-cols-1 gap-2">
+              {/* YouTube URL - more compact */}
+              <div className="flex items-center space-x-2">
+                <div className="flex-shrink-0">
+                  <Youtube size={14} className="text-gray-500" />
                 </div>
                 <Input
                   type="url"
                   id="youtubeUrl"
-                  className="rounded-l-none"
-                  placeholder="https://youtube.com/watch?v=..."
+                  className="h-8 text-xs"
+                  placeholder="YouTube URL (optional)"
                   value={youtubeUrl}
                   onChange={(e) => setYoutubeUrl(e.target.value)}
                 />
               </div>
-            </div>
-            
-            {/* External URL */}
-            <div>
-              <Label htmlFor="externalUrl" className="block text-sm font-medium text-gray-700 mb-1">
-                External URL (optional)
-              </Label>
-              <div className="flex">
-                <div className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
-                  <Link size={16} />
+              
+              {/* External URL - more compact */}
+              <div className="flex items-center space-x-2">
+                <div className="flex-shrink-0">
+                  <Link size={14} className="text-gray-500" />
                 </div>
                 <Input
                   type="url"
                   id="externalUrl"
-                  className="rounded-l-none"
-                  placeholder="https://example.com"
+                  className="h-8 text-xs"
+                  placeholder="Link URL (optional)"
                   value={externalUrl}
                   onChange={(e) => setExternalUrl(e.target.value)}
                 />
               </div>
-            </div>
-            
-            {/* URL Display Text */}
-            <div>
-              <Label htmlFor="urlDisplayText" className="block text-sm font-medium text-gray-700 mb-1">
-                URL Display Text
-              </Label>
-              <Input
-                type="text"
-                id="urlDisplayText"
-                placeholder="Display text for URL"
-                value={urlDisplayText}
-                onChange={(e) => setUrlDisplayText(e.target.value)}
-                disabled={!externalUrl}
-              />
-            </div>
-            
-            {/* Discussion Flag */}
-            <div className="flex items-center h-full">
-              <div className="flex items-center space-x-2 mt-4">
+              
+              {/* URL Display Text - only show if URL is entered */}
+              {externalUrl && (
+                <div className="flex items-center space-x-2 ml-5">
+                  <Input
+                    type="text"
+                    id="urlDisplayText"
+                    className="h-8 text-xs"
+                    placeholder="Link text (optional)"
+                    value={urlDisplayText}
+                    onChange={(e) => setUrlDisplayText(e.target.value)}
+                  />
+                </div>
+              )}
+              
+              {/* Discussion Flag - more compact */}
+              <div className="flex items-center space-x-2 mt-1">
                 <Checkbox
                   id="isDiscussion"
+                  className="h-3 w-3"
                   checked={isDiscussion}
                   onCheckedChange={(checked) => setIsDiscussion(checked === true)}
                 />
-                <Label htmlFor="isDiscussion" className="text-gray-700">
+                <Label htmlFor="isDiscussion" className="text-xs text-gray-600">
                   Mark as discussion
                 </Label>
               </div>
             </div>
           </div>
 
-          {/* Preview Section */}
-          <div className="mt-8 border-t border-gray-200 pt-6">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Preview</h3>
-            <div className="bg-gray-50 rounded-md p-4 prose prose-sm max-w-none">
-              {content.split('\n').map((paragraph, index) => (
-                <p key={index}>{paragraph}</p>
-              ))}
-              
-              {youtubeUrl && (
-                <div className="mt-2">
-                  <a 
-                    href={youtubeUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center text-red-600 hover:text-red-700"
-                  >
-                    <Youtube size={16} className="mr-1" />
-                    <span>Watch on YouTube</span>
-                  </a>
+          {/* Preview Section - smaller and more compact */}
+          <div className="mt-3 border-t border-gray-100 pt-2">
+            <div className="text-xs text-gray-500 flex justify-between items-center mb-1">
+              <span>Preview</span>
+              {(youtubeUrl || externalUrl) && (
+                <div className="flex space-x-2">
+                  {youtubeUrl && (
+                    <a 
+                      href={youtubeUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center text-red-600 hover:text-red-700 text-xs"
+                    >
+                      <Youtube size={12} className="mr-1" />
+                      <span>YouTube</span>
+                    </a>
+                  )}
+                  
+                  {externalUrl && (
+                    <a 
+                      href={externalUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center text-blue-600 hover:text-blue-700 text-xs"
+                    >
+                      <Link size={12} className="mr-1" />
+                      <span>{urlDisplayText || "Link"}</span>
+                    </a>
+                  )}
                 </div>
               )}
-              
-              {externalUrl && (
-                <div className="mt-2">
-                  <a 
-                    href={externalUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center text-blue-600 hover:text-blue-700"
-                  >
-                    <Link size={16} className="mr-1" />
-                    <span>{urlDisplayText || externalUrl}</span>
-                  </a>
-                </div>
+            </div>
+            <div className="bg-gray-50 rounded p-2 prose prose-sm max-w-none text-xs">
+              {content ? (
+                content.split('\n').map((paragraph, index) => (
+                  <p key={index} className="my-1 text-gray-700">{paragraph}</p>
+                ))
+              ) : (
+                <p className="text-gray-400 italic">No content yet</p>
               )}
             </div>
           </div>
