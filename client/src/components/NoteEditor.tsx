@@ -64,16 +64,7 @@ export default function NoteEditor() {
   if (!selectedNote) {
     return (
       <div className="flex-1 flex items-center justify-center p-6">
-        <Card className="max-w-md w-full">
-          <CardContent className="pt-6">
-            <div className="text-center py-8">
-              <h3 className="text-lg font-medium text-gray-700 mb-2">No note selected</h3>
-              <p className="text-gray-500">
-                Select a note from the sidebar or create a new one to edit its content.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Empty editor state - no message shown */}
       </div>
     );
   }
