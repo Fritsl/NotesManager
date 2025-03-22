@@ -35,15 +35,33 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const [currentLevel, setCurrentLevel] = useState<number>(1);
   const { toast } = useToast();
 
+  // Clean note positions to ensure sequential ordering without gaps
+  const cleanNotePositions = useCallback((noteList: Note[]): Note[] => {
+    // Sort the notes by their current position
+    const sortedNotes = [...noteList].sort((a, b) => a.position - b.position);
+    
+    // Reassign positions sequentially starting from 0
+    const cleanedNotes = sortedNotes.map((note, index) => ({
+      ...note,
+      position: index,
+      // Recursively clean child positions
+      children: note.children.length > 0 ? cleanNotePositions(note.children) : []
+    }));
+    
+    return cleanedNotes;
+  }, []);
+
   // Import notes from JSON
   const importNotes = useCallback((data: NotesData) => {
     if (data && Array.isArray(data.notes)) {
-      setNotes(data.notes);
+      // Clean up the positions before setting the notes
+      const cleanedNotes = cleanNotePositions(data.notes);
+      setNotes(cleanedNotes);
       setSelectedNote(null);
       setBreadcrumbs([]);
       toast({
         title: "Import Successful",
-        description: `Imported ${data.notes.length} notes`,
+        description: `Imported ${data.notes.length} notes with cleaned positions`,
       });
     } else {
       toast({
@@ -52,7 +70,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         variant: "destructive",
       });
     }
-  }, [toast]);
+  }, [toast, cleanNotePositions]);
 
   // Export notes to JSON
   const exportNotes = useCallback((): NotesData => {
@@ -136,7 +154,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         const updatedNotes = [...prevNotes];
         newNote.position = updatedNotes.length;
         updatedNotes.push(newNote);
-        return updatedNotes;
+        
+        // Clean positions at root level to ensure consistency
+        return cleanNotePositions(updatedNotes);
       });
     } else {
       // Add as child
@@ -147,6 +167,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         if (foundParent) {
           newNote.position = foundParent.children.length;
           foundParent.children.push(newNote);
+          
+          // Clean positions for this parent's children
+          foundParent.children = cleanNotePositions(foundParent.children);
         }
         
         return updatedNotes;
@@ -158,7 +181,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       title: "Note Added",
       description: "A new note has been added",
     });
-  }, [findNoteAndPath, selectNote, toast]);
+  }, [findNoteAndPath, selectNote, cleanNotePositions, toast]);
 
   // Update a note
   const updateNote = useCallback((updatedNote: Note) => {
@@ -202,17 +225,20 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const deleteNote = useCallback((noteId: string) => {
     setNotes((prevNotes) => {
       const updatedNotes = [...prevNotes];
+      let parentWithUpdatedChildren: Note | null = null;
       
       // Find and remove the note at any level in the tree
-      const removeNoteFromTree = (nodes: Note[]): boolean => {
+      const removeNoteFromTree = (nodes: Note[], parent: Note | null = null): boolean => {
         for (let i = 0; i < nodes.length; i++) {
           if (nodes[i].id === noteId) {
             nodes.splice(i, 1);
+            // Keep track of parent that had a child removed
+            parentWithUpdatedChildren = parent;
             return true;
           }
           
           if (nodes[i].children.length > 0) {
-            if (removeNoteFromTree(nodes[i].children)) {
+            if (removeNoteFromTree(nodes[i].children, nodes[i])) {
               return true;
             }
           }
@@ -222,7 +248,22 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       };
       
       removeNoteFromTree(updatedNotes);
-      return updatedNotes;
+      
+      // If we deleted from a parent's children, clean those children's positions
+      if (parentWithUpdatedChildren) {
+        parentWithUpdatedChildren.children = parentWithUpdatedChildren.children.map((child, index) => ({
+          ...child,
+          position: index
+        }));
+      } else {
+        // If we deleted from root level, clean root positions
+        updatedNotes.forEach((note, index) => {
+          note.position = index;
+        });
+      }
+      
+      // Apply full position cleaning to ensure consistency
+      return cleanNotePositions(updatedNotes);
     });
     
     if (selectedNote?.id === noteId) {
@@ -234,7 +275,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       title: "Note Deleted",
       description: "The note has been removed",
     });
-  }, [selectedNote, toast]);
+  }, [selectedNote, cleanNotePositions, toast]);
 
   // Move a note in the tree
   const moveNote = useCallback((noteId: string, targetParentId: string | null, position: number) => {
@@ -259,7 +300,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         const insertPosition = Math.min(position, updatedNotes.length);
         updatedNotes.splice(insertPosition, 0, noteToMove);
         
-        // Update positions
+        // Clean all positions at root level
         updatedNotes.forEach((note, index) => {
           note.position = index;
         });
@@ -271,7 +312,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
               const insertPosition = Math.min(position, nodes[i].children.length);
               nodes[i].children.splice(insertPosition, 0, noteToMove);
               
-              // Update positions
+              // Clean all positions in this child list
               nodes[i].children.forEach((child, index) => {
                 child.position = index;
               });
@@ -292,14 +333,16 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         findAndInsert(updatedNotes);
       }
       
-      return updatedNotes;
+      // For complex moves that might affect multiple levels, 
+      // use the full cleanNotePositions function to ensure consistency
+      return cleanNotePositions(updatedNotes);
     });
     
     toast({
       title: "Note Moved",
       description: "The note has been moved to a new position",
     });
-  }, [findNoteAndParent, toast]);
+  }, [findNoteAndParent, cleanNotePositions, toast]);
 
   // Toggle expansion for a single node
   const toggleExpand = useCallback((noteId: string) => {
