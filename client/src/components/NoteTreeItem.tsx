@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, Link, Youtube } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { cn } from "@/lib/utils";
+import DropZone from "./DropZone";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -251,21 +252,33 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         <div 
           ref={dropChildArea}
           className={cn(
-            "ml-6 mt-2 space-y-2 tree-line",
+            "ml-6 mt-2 space-y-2 tree-line relative",
             isOverChildArea && "bg-primary/5 border border-dashed border-primary rounded-md p-2"
           )}
         >
+          {/* Initial drop zone for first position */}
+          <DropZone index={0} />
+          
           {note.children.map((child, idx) => (
-            <NoteTreeItem
-              key={child.id}
-              note={child}
-              level={level + 1}
-              index={idx}
-              isRoot={false}
-              toggleExpand={toggleExpand}
-              isExpanded={isExpanded}
-            />
+            <div key={child.id}>
+              <NoteTreeItem
+                note={child}
+                level={level + 1}
+                index={idx}
+                isRoot={false}
+                toggleExpand={toggleExpand}
+                isExpanded={isExpanded}
+              />
+              <DropZone index={idx + 1} />
+            </div>
           ))}
+          
+          {/* Add hint for dropping at the end */}
+          {!isOverChildArea && note.children.length > 0 && (
+            <div className="text-xs text-gray-400 text-center py-1 italic opacity-0 group-hover:opacity-60">
+              Drop here to add as child
+            </div>
+          )}
         </div>
       )}
     </div>

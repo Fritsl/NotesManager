@@ -33,14 +33,28 @@ export default function DropZone({ index }: DropZoneProps) {
     }),
   });
 
-  // Show drop indicator only when active
+  // Show drop indicator with improved visibility
   return (
     <div 
       ref={drop}
       className={cn(
-        "h-2 -mt-1 -mb-1 z-10 transition-all duration-200",
-        isOver && canDrop ? "h-6 bg-primary/20 border-2 border-dashed border-primary rounded-md my-1" : ""
+        "h-3 my-1 z-10 transition-all duration-200 relative group",
+        isOver && canDrop ? "h-8 bg-primary/20 border-2 border-dashed border-primary rounded-md my-2" : ""
       )}
-    />
+    >
+      {/* Always visible hint line */}
+      <div className={cn(
+        "absolute inset-x-0 top-1/2 transform -translate-y-1/2 h-0.5 bg-gray-200 group-hover:bg-primary/40 transition-colors",
+        isOver && canDrop ? "opacity-0" : "opacity-100"
+      )} />
+      
+      {/* Drop here text - only visible on hover when not active */}
+      <div className={cn(
+        "absolute inset-0 flex items-center justify-center text-xs font-medium text-gray-400 opacity-0 group-hover:opacity-100 pointer-events-none",
+        isOver && canDrop ? "opacity-0" : "group-hover:opacity-100"
+      )}>
+        Drop here
+      </div>
+    </div>
   );
 }
