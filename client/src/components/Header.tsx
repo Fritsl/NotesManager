@@ -16,6 +16,7 @@ import {
 import { useNotes } from "@/context/NotesContext";
 import ImportModal from "@/components/ImportModal";
 import ExportModal from "@/components/ExportModal";
+import WebSocketStatus from "@/components/WebSocketStatus";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -69,6 +70,7 @@ export default function Header() {
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
+        <WebSocketStatus />
       </div>
       <div className="flex items-center space-x-2">
         {/* Level Controls */}
