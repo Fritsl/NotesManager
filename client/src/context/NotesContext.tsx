@@ -1,7 +1,8 @@
-import { createContext, useContext, useState, ReactNode, useCallback, useMemo, useRef } from "react";
+import { createContext, useContext, useState, ReactNode, useCallback, useMemo, useRef, useEffect } from "react";
 import { Note, NotesData } from "@/types/notes";
 import { useToast } from "@/components/ui/use-toast";
 import { v4 as uuidv4 } from "uuid";
+import { notesService } from "@/lib/supabase";
 
 interface NotesContextType {
   notes: Note[];
@@ -33,7 +34,42 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const [breadcrumbs, setBreadcrumbs] = useState<Note[]>([]);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [currentLevel, setCurrentLevel] = useState<number>(1);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
   const { toast } = useToast();
+  
+  // Load notes from Supabase on initial mount
+  useEffect(() => {
+    async function loadNotes() {
+      setIsLoading(true);
+      try {
+        const data = await notesService.getNotes();
+        if (data && data.notes) {
+          // Clean the positions just to be safe
+          const cleanedNotes = cleanNotePositions(data.notes);
+          setNotes(cleanedNotes);
+          toast({
+            title: "Notes Loaded",
+            description: `Loaded ${data.notes.length} root notes from Supabase`,
+          });
+        } else {
+          // If no notes exist yet, just start with an empty array
+          setNotes([]);
+        }
+      } catch (error) {
+        console.error("Error loading notes:", error);
+        toast({
+          title: "Error Loading Notes",
+          description: "Could not load your notes from the database",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    loadNotes();
+  }, []);
 
   // Clean note positions to ensure sequential ordering without gaps
   const cleanNotePositions = useCallback((noteList: Note[]): Note[] => {
