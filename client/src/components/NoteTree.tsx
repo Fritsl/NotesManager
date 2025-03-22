@@ -1,16 +1,10 @@
-import { useState, useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import { useNotes } from "@/context/NotesContext";
 import NoteTreeItem from "./NoteTreeItem";
 import DropZone from "./DropZone";
-import { Note } from "@/types/notes";
 import { Button } from "@/components/ui/button";
 import { 
   Plus, 
-  ChevronDown, 
-  ChevronUp, 
-  MinusCircle, 
-  PlusCircle,
-  Layers,
   Info
 } from "lucide-react";
 import {
@@ -21,133 +15,20 @@ import {
 } from "@/components/ui/tooltip";
 
 export default function NoteTree() {
-  const { notes, addNote } = useNotes();
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
-
-  // Toggle expansion for a single node
-  const toggleExpand = (noteId: string) => {
-    setExpandedNodes((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(noteId)) {
-        newSet.delete(noteId);
-      } else {
-        newSet.add(noteId);
-      }
-      return newSet;
-    });
-  };
+  const { 
+    notes, 
+    addNote, 
+    expandedNodes, 
+    toggleExpand, 
+    expandAll, 
+    collapseAll, 
+    expandToLevel, 
+    currentLevel 
+  } = useNotes();
 
   // Check if a node is expanded
   const isExpanded = (noteId: string) => {
     return expandedNodes.has(noteId);
-  };
-
-  // Helper function to get the node level in the tree
-  const getNodeLevel = useCallback((noteId: string, notesArray: Note[] = notes, level = 0): number => {
-    for (const note of notesArray) {
-      if (note.id === noteId) {
-        return level;
-      }
-      
-      if (note.children.length > 0) {
-        const foundLevel = getNodeLevel(noteId, note.children, level + 1);
-        if (foundLevel !== -1) {
-          return foundLevel;
-        }
-      }
-    }
-    
-    return -1;
-  }, [notes]);
-
-  // Helper function to collect note IDs at a specific level or up to a specific level
-  const getNoteIdsByLevel = useCallback((
-    notesArray: Note[], 
-    maxLevel: number, 
-    currentLevel = 0, 
-    exactLevel = false
-  ): string[] => {
-    let ids: string[] = [];
-    
-    notesArray.forEach(note => {
-      // If we're collecting notes up to a specific level
-      if (!exactLevel && currentLevel <= maxLevel) {
-        ids.push(note.id);
-      }
-      
-      // If we're collecting notes at an exact level
-      if (exactLevel && currentLevel === maxLevel) {
-        ids.push(note.id);
-      }
-      
-      // If the note has children, recursively collect their IDs
-      if (note.children.length > 0 && currentLevel < maxLevel) {
-        ids = [...ids, ...getNoteIdsByLevel(
-          note.children, 
-          maxLevel, 
-          currentLevel + 1, 
-          exactLevel
-        )];
-      }
-    });
-    
-    return ids;
-  }, []);
-
-  // Helper function to collect all note IDs in the tree
-  const getAllNoteIds = useCallback((notesArray: Note[]): string[] => {
-    let ids: string[] = [];
-    notesArray.forEach(note => {
-      ids.push(note.id);
-      if (note.children.length > 0) {
-        ids = [...ids, ...getAllNoteIds(note.children)];
-      }
-    });
-    return ids;
-  }, []);
-
-  // Expand all nodes
-  const expandAll = () => {
-    const allIds = getAllNoteIds(notes);
-    setExpandedNodes(new Set(allIds));
-  };
-
-  // Collapse all nodes
-  const collapseAll = () => {
-    setExpandedNodes(new Set());
-  };
-
-  // Track current expansion level
-  const [currentLevel, setCurrentLevel] = useState<number>(0);
-  
-  // Expand to a specific level (L1, L2, L3, etc.)
-  const expandToLevel = (level: number) => {
-    // Ensure level is at least 0
-    const targetLevel = Math.max(0, level);
-    
-    // We need to expand different sets of nodes based on the level
-    let idsToExpand: string[] = [];
-    
-    // Always expand level 0 (root nodes)
-    if (targetLevel >= 1) {
-      // For Level 1, just make sure root nodes are visible (no expansion needed)
-      // For Level 2, expand root nodes to show their immediate children
-      // For Level 3, expand root nodes and their children, etc.
-      const maxLevelToExpand = targetLevel - 1;
-      
-      // Collect nodes that need to be expanded (not the nodes themselves, but their parents)
-      // For example, to show level 2 nodes, we need to expand level 1 nodes
-      for (let i = 0; i < maxLevelToExpand; i++) {
-        const nodesAtLevel = getNoteIdsByLevel(notes, i, 0, true);
-        idsToExpand = [...idsToExpand, ...nodesAtLevel];
-      }
-    }
-    
-    // Update the current level
-    setCurrentLevel(targetLevel);
-    
-    // Update expanded nodes
-    setExpandedNodes(new Set(idsToExpand));
   };
   
   // Expand one more level
@@ -160,18 +41,6 @@ export default function NoteTree() {
     if (currentLevel > 0) {
       expandToLevel(currentLevel - 1);
     }
-  };
-
-  // Expand only a specific level
-  const expandLevel = (level: number) => {
-    // First collect parent nodes up to the target level
-    const parentIds = getNoteIdsByLevel(notes, level - 1);
-    
-    // Then collect nodes at the exact target level
-    const levelIds = getNoteIdsByLevel(notes, level, 0, true);
-    
-    // Combine both sets
-    setExpandedNodes(new Set([...parentIds, ...levelIds]));
   };
   
   // Set up keyboard shortcuts for expand/collapse
@@ -229,7 +98,7 @@ export default function NoteTree() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [notes, getAllNoteIds, getNoteIdsByLevel, currentLevel]);
+  }, [notes, expandAll, collapseAll, expandToLevel, currentLevel]);
 
   return (
     <div className="p-2">

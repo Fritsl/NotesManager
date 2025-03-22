@@ -15,6 +15,13 @@ interface NotesContextType {
   moveNote: (noteId: string, targetParentId: string | null, position: number) => void;
   importNotes: (data: NotesData) => void;
   exportNotes: () => NotesData;
+  expandedNodes: Set<string>;
+  setExpandedNodes: React.Dispatch<React.SetStateAction<Set<string>>>;
+  toggleExpand: (noteId: string) => void;
+  expandAll: () => void;
+  collapseAll: () => void;
+  expandToLevel: (level: number) => void;
+  currentLevel: number;
 }
 
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
@@ -23,6 +30,8 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [breadcrumbs, setBreadcrumbs] = useState<Note[]>([]);
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const [currentLevel, setCurrentLevel] = useState<number>(1);
   const { toast } = useToast();
 
   // Import notes from JSON
@@ -291,6 +300,108 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     });
   }, [findNoteAndParent, toast]);
 
+  // Toggle expansion for a single node
+  const toggleExpand = useCallback((noteId: string) => {
+    setExpandedNodes((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(noteId)) {
+        newSet.delete(noteId);
+      } else {
+        newSet.add(noteId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  // Get all note IDs in the tree
+  const getAllNoteIds = useCallback((notesArray: Note[]): string[] => {
+    let ids: string[] = [];
+    notesArray.forEach(note => {
+      ids.push(note.id);
+      if (note.children.length > 0) {
+        ids = [...ids, ...getAllNoteIds(note.children)];
+      }
+    });
+    return ids;
+  }, []);
+
+  // Expand all nodes
+  const expandAll = useCallback(() => {
+    const allIds = getAllNoteIds(notes);
+    setExpandedNodes(new Set(allIds));
+    setCurrentLevel(5); // Set to a high level to indicate full expansion
+  }, [getAllNoteIds, notes]);
+
+  // Collapse all nodes
+  const collapseAll = useCallback(() => {
+    setExpandedNodes(new Set());
+    setCurrentLevel(0);
+  }, []);
+
+  // Helper function to get nodes at a specific level
+  const getNoteIdsByLevel = useCallback((
+    notesArray: Note[], 
+    maxLevel: number, 
+    currentLevel = 0, 
+    exactLevel = false
+  ): string[] => {
+    let ids: string[] = [];
+    
+    notesArray.forEach(note => {
+      // If we're collecting notes up to a specific level
+      if (!exactLevel && currentLevel <= maxLevel) {
+        ids.push(note.id);
+      }
+      
+      // If we're collecting notes at an exact level
+      if (exactLevel && currentLevel === maxLevel) {
+        ids.push(note.id);
+      }
+      
+      // If the note has children, recursively collect their IDs
+      if (note.children.length > 0 && currentLevel < maxLevel) {
+        ids = [...ids, ...getNoteIdsByLevel(
+          note.children, 
+          maxLevel, 
+          currentLevel + 1, 
+          exactLevel
+        )];
+      }
+    });
+    
+    return ids;
+  }, []);
+
+  // Expand to a specific level
+  const expandToLevel = useCallback((level: number) => {
+    // Ensure level is at least 0
+    const targetLevel = Math.max(0, level);
+    
+    // We need to expand different sets of nodes based on the level
+    let idsToExpand: string[] = [];
+    
+    // Always expand level 0 (root nodes)
+    if (targetLevel >= 1) {
+      // For Level 1, just make sure root nodes are visible (no expansion needed)
+      // For Level 2, expand root nodes to show their immediate children
+      // For Level 3, expand root nodes and their children, etc.
+      const maxLevelToExpand = targetLevel - 1;
+      
+      // Collect nodes that need to be expanded (not the nodes themselves, but their parents)
+      // For example, to show level 2 nodes, we need to expand level 1 nodes
+      for (let i = 0; i < maxLevelToExpand; i++) {
+        const nodesAtLevel = getNoteIdsByLevel(notes, i, 0, true);
+        idsToExpand = [...idsToExpand, ...nodesAtLevel];
+      }
+    }
+    
+    // Update the current level
+    setCurrentLevel(targetLevel);
+    
+    // Update expanded nodes
+    setExpandedNodes(new Set(idsToExpand));
+  }, [getNoteIdsByLevel, notes]);
+
   return (
     <NotesContext.Provider
       value={{
@@ -305,6 +416,13 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         moveNote,
         importNotes,
         exportNotes,
+        expandedNodes,
+        setExpandedNodes,
+        toggleExpand,
+        expandAll,
+        collapseAll,
+        expandToLevel,
+        currentLevel,
       }}
     >
       {children}
