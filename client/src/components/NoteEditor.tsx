@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNotes } from "@/context/NotesContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Save, Youtube, Link } from "lucide-react";
+import { Save, Youtube, Link, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -19,6 +19,18 @@ export default function NoteEditor() {
   const [urlDisplayText, setUrlDisplayText] = useState<string>("");
   const [isDiscussion, setIsDiscussion] = useState<boolean>(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  
+  // Track if the form has unsaved changes
+  const [hasChanges, setHasChanges] = useState<boolean>(false);
+  
+  // References to track the form elements for blur handling
+  const contentRef = useRef<HTMLTextAreaElement>(null);
+  const youtubeUrlRef = useRef<HTMLInputElement>(null);
+  const externalUrlRef = useRef<HTMLInputElement>(null);
+  const urlDisplayTextRef = useRef<HTMLInputElement>(null);
+  
+  // Auto-save timer reference
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Update form when selected note changes
   useEffect(() => {
@@ -28,6 +40,7 @@ export default function NoteEditor() {
       setExternalUrl(selectedNote.url || "");
       setUrlDisplayText(selectedNote.url_display_text || "");
       setIsDiscussion(selectedNote.is_discussion);
+      setHasChanges(false); // Reset changes flag on note selection
     } else {
       // Reset form when no note is selected
       setContent("");
@@ -35,8 +48,55 @@ export default function NoteEditor() {
       setExternalUrl("");
       setUrlDisplayText("");
       setIsDiscussion(false);
+      setHasChanges(false);
     }
   }, [selectedNote]);
+  
+  // Auto-save when form loses focus if there are changes
+  const handleBlur = useCallback(() => {
+    if (selectedNote && hasChanges) {
+      // Use a small delay to prevent saving while user is still interacting with the form
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+      
+      autoSaveTimerRef.current = setTimeout(() => {
+        handleSave();
+        // Show a subtle toast notification for auto-save
+        toast({
+          title: "Auto-saved",
+          description: "Your changes have been automatically saved",
+          variant: "default",
+        });
+      }, 500);
+    }
+  }, [selectedNote, hasChanges]);
+  
+  // Set up change tracking
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setContent(e.target.value);
+    setHasChanges(true);
+  };
+  
+  const handleYoutubeUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setYoutubeUrl(e.target.value);
+    setHasChanges(true);
+  };
+  
+  const handleExternalUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setExternalUrl(e.target.value);
+    setHasChanges(true);
+  };
+  
+  const handleUrlDisplayTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUrlDisplayText(e.target.value);
+    setHasChanges(true);
+  };
+  
+  const handleDiscussionChange = (checked: boolean | "indeterminate") => {
+    setIsDiscussion(checked === true);
+    setHasChanges(true);
+  };
 
   const handleSave = () => {
     if (!selectedNote) return;
@@ -54,6 +114,7 @@ export default function NoteEditor() {
     
     updateNote(updatedNote);
     setSaveStatus("saved");
+    setHasChanges(false); // Reset changes flag after saving
     
     // Reset status after a delay
     setTimeout(() => {
@@ -130,11 +191,13 @@ export default function NoteEditor() {
             </Label>
             <Textarea 
               id="noteContent" 
+              ref={contentRef}
               rows={6} 
               className="w-full p-2 text-sm"
               placeholder="Enter note content..."
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={handleContentChange}
+              onBlur={handleBlur}
             />
           </div>
           
@@ -149,10 +212,12 @@ export default function NoteEditor() {
                 <Input
                   type="url"
                   id="youtubeUrl"
+                  ref={youtubeUrlRef}
                   className="h-8 text-xs"
                   placeholder="YouTube URL (optional)"
                   value={youtubeUrl}
-                  onChange={(e) => setYoutubeUrl(e.target.value)}
+                  onChange={handleYoutubeUrlChange}
+                  onBlur={handleBlur}
                 />
               </div>
               
@@ -164,10 +229,12 @@ export default function NoteEditor() {
                 <Input
                   type="url"
                   id="externalUrl"
+                  ref={externalUrlRef}
                   className="h-8 text-xs"
                   placeholder="Link URL (optional)"
                   value={externalUrl}
-                  onChange={(e) => setExternalUrl(e.target.value)}
+                  onChange={handleExternalUrlChange}
+                  onBlur={handleBlur}
                 />
               </div>
               
@@ -177,10 +244,12 @@ export default function NoteEditor() {
                   <Input
                     type="text"
                     id="urlDisplayText"
+                    ref={urlDisplayTextRef}
                     className="h-8 text-xs"
                     placeholder="Link text (optional)"
                     value={urlDisplayText}
-                    onChange={(e) => setUrlDisplayText(e.target.value)}
+                    onChange={handleUrlDisplayTextChange}
+                    onBlur={handleBlur}
                   />
                 </div>
               )}
@@ -191,7 +260,8 @@ export default function NoteEditor() {
                   id="isDiscussion"
                   className="h-3 w-3"
                   checked={isDiscussion}
-                  onCheckedChange={(checked) => setIsDiscussion(checked === true)}
+                  onCheckedChange={handleDiscussionChange}
+                  onBlur={handleBlur}
                 />
                 <Label htmlFor="isDiscussion" className="text-xs text-gray-600">
                   Mark as discussion
