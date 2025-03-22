@@ -39,31 +39,18 @@ export default function Header() {
       </div>
       <div className="flex items-center space-x-2">
         {/* Level Controls */}
-        <div className="flex items-center mr-2 border-r pr-3 border-gray-200">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => expandToLevel(1)}
-            className={`h-7 px-2 ${currentLevel === 1 ? 'bg-blue-50 border-blue-200' : ''}`}
-          >
-            L1
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => expandToLevel(2)}
-            className={`h-7 px-2 ml-1 ${currentLevel === 2 ? 'bg-blue-50 border-blue-200' : ''}`}
-          >
-            L2
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => expandToLevel(3)}
-            className={`h-7 px-2 ml-1 ${currentLevel === 3 ? 'bg-blue-50 border-blue-200' : ''}`}
-          >
-            L3
-          </Button>
+        <div className="flex items-center mr-2 border-r pr-3 border-gray-200 flex-wrap">
+          {Array.from({ length: 9 }, (_, i) => i + 1).map(level => (
+            <Button 
+              key={level}
+              variant="outline" 
+              size="sm"
+              onClick={() => expandToLevel(level)}
+              className={`h-7 w-7 p-0 ${level > 1 ? 'ml-1' : ''} ${currentLevel === level ? 'bg-blue-50 border-blue-200' : ''}`}
+            >
+              L{level}
+            </Button>
+          ))}
         </div>
         
         {/* Expand/Collapse Controls */}
