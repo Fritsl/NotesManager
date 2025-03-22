@@ -18,16 +18,23 @@ export function useWebSocket({ onMessage }: UseWebSocketProps = {}) {
   
   // Set up the WebSocket connection
   const connectWebSocket = useCallback(() => {
+    // Prevent multiple simultaneous connection attempts
+    if (socketRef.current) {
+      console.log('WebSocket connection already exists or is in progress');
+      return;
+    }
+    
     try {
       // Create WebSocket connection with the correct path
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const wsUrl = `${protocol}//${window.location.host}/ws`;
       
+      console.log(`Connecting to WebSocket at ${wsUrl}`);
       socketRef.current = new WebSocket(wsUrl);
       
       // Connection opened
       socketRef.current.addEventListener('open', () => {
-        console.log('WebSocket connected');
+        console.log('WebSocket connected successfully');
         setIsConnected(true);
         
         // Clear any reconnection timeout
@@ -57,23 +64,29 @@ export function useWebSocket({ onMessage }: UseWebSocketProps = {}) {
       });
       
       // Connection closed or error
-      socketRef.current.addEventListener('close', () => {
-        console.log('WebSocket disconnected');
+      socketRef.current.addEventListener('close', (event) => {
+        console.log(`WebSocket disconnected with code: ${event.code}, reason: ${event.reason}`);
         setIsConnected(false);
         socketRef.current = null;
         
-        // Try to reconnect after a delay
-        reconnectTimeoutRef.current = setTimeout(() => {
-          console.log('Attempting to reconnect WebSocket...');
-          connectWebSocket();
-        }, 3000);
+        // Only try to reconnect for non-normal closures and if not unmounting
+        if (event.code !== 1000 && event.code !== 1001) {
+          // Try to reconnect after a delay
+          console.log('Scheduling reconnection attempt');
+          reconnectTimeoutRef.current = setTimeout(() => {
+            console.log('Attempting to reconnect WebSocket...');
+            connectWebSocket();
+          }, 5000); // Longer timeout to avoid rapid reconnection attempts
+        }
       });
       
       socketRef.current.addEventListener('error', (error) => {
         console.error('WebSocket error:', error);
+        // Don't close here as the close event will fire afterwards
       });
     } catch (error) {
       console.error('Failed to connect to WebSocket:', error);
+      socketRef.current = null;
     }
   }, [onMessage]);
   
@@ -89,16 +102,28 @@ export function useWebSocket({ onMessage }: UseWebSocketProps = {}) {
   
   // Set up the WebSocket connection on component mount
   useEffect(() => {
-    connectWebSocket();
+    // Create a flag to track if the component is mounted
+    let isMounted = true;
+    
+    // Only connect if the component is mounted
+    if (isMounted) {
+      connectWebSocket();
+    }
     
     // Clean up on unmount
     return () => {
+      isMounted = false;
+      
       if (socketRef.current) {
-        socketRef.current.close();
+        console.log('Closing WebSocket connection due to component unmount');
+        socketRef.current.close(1000, 'Component unmounted');
+        socketRef.current = null;
       }
       
       if (reconnectTimeoutRef.current) {
+        console.log('Clearing reconnection timeout');
         clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
       }
     };
   }, [connectWebSocket]);

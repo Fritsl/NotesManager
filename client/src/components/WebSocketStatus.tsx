@@ -22,15 +22,18 @@ export default function WebSocketStatus() {
   
   const { notes, isLoading } = useNotes();
   
-  // Broadcast notes loaded event when notes are loaded
+  // Broadcast notes loaded event when notes are loaded - but only once when connection is established
   useEffect(() => {
     if (!isLoading && notes.length > 0 && isConnected) {
-      sendMessage({
+      // Only send on connection established, not on every notes update
+      const messageData = {
         type: 'notesLoaded',
-        data: { notes }
-      });
+        data: { notesCount: notes.length } // Just send count to avoid circular references
+      };
+      console.log('Connection established, sending initial data');
+      sendMessage(messageData);
     }
-  }, [isLoading, notes, isConnected, sendMessage]);
+  }, [isConnected]); // Only trigger when connection status changes
   
   return (
     <div className="flex items-center space-x-2">
