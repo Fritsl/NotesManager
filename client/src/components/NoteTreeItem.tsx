@@ -76,10 +76,10 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           const hoverMiddleX = (hoverBoundingRect.right - hoverBoundingRect.left) * 0.7;
           const offsetX = clientOffset.x - hoverBoundingRect.left;
           
-          // If dropped on the right side (> 70% of width), add as child
+          // If dropped on the right side (> 70% of width), add as child at position 0
           if (offsetX > hoverMiddleX) {
-            // Add as a child of the current note (Inside)
-            moveNote(draggedItemId, note.id, note.children.length);
+            // Add as a child of the current note (Inside) at the top
+            moveNote(draggedItemId, note.id, 0);
           } else {
             // Otherwise, insert below this note at the same level (Below)
             // If this is a root note, the below drop should also be at root level
@@ -196,6 +196,11 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             // Highlight when dragging over right side
             isOver && isOverRight && "bg-primary opacity-50 w-2"
           )}></div>
+          
+          {/* Top indicator for "Inside" drop to show it will be at position 0 */}
+          {isOver && isOverRight && (
+            <div className="absolute top-0 left-0 right-0 h-1 bg-primary"></div>
+          )}
           
           <div className="drag-handle mr-2 text-gray-400 hover:text-gray-600 cursor-grab">
             <GripVertical size={16} />
