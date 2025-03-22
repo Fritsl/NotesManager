@@ -39,7 +39,9 @@ export default function Header() {
     collapseAll, 
     expandToLevel, 
     currentLevel,
-    maxDepth
+    maxDepth,
+    saveAllNotes,
+    isSaving
   } = useNotes();
   const [showImportModal, setShowImportModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -146,6 +148,14 @@ export default function Header() {
             <DropdownMenuItem onClick={() => setShowExportModal(true)}>
               <FileDown className="h-4 w-4 mr-2" />
               <span>Export</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={() => saveAllNotes()}
+              disabled={isSaving}
+            >
+              <Database className="h-4 w-4 mr-2" />
+              <span>{isSaving ? "Saving..." : "Save to Supabase"}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
