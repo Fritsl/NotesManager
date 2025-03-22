@@ -402,30 +402,57 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     // Ensure level is at least 0
     const targetLevel = Math.max(0, level);
     
-    // We need to expand different sets of nodes based on the level
-    let idsToExpand: string[] = [];
-    
-    // Always expand level 0 (root nodes)
-    if (targetLevel >= 1) {
-      // For Level 1, just make sure root nodes are visible (no expansion needed)
-      // For Level 2, expand root nodes to show their immediate children
-      // For Level 3, expand root nodes and their children, etc.
-      const maxLevelToExpand = targetLevel - 1;
-      
-      // Collect nodes that need to be expanded (not the nodes themselves, but their parents)
-      // For example, to show level 2 nodes, we need to expand level 1 nodes
-      for (let i = 0; i < maxLevelToExpand; i++) {
-        const nodesAtLevel = getNoteIdsByLevel(notes, i, 0, true);
-        idsToExpand = [...idsToExpand, ...nodesAtLevel];
-      }
+    if (targetLevel === 0) {
+      // Level 0 means collapse all
+      setExpandedNodes(new Set());
+      setCurrentLevel(0);
+      return;
     }
+    
+    // Function to collect node IDs that need to be expanded to show up to the target level
+    const collectNodesForLevel = (
+      notesArray: Note[], 
+      currentDepth = 0, 
+      maxDepth: number,
+      parentIds: string[] = []
+    ): string[] => {
+      // If we've reached the maximum depth we want to show, stop expanding
+      if (currentDepth >= maxDepth) {
+        return [];
+      }
+      
+      let idsToExpand: string[] = [];
+      
+      notesArray.forEach(note => {
+        // If this node has children and we're not at the target depth yet,
+        // we need to expand this node
+        if (note.children.length > 0 && currentDepth < maxDepth) {
+          idsToExpand.push(note.id);
+          
+          // Recursively collect IDs from children
+          const childIds = collectNodesForLevel(
+            note.children,
+            currentDepth + 1,
+            maxDepth,
+            [...parentIds, note.id]
+          );
+          
+          idsToExpand = [...idsToExpand, ...childIds];
+        }
+      });
+      
+      return idsToExpand;
+    };
+    
+    // Collect IDs to expand (all nodes up to the level before target level)
+    const idsToExpand = collectNodesForLevel(notes, 0, targetLevel - 1);
     
     // Update the current level
     setCurrentLevel(targetLevel);
     
     // Update expanded nodes
     setExpandedNodes(new Set(idsToExpand));
-  }, [getNoteIdsByLevel, notes]);
+  }, [notes]);
 
   return (
     <NotesContext.Provider
