@@ -189,8 +189,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
     },
   });
 
-  // Use a simple variable to store the element rather than a ref
-  let childAreaElement: HTMLDivElement | null = null;
+  // Create a ref for the child area
+  const childAreaRef = useRef<HTMLDivElement>(null);
   
   // Set up child area drop
   const [{ isOverChildArea }, dropChildArea] = useDrop<DragItem, void, { isOverChildArea: boolean }>({
@@ -217,7 +217,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         // When dropping directly in the child area (not on a specific child), 
         // determine if we should append the note instead of prepending it
         if (clientOffset && note.children.length > 0) {
-          const childAreaRect = childAreaElement?.getBoundingClientRect();
+          const childAreaRect = childAreaRef.current?.getBoundingClientRect();
           if (childAreaRect) {
             // If we're dropping closer to the bottom of the child area, append as the last child
             const offsetY = clientOffset.y - childAreaRect.top;
