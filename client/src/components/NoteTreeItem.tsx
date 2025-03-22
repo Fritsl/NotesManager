@@ -99,12 +99,16 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           } 
           // Check if in the top zone (Above, same level)
           else if (offsetY < topThreshold) {
-            // Insert above this note at the same level
+            // For "Above" - place it at the same level (sibling) regardless of original level
+            // This means if we're dragging a note from level 3 to above a note at level 1,
+            // it should be placed as a sibling of the level 1 note, not remain at level 3
             moveNote(draggedItemId, parentId, index);
           } 
           // Check if in the bottom zone (Below, same level)
           else if (offsetY > bottomThreshold) {
-            // Insert below this note at the same level
+            // For "Below" - place it at the same level (sibling) regardless of original level
+            // This means if we're dragging a note from level 3 to below a note at level 1,
+            // it should be placed as a sibling of the level 1 note, not remain at level 3
             moveNote(draggedItemId, parentId, index + 1);
           }
           // Middle area (default to below)
