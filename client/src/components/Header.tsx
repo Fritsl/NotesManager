@@ -20,6 +20,8 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import { levelColors } from "@/lib/level-colors";
 
 export default function Header() {
   const { 
@@ -40,17 +42,28 @@ export default function Header() {
       <div className="flex items-center space-x-2">
         {/* Level Controls */}
         <div className="flex items-center mr-2 border-r pr-3 border-gray-200 flex-wrap">
-          {Array.from({ length: 9 }, (_, i) => i + 1).map(level => (
-            <Button 
-              key={level}
-              variant="outline" 
-              size="sm"
-              onClick={() => expandToLevel(level)}
-              className={`h-7 w-7 p-0 ${level > 1 ? 'ml-1' : ''} ${currentLevel === level ? 'bg-blue-50 border-blue-200' : ''}`}
-            >
-              L{level}
-            </Button>
-          ))}
+          {Array.from({ length: 9 }, (_, i) => i + 1).map(level => {
+            // Get the color theme for this level (index is 0-based, level is 1-based)
+            const colorTheme = levelColors[level - 1];
+            return (
+              <Button 
+                key={level}
+                variant="outline" 
+                size="sm"
+                onClick={() => expandToLevel(level)}
+                className={cn(
+                  "h-7 w-7 p-0",
+                  level > 1 ? "ml-1" : "",
+                  // Apply the level color
+                  currentLevel === level 
+                    ? `${colorTheme.highlight} border-l-[3px] ${colorTheme.border} ${colorTheme.text}`
+                    : `border hover:${colorTheme.highlight} hover:${colorTheme.text} hover:border-l-[3px] hover:${colorTheme.border}`
+                )}
+              >
+                L{level}
+              </Button>
+            );
+          })}
         </div>
         
         {/* Expand/Collapse Controls */}

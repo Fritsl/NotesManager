@@ -6,6 +6,7 @@ import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, Link, Youtube } 
 import { useNotes } from "@/context/NotesContext";
 import { cn } from "@/lib/utils";
 import DropZone from "./DropZone";
+import { levelColors } from "@/lib/level-colors";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -136,13 +137,9 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         ref={ref}
         className={cn(
           "note-card border rounded-md p-2 transition flex items-start group shadow-sm hover:shadow",
-          // Level-based color variations - more distinct backgrounds with colored borders
-          level === 0 && "bg-white border-l-[4px] border-l-gray-400",
-          level === 1 && "bg-gray-100 border-l-[4px] border-l-blue-400",
-          level === 2 && "bg-blue-100 border-l-[4px] border-l-emerald-400",
-          level === 3 && "bg-emerald-100 border-l-[4px] border-l-amber-400",
-          level === 4 && "bg-amber-100 border-l-[4px] border-l-violet-400",
-          level >= 5 && "bg-violet-100 border-l-[4px] border-l-red-400",
+          // Use the level color themes for consistent styling
+          levelColors[Math.min(level, 8)].bg,
+          `border-l-[4px] ${levelColors[Math.min(level, 8)].border}`,
           isOver && "border-primary bg-primary/10",
           selectedNote?.id === note.id ? "border-primary ring-2 ring-primary ring-opacity-50" : "border-gray-200 hover:bg-opacity-80",
           isDragging && "opacity-50"
@@ -181,7 +178,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         
         <div className="flex-1 overflow-hidden">
           {/* Title line - larger and more prominent */}
-          <div className="text-sm font-medium text-gray-800 truncate">{displayContent}</div>
+          <div className={`text-sm font-medium ${levelColors[Math.min(level, 8)].text} truncate`}>{displayContent}</div>
           
           {/* Multiple preview lines */}
           {previewLines.length > 0 && (
