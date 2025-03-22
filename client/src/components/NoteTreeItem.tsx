@@ -114,7 +114,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           const noteHeight = hoverBoundingRect.bottom - hoverBoundingRect.top;
           const noteWidth = hoverBoundingRect.right - hoverBoundingRect.left;
           
-          // Calculate thresholds
+          // Calculate thresholds - make the right zone larger and more obvious
           const topThreshold = noteHeight * 0.25; // Top 25% = "Above" zone
           const bottomThreshold = noteHeight * 0.75; // Bottom 25% = "Below" zone
           const rightThreshold = noteWidth * 0.7; // Right 30% = "Inside" zone
@@ -123,26 +123,42 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           const offsetY = clientOffset.y - hoverBoundingRect.top;
           const offsetX = clientOffset.x - hoverBoundingRect.left;
           
+          console.log("Drop detected for note:", note.id);
+          console.log("Position - X:", offsetX, "Y:", offsetY);
+          console.log("Right threshold:", rightThreshold, "offsetX:", offsetX);
+          
+          // Make right zone (Child) stand out to be much more visible for the user
+          const isRightZone = offsetX > rightThreshold;
+          const isTopZone = offsetY < topThreshold && !isRightZone;
+          const isBottomZone = offsetY > bottomThreshold && !isRightZone;
+          
           // Check if in the right side zone (Inside, as a child)
-          if (offsetX > rightThreshold) {
-            // Add as a child of the current note (Inside)
-            // When adding as a child, default position is at the END of child list
+          if (isRightZone) {
+            console.log("PLACING AS CHILD of", note.id, "at position", note.children.length);
+            // Very important - Add as a child of the current note at the END (Inside)
             moveNote(draggedItemId, note.id, note.children.length);
+            return; // Return to ensure we don't continue to other checks
           } 
           // Check if in the top zone (Above, same level)
-          else if (offsetY < topThreshold) {
+          else if (isTopZone) {
+            console.log("PLACING ABOVE", note.id, "at position", index);
             // For "Above" - place it at the same level (sibling) regardless of original level
             moveNote(draggedItemId, parentId, index);
+            return; // Return to ensure we don't continue to other checks
           } 
           // Check if in the bottom zone (Below, same level)
-          else if (offsetY > bottomThreshold) {
+          else if (isBottomZone) {
+            console.log("PLACING BELOW", note.id, "at position", index + 1);
             // For "Below" - place it at the same level (sibling) regardless of original level
             moveNote(draggedItemId, parentId, index + 1);
+            return; // Return to ensure we don't continue to other checks
           }
           // Middle area (default to below)
           else {
+            console.log("PLACING IN MIDDLE ZONE (as below)", note.id, "at position", index + 1);
             // Default to below for the middle area
             moveNote(draggedItemId, parentId, index + 1);
+            return; // Return to ensure we don't continue to other checks
           }
         }
       }
@@ -211,28 +227,13 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           return;
         }
         
+        console.log("DROP IN CHILD AREA: Adding as child of", note.id);
+        
         // Get the client offset to determine drop position
         const clientOffset = monitor.getClientOffset();
         
-        // When dropping directly in the child area (not on a specific child), 
-        // determine if we should append the note instead of prepending it
-        if (clientOffset && note.children.length > 0) {
-          const childAreaRect = childAreaRef.current?.getBoundingClientRect();
-          if (childAreaRect) {
-            // If we're dropping closer to the bottom of the child area, append as the last child
-            const offsetY = clientOffset.y - childAreaRect.top;
-            const childAreaHeight = childAreaRect.bottom - childAreaRect.top;
-            const dropPosition = offsetY / childAreaHeight;
-            
-            if (dropPosition > 0.8) {
-              // If dropping in the bottom 20% of the child area, add as the last child
-              moveNote(draggedItemId, note.id, note.children.length);
-              return;
-            }
-          }
-        }
-        
-        // Default: Move the dragged note to be the last child of the current note
+        // When dropping directly in the child area (not on a specific child),
+        // We now ALWAYS add it at the END of the children list
         moveNote(draggedItemId, note.id, note.children.length);
       }
     },
@@ -296,8 +297,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             "absolute top-0 right-0 bottom-0 w-1 opacity-0 transition-all duration-100",
             // Only show when hovering over the note (not dragging)
             "group-hover:opacity-10", 
-            // Highlight when dragging over right side
-            isOver && isOverRight && "bg-primary opacity-50 w-2"
+            // Highlight when dragging over right side - Make it MUCH more obvious
+            isOver && isOverRight && "bg-primary opacity-80 w-4"
           )}></div>
           
           <div className="drag-handle mr-2 text-gray-400 hover:text-gray-600 cursor-grab">

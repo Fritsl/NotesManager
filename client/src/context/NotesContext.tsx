@@ -343,8 +343,16 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         const findAndInsert = (nodes: Note[]): boolean => {
           for (let i = 0; i < nodes.length; i++) {
             if (nodes[i].id === targetParentId) {
+              console.log(`INSERTING note ${noteToMove.id} as child of ${targetParentId} at position ${position}`);
+              
+              // Make sure we have a valid position (defensive)
               const insertPosition = Math.min(position, nodes[i].children.length);
-              nodes[i].children.splice(insertPosition, 0, noteToMove);
+              
+              // Important: Deep clone the note to avoid reference issues
+              const noteClone = JSON.parse(JSON.stringify(noteToMove));
+              
+              // Insert at the specified position
+              nodes[i].children.splice(insertPosition, 0, noteClone);
               
               // Clean all positions in this child list
               nodes[i].children.forEach((child, index) => {
