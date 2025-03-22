@@ -51,7 +51,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   }));
 
   // Set up drop detection with position information
-  const [{ isOver, isOverRight }, drop] = useDrop<DragItem, void, { isOver: boolean, isOverRight: boolean }>({
+  const [{ isOver, isOverRight, isOverTop, isOverBottom }, drop] = useDrop<DragItem, void, { isOver: boolean, isOverRight: boolean, isOverTop: boolean, isOverBottom: boolean }>({
     accept: 'NOTE',
     hover: (item, monitor) => {
       // No action needed in hover, we'll just collect position data
