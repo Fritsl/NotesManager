@@ -116,17 +116,23 @@ export default function NoteTree() {
     setExpandedNodes(new Set());
   };
 
-  // Expand to a specific level (L1, L2, L3)
+  // Track current expansion level
+  const [currentLevel, setCurrentLevel] = useState<number>(0);
+  
+  // Expand to a specific level (L1, L2, L3, etc.)
   const expandToLevel = (level: number) => {
+    // Ensure level is at least 0
+    const targetLevel = Math.max(0, level);
+    
     // We need to expand different sets of nodes based on the level
     let idsToExpand: string[] = [];
     
     // Always expand level 0 (root nodes)
-    if (level >= 1) {
+    if (targetLevel >= 1) {
       // For Level 1, just make sure root nodes are visible (no expansion needed)
       // For Level 2, expand root nodes to show their immediate children
-      // For Level 3, expand root nodes and their children
-      const maxLevelToExpand = level - 1;
+      // For Level 3, expand root nodes and their children, etc.
+      const maxLevelToExpand = targetLevel - 1;
       
       // Collect nodes that need to be expanded (not the nodes themselves, but their parents)
       // For example, to show level 2 nodes, we need to expand level 1 nodes
@@ -136,7 +142,23 @@ export default function NoteTree() {
       }
     }
     
+    // Update the current level
+    setCurrentLevel(targetLevel);
+    
+    // Update expanded nodes
     setExpandedNodes(new Set(idsToExpand));
+  };
+  
+  // Expand one more level
+  const expandMoreLevel = () => {
+    expandToLevel(currentLevel + 1);
+  };
+  
+  // Collapse one level
+  const collapseOneLevel = () => {
+    if (currentLevel > 0) {
+      expandToLevel(currentLevel - 1);
+    }
   };
 
   // Expand only a specific level
@@ -157,6 +179,14 @@ export default function NoteTree() {
       // Only handle keyboard shortcuts if there are notes
       if (notes.length === 0) return;
       
+      // If user is typing in an input or textarea, don't handle keyboard shortcuts
+      if (
+        e.target instanceof HTMLInputElement || 
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+      
       // Ctrl+E to expand all
       if (e.ctrlKey && e.key === 'e') {
         e.preventDefault();
@@ -172,8 +202,21 @@ export default function NoteTree() {
         collapseAll();
       }
       
+      // Z - Collapse one level (no modifier needed - dedicated keys for tree navigation)
+      if (e.key === 'z' && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        collapseOneLevel();
+      }
+      
+      // X - Expand one more level
+      if (e.key === 'x' && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        expandMoreLevel();
+      }
+      
       // Number keys 1-3 with Ctrl to expand to specific levels
-      if (e.ctrlKey && ['1', '2', '3'].includes(e.key)) {
+      // Keep these as they can be convenient for quick jumps
+      if (e.ctrlKey && ['1', '2', '3', '4', '5'].includes(e.key)) {
         e.preventDefault();
         const level = parseInt(e.key);
         expandToLevel(level);
@@ -185,7 +228,7 @@ export default function NoteTree() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [notes, getAllNoteIds, getNoteIdsByLevel]);
+  }, [notes, getAllNoteIds, getNoteIdsByLevel, currentLevel]);
 
   return (
     <div className="p-4">
@@ -235,11 +278,11 @@ export default function NoteTree() {
                 <TooltipContent className="max-w-xs text-xs">
                   <p className="font-semibold mb-1">Keyboard Shortcuts:</p>
                   <ul className="list-disc ml-4 space-y-1">
+                    <li><kbd className="px-1 bg-gray-100 rounded text-[10px]">Z</kbd> Collapse one level</li>
+                    <li><kbd className="px-1 bg-gray-100 rounded text-[10px]">X</kbd> Expand one more level</li>
+                    <li><kbd className="px-1 bg-gray-100 rounded text-[10px]">Ctrl+1-5</kbd> Jump to specific level</li>
                     <li><kbd className="px-1 bg-gray-100 rounded text-[10px]">Ctrl+E</kbd> Expand All</li>
                     <li><kbd className="px-1 bg-gray-100 rounded text-[10px]">Ctrl+C</kbd> Collapse All</li>
-                    <li><kbd className="px-1 bg-gray-100 rounded text-[10px]">Ctrl+1</kbd> Expand to level 1</li>
-                    <li><kbd className="px-1 bg-gray-100 rounded text-[10px]">Ctrl+2</kbd> Expand to level 2</li>
-                    <li><kbd className="px-1 bg-gray-100 rounded text-[10px]">Ctrl+3</kbd> Expand to level 3</li>
                   </ul>
                 </TooltipContent>
               </Tooltip>
@@ -247,42 +290,81 @@ export default function NoteTree() {
           </div>
           
           <div className="flex flex-wrap gap-2 mb-4 text-sm border-t pt-2">
-            <div className="text-xs text-gray-500 w-full mb-1 flex items-center">
-              <Layers className="h-3 w-3 mr-1" />
-              <span className="mr-1">Expand to level:</span>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
-                      <Info className="h-3 w-3 text-gray-400" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p>Control how much of the tree to show:</p>
-                    <ul className="list-disc ml-4 mt-1 text-xs">
-                      <li><strong>L1</strong>: Show only root notes</li>
-                      <li><strong>L2</strong>: Show root notes and their immediate children</li>
-                      <li><strong>L3</strong>: Show up to three levels deep</li>
-                    </ul>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+            <div className="text-xs text-gray-500 w-full mb-1 flex items-center justify-between">
+              <div className="flex items-center">
+                <Layers className="h-3 w-3 mr-1" />
+                <span className="mr-1">Level-based navigation:</span>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
+                        <Info className="h-3 w-3 text-gray-400" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p>Control how much of the tree to show:</p>
+                      <ul className="list-disc ml-4 mt-1 text-xs">
+                        <li><strong>L1</strong>: Show only root notes</li>
+                        <li><strong>L2</strong>: Show root notes and their immediate children</li>
+                        <li><strong>L3+</strong>: Show deeper levels as needed</li>
+                        <li><strong>Z/X</strong>: Collapse/expand one level at a time</li>
+                      </ul>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              
+              <div className="text-xs">
+                <span className="text-gray-500">Current: </span>
+                <span className="font-semibold">L{currentLevel}</span>
+              </div>
             </div>
-            {[1, 2, 3].map(level => (
+            
+            {/* Level by level navigation */}
+            <div className="flex items-center gap-1 mr-2">
               <Button
-                key={`level-${level}`}
                 variant="outline"
                 size="sm"
-                onClick={() => expandToLevel(level)}
+                onClick={collapseOneLevel}
                 className="flex items-center text-xs px-2 py-0 h-6"
-                title={`Expand to level ${level} (Ctrl+${level})`}
+                title="Collapse one level (shortcut: Z)"
+                disabled={currentLevel === 0}
               >
-                <span>L{level}</span>
-                <kbd className="ml-1 text-[9px] text-gray-400 font-mono hidden sm:inline-block">
-                  {level}
-                </kbd>
+                <MinusCircle className="h-3 w-3 mr-1" />
+                <span className="hidden sm:inline">Collapse</span>
+                <span className="sm:hidden">-</span>
+                <kbd className="ml-1 text-[9px] text-gray-400 font-mono hidden sm:inline-block">Z</kbd>
               </Button>
-            ))}
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={expandMoreLevel}
+                className="flex items-center text-xs px-2 py-0 h-6"
+                title="Expand one more level (shortcut: X)"
+              >
+                <PlusCircle className="h-3 w-3 mr-1" />
+                <span className="hidden sm:inline">Expand</span>
+                <span className="sm:hidden">+</span>
+                <kbd className="ml-1 text-[9px] text-gray-400 font-mono hidden sm:inline-block">X</kbd>
+              </Button>
+            </div>
+            
+            {/* Fixed level buttons */}
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map(level => (
+                <Button
+                  key={`level-${level}`}
+                  variant={currentLevel === level ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => expandToLevel(level)}
+                  className="flex items-center text-xs px-2 py-0 h-6"
+                  title={`Expand to level ${level} (Ctrl+${level})`}
+                >
+                  <span>L{level}</span>
+                </Button>
+              ))}
+            </div>
           </div>
         </>
       )}
