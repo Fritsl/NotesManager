@@ -195,17 +195,20 @@ export default function NoteEditor() {
           )}
         </div>
         
-        <Button
-          onClick={handleSave}
-          className={`
-            flex items-center space-x-1
-            ${saveStatus === "saved" ? "bg-green-500 hover:bg-green-600" : ""}
-          `}
-          disabled={saveStatus === "saving"}
-        >
-          <Save size={16} />
-          <span>{saveStatus === "saved" ? "Saved" : "Save"}</span>
-        </Button>
+        {/* Only show save button when there are unsaved changes */}
+        {hasChanges && (
+          <Button
+            onClick={handleSave}
+            className={`
+              flex items-center space-x-1
+              ${saveStatus === "saved" ? "bg-green-500 hover:bg-green-600" : ""}
+            `}
+            disabled={saveStatus === "saving"}
+          >
+            <Save size={16} />
+            <span>{saveStatus === "saving" ? "Saving..." : "Save"}</span>
+          </Button>
+        )}
       </div>
 
       {/* Compact note editor form */}
