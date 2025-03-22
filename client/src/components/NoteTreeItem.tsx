@@ -275,7 +275,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           ref={dropChildArea}
           className={cn(
             "ml-4 mt-1 space-y-1 tree-line relative",
-            isOverChildArea && "bg-primary/5 border border-dashed border-primary rounded-md p-1"
+            // Instead of adding borders and padding that cause jumping, just change background color subtly
+            isOverChildArea ? "bg-primary/5" : "bg-transparent"
           )}
         >
           {/* Initial drop zone for first position */}
@@ -295,10 +296,13 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             </div>
           ))}
           
-          {/* Add hint for dropping at the end */}
-          {!isOverChildArea && note.children.length > 0 && (
-            <div className="text-xs text-gray-400 text-center py-1 italic opacity-0 group-hover:opacity-60">
-              Drop here to add as child
+          {/* Replace with a subtle persistent indicator */}
+          {note.children.length > 0 && (
+            <div className="h-2 flex items-center justify-center">
+              <div className={cn(
+                "h-[1px] w-1/3 transition-all duration-200",
+                isOverChildArea ? "bg-primary opacity-70" : "bg-gray-200 opacity-20 group-hover:opacity-40"
+              )}></div>
             </div>
           )}
         </div>
