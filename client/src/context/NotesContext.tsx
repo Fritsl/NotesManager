@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode, useCallback, useMemo } from "react";
+import { createContext, useContext, useState, ReactNode, useCallback, useMemo, useRef } from "react";
 import { Note, NotesData } from "@/types/notes";
 import { useToast } from "@/components/ui/use-toast";
 import { v4 as uuidv4 } from "uuid";
@@ -277,8 +277,27 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     });
   }, [selectedNote, cleanNotePositions, toast]);
 
+  // Reference to track if a move operation is in progress to prevent multiple simultaneous moves
+  const isMovingRef = useRef<boolean>(false);
+  
   // Move a note in the tree
   const moveNote = useCallback((noteId: string, targetParentId: string | null, position: number) => {
+    // Prevent multiple drop handlers from triggering simultaneously
+    if (isMovingRef.current) {
+      console.log("⚠️ Ignoring duplicate move operation - operation already in progress");
+      return;
+    }
+    
+    // Set the moving flag to true
+    isMovingRef.current = true;
+    
+    // Create a timeout to reset the flag after a short delay
+    setTimeout(() => {
+      isMovingRef.current = false;
+    }, 200); // 200ms should be enough to block duplicate events
+    
+    console.log(`📌 MOVING note ${noteId} to parent: ${targetParentId}, position: ${position}`);
+    
     setNotes((prevNotes) => {
       const updatedNotes = [...prevNotes];
       
