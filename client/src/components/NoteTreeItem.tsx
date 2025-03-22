@@ -36,7 +36,7 @@ interface DragItem {
 }
 
 export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, index = 0, isRoot = false }: NoteTreeItemProps) {
-  const { selectedNote, selectNote, addNote, deleteNote, moveNote } = useNotes();
+  const { selectedNote, selectNote, addNote, deleteNote, moveNote, expandedNodes } = useNotes();
   const ref = useRef<HTMLDivElement>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 

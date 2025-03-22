@@ -409,38 +409,39 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       return;
     }
     
-    // We'll use a breadth-first approach to expand nodes level by level
-    // This approach ensures we expand exactly to the level specified
-    const newExpandedNodes = new Set<string>();
-    
-    // Recursive helper function to expand nodes at specific depths
-    const expandNodesAtLevels = (notesArray: Note[], currentDepth: number) => {
-      // If we've reached the target depth, we don't need to expand these nodes
-      if (currentDepth >= targetLevel) {
-        return;
+    // Helper function to collect IDs at or above a specific level
+    const getParentIds = (notesArray: Note[], depth = 1): string[] => {
+      let ids: string[] = [];
+      
+      // We only expand nodes at levels LESS than the target level 
+      // (so nodes at levels 0 to targetLevel-1)
+      // This will show content at level 0 through targetLevel
+      if (depth >= targetLevel) {
+        return ids;
       }
       
-      // For each note at this level
       for (const note of notesArray) {
-        // If the note has children and we're not yet at the target level, expand it
-        if (note.children.length > 0 && currentDepth < targetLevel) {
-          // Add this node to expanded set
-          newExpandedNodes.add(note.id);
+        if (note.children.length > 0) {
+          // Include this node's ID if it has children and we're not at max level
+          ids.push(note.id);
           
-          // Recursively process child nodes
-          expandNodesAtLevels(note.children, currentDepth + 1);
+          // Recursively process children at next depth level
+          const childIds = getParentIds(note.children, depth + 1);
+          ids = [...ids, ...childIds];
         }
       }
+      
+      return ids;
     };
-    
-    // Start the expansion from the root level (depth 0)
-    expandNodesAtLevels(notes, 0);
+
+    // Get all parent node IDs up to one level before target level
+    const idsToExpand = getParentIds(notes);
     
     // Update the current level indicator
     setCurrentLevel(targetLevel);
     
-    // Update expanded nodes
-    setExpandedNodes(newExpandedNodes);
+    // Update expanded nodes set
+    setExpandedNodes(new Set(idsToExpand));
   }, [notes]);
 
   return (
