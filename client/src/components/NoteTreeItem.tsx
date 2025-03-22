@@ -1,0 +1,216 @@
+import { useRef } from "react";
+import { useDrag, useDrop } from "react-dnd";
+import { Note } from "@/types/notes";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, Link, Youtube } from "lucide-react";
+import { useNotes } from "@/context/NotesContext";
+import { cn } from "@/lib/utils";
+
+interface NoteTreeItemProps {
+  note: Note;
+  level: number;
+  toggleExpand: (noteId: string) => void;
+  isExpanded: boolean;
+}
+
+interface DragItem {
+  type: string;
+  id: string;
+}
+
+export default function NoteTreeItem({ note, level, toggleExpand, isExpanded }: NoteTreeItemProps) {
+  const { selectedNote, selectNote, addNote, deleteNote, moveNote } = useNotes();
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Set up drag
+  const [{ isDragging }, drag, preview] = useDrag(() => ({
+    type: 'NOTE',
+    item: { type: 'NOTE', id: note.id },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  }));
+
+  // Set up drop
+  const [{ isOver }, drop] = useDrop<DragItem, void, { isOver: boolean }>({
+    accept: 'NOTE',
+    drop: (item, monitor) => {
+      if (item.id !== note.id) {
+        // Get the dragged note ID
+        const draggedItemId = item.id;
+        
+        // If the note is dropped onto itself or its own child, ignore it
+        const isChild = checkIfChild(note, draggedItemId);
+        if (note.id === draggedItemId || isChild) {
+          return;
+        }
+        
+        // Move the dragged note as a child of the current note
+        moveNote(draggedItemId, note.id, note.children.length);
+      }
+    },
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+    }),
+  });
+
+  // Helper to check if a note is a child of another
+  const checkIfChild = (parentNote: Note, childId: string): boolean => {
+    for (const child of parentNote.children) {
+      if (child.id === childId || checkIfChild(child, childId)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // Set up child area drop
+  const [{ isOverChildArea }, dropChildArea] = useDrop<DragItem, void, { isOverChildArea: boolean }>({
+    accept: 'NOTE',
+    drop: (item) => {
+      if (item.id !== note.id) {
+        const draggedItemId = item.id;
+        
+        // If the note is dropped onto itself or its own child, ignore it
+        const isChild = checkIfChild(note, draggedItemId);
+        if (note.id === draggedItemId || isChild) {
+          return;
+        }
+        
+        // Move the dragged note as the first child of the current note
+        moveNote(draggedItemId, note.id, 0);
+      }
+    },
+    collect: (monitor) => ({
+      isOverChildArea: monitor.isOver(),
+    }),
+  });
+
+  // Connect drag and drop refs
+  drag(ref);
+  drop(preview(ref));
+
+  const hasChildren = note.children.length > 0;
+
+  // Truncate content for display in the tree
+  const displayContent = note.content
+    .split('\n')[0]
+    .slice(0, 40)
+    + (note.content.length > 40 ? '...' : '');
+
+  // Get a secondary line if available
+  const secondLine = note.content.split('\n')[1];
+  const displaySecondLine = secondLine ? secondLine.slice(0, 40) + (secondLine.length > 40 ? '...' : '') : null;
+
+  return (
+    <div className="note-tree-item">
+      <div 
+        ref={ref}
+        className={cn(
+          "note-card bg-white border rounded p-2 transition flex items-start group",
+          isOver && "border-primary bg-primary/5",
+          selectedNote?.id === note.id ? "border-primary bg-blue-50" : "border-gray-200 hover:bg-gray-50",
+          isDragging && "opacity-50"
+        )}
+        onClick={() => selectNote(note)}
+      >
+        <div className="drag-handle mr-2 text-gray-400 hover:text-gray-600 cursor-grab">
+          <GripVertical size={16} />
+        </div>
+        
+        {hasChildren && (
+          <Button
+            variant="ghost" 
+            size="icon" 
+            className="h-5 w-5 p-0 mr-1 text-gray-400 hover:text-gray-600"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleExpand(note.id);
+            }}
+          >
+            {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          </Button>
+        )}
+        
+        {!hasChildren && level > 0 && (
+          <div className="w-5 mr-1" />
+        )}
+        
+        <div className="flex-1 overflow-hidden">
+          <div className="text-sm font-medium text-gray-700 truncate">{displayContent}</div>
+          {displaySecondLine && (
+            <div className="text-xs text-gray-500 truncate">{displaySecondLine}</div>
+          )}
+          
+          {/* Badges for special attributes */}
+          {(note.youtube_url || note.url) && (
+            <div className="flex space-x-2 mt-1">
+              {note.youtube_url && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                  <Youtube size={12} className="mr-1" />
+                  YouTube
+                </span>
+              )}
+              
+              {note.url && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                  <Link size={12} className="mr-1" />
+                  {note.url_display_text || "Link"}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        
+        <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-gray-400 hover:text-primary p-1"
+            title="Add Child"
+            onClick={(e) => {
+              e.stopPropagation();
+              addNote(note);
+            }}
+          >
+            <Plus size={14} />
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-gray-400 hover:text-red-500 p-1"
+            title="Delete"
+            onClick={(e) => {
+              e.stopPropagation();
+              deleteNote(note.id);
+            }}
+          >
+            <Trash2 size={14} />
+          </Button>
+        </div>
+      </div>
+      
+      {/* Children container */}
+      {hasChildren && isExpanded && (
+        <div 
+          ref={dropChildArea}
+          className={cn(
+            "ml-6 mt-2 space-y-2 tree-line",
+            isOverChildArea && "bg-primary/5 border border-dashed border-primary rounded-md p-2"
+          )}
+        >
+          {note.children.map((child) => (
+            <NoteTreeItem
+              key={child.id}
+              note={child}
+              level={level + 1}
+              toggleExpand={toggleExpand}
+              isExpanded={isExpanded && isExpanded}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
