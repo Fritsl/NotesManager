@@ -271,9 +271,9 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           ref={ref}
           className={cn(
             "note-card border rounded-md p-2 transition flex items-start group shadow-sm hover:shadow relative",
-            // Use the level color themes for consistent styling
-            levelColors[Math.min(level, 8)].bg,
-            `border-l-[4px] ${levelColors[Math.min(level, 8)].border}`,
+            // Use the level color themes for consistent styling with the header buttons
+            levelColors[Math.min(level, levelColors.length - 1)].bg,
+            `border-l-[4px] ${levelColors[Math.min(level, levelColors.length - 1)].border}`,
             // Don't highlight the entire note, we'll use a bottom border instead
             selectedNote?.id === note.id ? "border-primary ring-2 ring-primary ring-opacity-50" : "border-gray-200 hover:bg-opacity-80",
             isDragging && "opacity-50"
