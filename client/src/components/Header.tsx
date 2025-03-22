@@ -37,15 +37,43 @@ export default function Header() {
       <div className="flex items-center space-x-2">
         <h1 className="text-base font-semibold text-gray-800">Notes Tree</h1>
       </div>
-      <div className="flex items-center space-x-1">
+      <div className="flex items-center space-x-2">
+        {/* Level Controls */}
+        <div className="flex items-center mr-2 border-r pr-3 border-gray-200">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => expandToLevel(1)}
+            className={`h-7 px-2 ${currentLevel === 1 ? 'bg-blue-50 border-blue-200' : ''}`}
+          >
+            L1
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => expandToLevel(2)}
+            className={`h-7 px-2 ml-1 ${currentLevel === 2 ? 'bg-blue-50 border-blue-200' : ''}`}
+          >
+            L2
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => expandToLevel(3)}
+            className={`h-7 px-2 ml-1 ${currentLevel === 3 ? 'bg-blue-50 border-blue-200' : ''}`}
+          >
+            L3
+          </Button>
+        </div>
+        
         {/* Expand/Collapse Controls */}
-        <div className="flex">
+        <div className="flex items-center mr-2 border-r pr-3 border-gray-200">
           <Button 
             variant="ghost" 
             size="icon"
             onClick={collapseAll}
-            className="h-8 w-8"
-            title="Collapse All (Ctrl+C)"
+            className="h-7 w-7"
+            title="Collapse All"
           >
             <ChevronUp className="h-4 w-4" />
           </Button>
@@ -54,22 +82,23 @@ export default function Header() {
             variant="ghost" 
             size="icon"
             onClick={expandAll}
-            className="h-8 w-8"
-            title="Expand All (Ctrl+E)"
+            className="h-7 w-7"
+            title="Expand All"
           >
             <ChevronDown className="h-4 w-4" />
           </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => expandToLevel(currentLevel < 3 ? currentLevel + 1 : 1)}
-            className="h-8 w-8"
-            title="Toggle Level"
-          >
-            <ChevronsUpDown className="h-4 w-4" />
-          </Button>
         </div>
+        
+        {/* Add New Root Note Button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => addNote(null)}
+          className="h-7 mr-2"
+        >
+          <PlusCircle className="h-3.5 w-3.5 mr-1" />
+          Add Root Note
+        </Button>
         
         {/* Menu */}
         <DropdownMenu>
@@ -86,11 +115,6 @@ export default function Header() {
             <DropdownMenuItem onClick={() => setShowExportModal(true)}>
               <FileDown className="h-4 w-4 mr-2" />
               <span>Export</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => addNote(null)}>
-              <PlusCircle className="h-4 w-4 mr-2" />
-              <span>Add Root Note</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
