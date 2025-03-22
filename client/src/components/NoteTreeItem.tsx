@@ -135,9 +135,16 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
       <div 
         ref={ref}
         className={cn(
-          "note-card bg-white border rounded-md p-2 transition flex items-start group shadow-sm hover:shadow",
-          isOver && "border-primary bg-primary/5",
-          selectedNote?.id === note.id ? "border-primary bg-blue-50" : "border-gray-200 hover:bg-gray-50",
+          "note-card border rounded-md p-2 transition flex items-start group shadow-sm hover:shadow",
+          // Level-based color variations - subtle backgrounds with distinctive borders
+          level === 0 && "bg-white border-l-[3px] border-l-gray-300",
+          level === 1 && "bg-gray-50/70 border-l-[3px] border-l-blue-300",
+          level === 2 && "bg-blue-50/20 border-l-[3px] border-l-emerald-300",
+          level === 3 && "bg-emerald-50/20 border-l-[3px] border-l-amber-300",
+          level === 4 && "bg-amber-50/20 border-l-[3px] border-l-violet-300",
+          level >= 5 && "bg-violet-50/20 border-l-[3px] border-l-red-300",
+          isOver && "border-primary bg-primary/10",
+          selectedNote?.id === note.id ? "border-primary" : "border-gray-200 hover:bg-opacity-80",
           isDragging && "opacity-50"
         )}
         onClick={() => selectNote(note)}
