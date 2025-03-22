@@ -116,9 +116,26 @@ export default function NoteTree() {
     setExpandedNodes(new Set());
   };
 
-  // Expand to a specific level
+  // Expand to a specific level (L1, L2, L3)
   const expandToLevel = (level: number) => {
-    const idsToExpand = getNoteIdsByLevel(notes, level - 1);
+    // We need to expand different sets of nodes based on the level
+    let idsToExpand: string[] = [];
+    
+    // Always expand level 0 (root nodes)
+    if (level >= 1) {
+      // For Level 1, just make sure root nodes are visible (no expansion needed)
+      // For Level 2, expand root nodes to show their immediate children
+      // For Level 3, expand root nodes and their children
+      const maxLevelToExpand = level - 1;
+      
+      // Collect nodes that need to be expanded (not the nodes themselves, but their parents)
+      // For example, to show level 2 nodes, we need to expand level 1 nodes
+      for (let i = 0; i < maxLevelToExpand; i++) {
+        const nodesAtLevel = getNoteIdsByLevel(notes, i, 0, true);
+        idsToExpand = [...idsToExpand, ...nodesAtLevel];
+      }
+    }
+    
     setExpandedNodes(new Set(idsToExpand));
   };
 
