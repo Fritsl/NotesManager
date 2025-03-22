@@ -136,15 +136,15 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         ref={ref}
         className={cn(
           "note-card border rounded-md p-2 transition flex items-start group shadow-sm hover:shadow",
-          // Level-based color variations - subtle backgrounds with distinctive borders
-          level === 0 && "bg-white border-l-[3px] border-l-gray-300",
-          level === 1 && "bg-gray-50/70 border-l-[3px] border-l-blue-300",
-          level === 2 && "bg-blue-50/20 border-l-[3px] border-l-emerald-300",
-          level === 3 && "bg-emerald-50/20 border-l-[3px] border-l-amber-300",
-          level === 4 && "bg-amber-50/20 border-l-[3px] border-l-violet-300",
-          level >= 5 && "bg-violet-50/20 border-l-[3px] border-l-red-300",
+          // Level-based color variations - more distinct backgrounds with colored borders
+          level === 0 && "bg-white border-l-[4px] border-l-gray-400",
+          level === 1 && "bg-gray-100 border-l-[4px] border-l-blue-400",
+          level === 2 && "bg-blue-100 border-l-[4px] border-l-emerald-400",
+          level === 3 && "bg-emerald-100 border-l-[4px] border-l-amber-400",
+          level === 4 && "bg-amber-100 border-l-[4px] border-l-violet-400",
+          level >= 5 && "bg-violet-100 border-l-[4px] border-l-red-400",
           isOver && "border-primary bg-primary/10",
-          selectedNote?.id === note.id ? "border-primary" : "border-gray-200 hover:bg-opacity-80",
+          selectedNote?.id === note.id ? "border-primary ring-2 ring-primary ring-opacity-50" : "border-gray-200 hover:bg-opacity-80",
           isDragging && "opacity-50"
         )}
         onClick={() => selectNote(note)}
