@@ -400,7 +400,7 @@ export default function Header() {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setShowExportModal(true)}>
                   <FileDown className="h-4 w-4 mr-2" />
-                  <span>Export to JSON</span>
+                  <span>Export JSON</span>
                 </DropdownMenuItem>
                 
                 <DropdownMenuSeparator />
@@ -449,6 +449,10 @@ export default function Header() {
                 <DropdownMenuItem onClick={() => setShowImportModal(true)}>
                   <FileUp className="h-4 w-4 mr-2" />
                   <span>Import from JSON</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowExportModal(true)}>
+                  <FileDown className="h-4 w-4 mr-2" />
+                  <span>Export JSON</span>
                 </DropdownMenuItem>
                 
                 {/* Debug button in no-project mode */}
