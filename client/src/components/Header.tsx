@@ -28,7 +28,6 @@ import { useToast } from "@/hooks/use-toast";
 import ImportModal from "@/components/ImportModal";
 import ExportModal from "@/components/ExportModal";
 import ProjectsModal from "@/components/ProjectsModal";
-import UserMenu from "@/components/UserMenu";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,6 +61,23 @@ export default function Header() {
   } = useNotes();
   const { signOut } = useAuth();
   const { toast } = useToast();
+  
+  // Handle sign out
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Success",
+        description: "You have been logged out",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to log out",
+        variant: "destructive",
+      });
+    }
+  };
   
   // Debug
   console.log("Header - Current Project Name:", currentProjectName);
@@ -309,9 +325,7 @@ export default function Header() {
                 
                 <DropdownMenuSeparator />
                 {/* User Options - Incorporating UserMenu items here */}
-                <DropdownMenuItem onClick={() => {
-                  // Sign out functionality
-                }}>
+                <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="h-4 w-4 mr-2" />
                   <span>Sign Out</span>
                 </DropdownMenuItem>
@@ -383,9 +397,7 @@ export default function Header() {
                 
                 <DropdownMenuSeparator />
                 {/* User Options - Incorporating UserMenu items here */}
-                <DropdownMenuItem onClick={() => {
-                  // Sign out functionality
-                }}>
+                <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="h-4 w-4 mr-2" />
                   <span>Sign Out</span>
                 </DropdownMenuItem>
