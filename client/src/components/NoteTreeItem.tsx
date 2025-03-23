@@ -271,9 +271,9 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           ref={ref}
           className={cn(
             "note-item note-card border rounded-md p-2 sm:p-2 transition flex items-start group shadow-sm hover:shadow relative",
-            // Use the level color themes for consistent styling with the header buttons
-            levelColors[Math.min(level, levelColors.length - 1)].bg,
-            `border-l-[4px] ${levelColors[Math.min(level, levelColors.length - 1)].border}`,
+            // Use the level color themes for consistent styling with the header buttons - directly using level index
+            level >= 0 && level < levelColors.length ? levelColors[level].bg : levelColors[0].bg,
+            `border-l-[4px] ${level >= 0 && level < levelColors.length ? levelColors[level].border : levelColors[0].border}`,
             // Don't highlight the entire note, we'll use a bottom border instead
             selectedNote?.id === note.id ? "selected-note border-primary ring-2 ring-primary ring-opacity-70" : "border-gray-700 hover:bg-opacity-80",
             isDragging && "opacity-50"
@@ -333,7 +333,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           <div className="flex-1 overflow-hidden">
             {/* Title line - larger and more prominent with position badge */}
             <div className="flex items-center">
-              <div className={`mobile-text-base font-medium ${levelColors[Math.min(level, levelColors.length - 1)].text} truncate flex-1`}>{displayContent}</div>
+              <div className={`mobile-text-base font-medium ${level >= 0 && level < levelColors.length ? levelColors[level].text : levelColors[0].text} truncate flex-1`}>{displayContent}</div>
               <div className="mobile-text-sm text-gray-300 bg-gray-800 rounded px-1.5 py-0.5 ml-2">pos: {note.position}</div>
             </div>
             
