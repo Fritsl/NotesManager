@@ -30,18 +30,24 @@ export default function NoteTree() {
   
   // Expand one more level, but cap at maxDepth
   const expandMoreLevel = () => {
+    console.log(`Expand more level: current=${currentLevel}, max=${maxDepth}`);
     // Ensure we don't exceed the maximum depth of the hierarchy
     const newLevel = Math.min(currentLevel + 1, maxDepth);
+    console.log(`Setting new level to: ${newLevel}`);
     expandToLevel(newLevel);
   };
   
   // Collapse one level
   const collapseOneLevel = () => {
+    console.log(`Collapse one level: current=${currentLevel}`);
     // Don't allow collapsing below level 0 (fully collapsed)
     if (currentLevel > 0) {
-      expandToLevel(currentLevel - 1);
+      const newLevel = currentLevel - 1;
+      console.log(`Setting new level to: ${newLevel}`);
+      expandToLevel(newLevel);
     } else {
       // If already at level 0, ensure it's properly collapsed
+      console.log(`Already at level 0, ensuring it's collapsed`);
       expandToLevel(0);
     }
   };

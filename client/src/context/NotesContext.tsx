@@ -520,14 +520,14 @@ export function NotesProvider({ children }: { children: ReactNode }) {
 
   // Expand nodes up to a certain level
   const expandToLevel = useCallback((level: number) => {
-    // Convert from 1-indexed (UI friendly) to 0-indexed (code friendly)
-    const targetLevel = level - 1;
+    console.log(`Expanding to level: ${level}`);
     
     // Always reset expanded nodes first
     setExpandedNodes(new Set());
     
-    if (targetLevel < 0) {
-      // Negative levels or level 0 means collapse all
+    if (level <= 0) {
+      // Level 0 means collapse all
+      setCurrentLevel(0);
       return;
     }
     
@@ -535,19 +535,19 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     
     // Helper function to traverse the tree and expand nodes up to the specified level
     const expandLevels = (nodes: Note[], currentLevel = 0) => {
-      if (currentLevel > targetLevel) {
+      // If we're at a level that's too deep, stop recursion
+      if (currentLevel >= level) {
         return;
       }
       
       for (const note of nodes) {
-        // If we're not yet at the maximum level, expand this node
-        if (currentLevel < targetLevel) {
+        // Add this node to expanded set if it has children
+        // and we haven't reached the target level yet
+        if (note.children && note.children.length > 0) {
           newExpandedNodes.add(note.id);
           
-          // Recursively process children if they exist
-          if (note.children && note.children.length > 0) {
-            expandLevels(note.children, currentLevel + 1);
-          }
+          // Recursively process children to the next level
+          expandLevels(note.children, currentLevel + 1);
         }
       }
     };
@@ -555,6 +555,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     expandLevels(notes);
     setExpandedNodes(newExpandedNodes);
     setCurrentLevel(level);
+    console.log(`Expanded nodes count: ${newExpandedNodes.size}, current level set to: ${level}`);
   }, [notes]);
 
   // Create a new project
