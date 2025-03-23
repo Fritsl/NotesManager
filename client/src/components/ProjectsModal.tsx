@@ -246,7 +246,7 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
           <DialogHeader className="border-b border-gray-800 pb-4">
             <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">Your Projects</DialogTitle>
             <DialogDescription className="text-gray-400">
-              Manage your saved projects - create new ones, load existing ones, or update current work.
+              Click on a project to load it. Use Save to update the current project or Delete to remove it.
             </DialogDescription>
           </DialogHeader>
           
@@ -288,30 +288,31 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                   {projects.map((project) => (
                     <div 
                       key={project.id} 
-                      className="p-3 border border-gray-800 rounded-md bg-gray-850 hover:bg-gray-800 transition-colors"
+                      className="p-3 border border-gray-800 rounded-md bg-gray-850 hover:bg-gray-700 transition-colors cursor-pointer flex flex-col relative"
+                      onClick={() => handleLoadProject(project)}
                     >
                       <div className="flex justify-between items-center">
-                        <div>
-                          <h4 className="font-medium text-gray-200">{project.name}</h4>
-                          <p className="text-sm text-gray-400">
-                            Updated: {formatDate(project.updated_at)}
-                          </p>
+                        <div className="flex items-center">
+                          <FileDown className="h-5 w-5 mr-3 text-gray-400" />
+                          <div>
+                            <h4 className="font-medium text-gray-200 flex items-center">
+                              {project.name}
+                              <span className="ml-2 text-xs text-gray-500 border border-gray-700 rounded px-1 py-0.5">Click to load</span>
+                            </h4>
+                            <p className="text-sm text-gray-400">
+                              Updated: {formatDate(project.updated_at)}
+                            </p>
+                          </div>
                         </div>
                         <div className="flex gap-2">
                           <Button
                             variant="outline"
                             size="sm"
                             className="border-gray-700 hover:bg-gray-700 hover:text-gray-200"
-                            onClick={() => handleLoadProject(project)}
-                          >
-                            <FileDown className="h-4 w-4 mr-1" />
-                            Load
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="border-gray-700 hover:bg-gray-700 hover:text-gray-200"
-                            onClick={() => handleUpdateProject(project)}
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent triggering the parent div's onClick
+                              handleUpdateProject(project);
+                            }}
                           >
                             <Save className="h-4 w-4 mr-1" />
                             Save
@@ -320,7 +321,10 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                             variant="outline"
                             size="sm"
                             className="border-gray-700 hover:bg-red-900 hover:text-red-200" 
-                            onClick={() => confirmDeleteProject(project)}
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent triggering the parent div's onClick
+                              confirmDeleteProject(project);
+                            }}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
