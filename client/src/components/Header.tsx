@@ -205,19 +205,23 @@ export default function Header() {
             {/* Level Controls */}
             <div className="hidden sm:flex items-center mr-2 border-r pr-3 border-gray-700 flex-wrap">
               {/* Create buttons for L0 through maxDepth */}
-              {Array.from({ length: maxDepth + 1 }, (_, i) => i).map(level => {
-                // Get the color theme for this level - now directly using the level as index
+              {Array.from({ length: Math.min(maxDepth + 1, 9) }, (_, i) => i).map(level => {
+                // Get the color theme for this level - directly using the level as index
                 const colorTheme = levelColors[Math.min(level, levelColors.length - 1)];
+                console.log(`Rendering level button ${level}, current level: ${currentLevel}`);
                 return (
                   <Button 
                     key={level}
                     variant="outline" 
                     size="sm"
-                    onClick={() => expandToLevel(level)}
+                    onClick={() => {
+                      console.log(`Level button ${level} clicked, setting level to ${level}`);
+                      expandToLevel(level);
+                    }}
                     className={cn(
                       "h-7 w-7 p-0",
                       level > 0 ? "ml-1" : "", // Spacing between buttons
-                      // Apply the level color - now checking if currentLevel matches exactly
+                      // Apply the level color - checking if currentLevel matches exactly
                       currentLevel === level 
                         ? `${colorTheme.highlight} border-l-[3px] ${colorTheme.border} ${colorTheme.text}`
                         : `border border-gray-700 hover:${colorTheme.highlight} hover:${colorTheme.text} hover:border-l-[3px] hover:${colorTheme.border}`
@@ -275,7 +279,7 @@ export default function Header() {
                 <div className="sm:hidden p-2 border-b border-gray-700">
                   <div className="text-xs text-gray-400 mb-1">Level Controls</div>
                   <div className="flex flex-wrap gap-1">
-                    {Array.from({ length: maxDepth + 1 }, (_, i) => i).slice(0, 5).map(level => {
+                    {Array.from({ length: Math.min(maxDepth + 1, 9) }, (_, i) => i).slice(0, 5).map(level => {
                       const colorTheme = levelColors[Math.min(level, levelColors.length - 1)];
                       return (
                         <Button 
@@ -283,6 +287,7 @@ export default function Header() {
                           variant="outline" 
                           size="sm"
                           onClick={() => {
+                            console.log(`Mobile level button ${level} clicked, setting level to ${level}`);
                             expandToLevel(level);
                             // Close dropdown on mobile after selecting
                             document.body.click();
