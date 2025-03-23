@@ -595,10 +595,6 @@ export function NotesProvider({ children }: { children: ReactNode }) {
 
   // Create a new project with the given name
   const createNewProject = useCallback(async (baseName: string) => {
-    // Use the timestamp to ensure a unique project name
-    const timestamp = new Date().toISOString().replace(/[-:.]/g, '').slice(0, 14);
-    const uniqueName = `${baseName} ${timestamp}`;
-    
     // Initialize empty project
     setNotes([]);
     setSelectedNote(null);
@@ -608,9 +604,11 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     
     // Create project in database
     try {
-      console.log("Creating new project in database with unique name:", uniqueName);
+      console.log("Creating new project in database:", baseName);
       const emptyProject = { notes: [] };
-      const result = await createProject(uniqueName, emptyProject);
+      
+      // Implement unique naming strategy in the backend service
+      const result = await createProject(baseName, emptyProject);
       
       if (result) {
         console.log("Project saved to database:", result);
@@ -619,8 +617,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
           description: `New project "${baseName}" has been created and saved`,
         });
         
-        // Update UI with the saved project name
-        setCurrentProjectName(result.name);
+        // Keep using the clean name for display purposes
+        // Note: result.name might contain a unique suffix added by the backend
+        // but we want to show the clean name to the user
       } else {
         console.error("Failed to save project to database");
         toast({

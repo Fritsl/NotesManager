@@ -213,16 +213,36 @@ export async function getProject(id: string): Promise<Project | null> {
       .from('notes')
       .select('*')
       .eq('project_id', id)
-      .eq('user_id', userData.user.id)
-      .order('note_position', { ascending: true });
+      .eq('user_id', userData.user.id);
     
     if (notesError) {
       console.error('Error fetching notes:', notesError);
+      // Return the project even if we couldn't fetch notes
+      return {
+        id: projectData.id,
+        name: projectData.title || 'Untitled Project',
+        created_at: projectData.created_at,
+        updated_at: projectData.updated_at,
+        user_id: projectData.user_id,
+        data: { notes: [] }
+      };
     }
     
     console.log('Raw notes data from DB count:', notesData ? notesData.length : 0);
     if (notesData && notesData.length > 0) {
       console.log('First note sample:', notesData[0]);
+      
+      // Check if notes have the correct field names for buildNoteHierarchy
+      const sampleNote = notesData[0];
+      if (sampleNote && sampleNote.note_position !== undefined) {
+        console.log('Notes have note_position field, using for hierarchy building');
+      } else if (sampleNote && sampleNote.position !== undefined) {
+        console.log('Notes have position field instead of note_position, remapping fields');
+        // Remap field names if needed
+        notesData.forEach(note => {
+          note.note_position = note.position;
+        });
+      }
     } else {
       console.log('No notes found for this project');
     }
@@ -244,6 +264,8 @@ export async function getProject(id: string): Promise<Project | null> {
     };
     
     console.log('Formatted project:', formattedProject.name, 'Notes count:', formattedProject.data.notes.length);
+    console.log('Full project data loaded:', formattedProject.data);
+    
     return formattedProject;
   } catch (error) {
     console.error('Error in getProject:', error);
@@ -276,62 +298,90 @@ export async function createProject(name: string, notesData: NotesData): Promise
     
     console.log('Validated notes data for storage:', validNotesData);
     
-    // Create the project in settings table first
-    console.log('Inserting into settings table with fields:');
-    const projectFields = {
-      title: name,
-      user_id: userData.user.id,
-      created_at: now,
-      updated_at: now,
-      last_modified_at: now,
-      description: '',
-      note_count: validNotesData.notes.length,
-      last_level: 0
-    };
-    console.log('Project fields:', projectFields);
+    // Attempt to create the project, handling unique constraint violations
+    let projectInsertResponse;
+    let baseName = name;
+    let currentName = baseName;
+    let attempt = 0;
+    const MAX_ATTEMPTS = 5;
     
-    const response = await supabase
-      .from('settings')
-      .insert(projectFields)
-      .select()
-      .single();
+    // Try creating with original name first, then add numeric suffixes if needed
+    while (!projectInsertResponse?.data && attempt < MAX_ATTEMPTS) {
+      console.log(`Creating project attempt ${attempt + 1}/${MAX_ATTEMPTS} with name: "${currentName}"`);
       
-    console.log('Raw response from supabase insert:', response);
+      const projectFields = {
+        title: currentName,
+        user_id: userData.user.id,
+        created_at: now,
+        updated_at: now,
+        last_modified_at: now,
+        description: '',
+        note_count: validNotesData.notes.length,
+        last_level: 0
+      };
+      
+      projectInsertResponse = await supabase
+        .from('settings')
+        .insert(projectFields)
+        .select()
+        .single();
+        
+      if (projectInsertResponse.error) {
+        if (projectInsertResponse.error.code === '23505') { // Unique constraint violation
+          attempt++;
+          // Try with a new name, adding a numeric suffix
+          currentName = `${baseName} (${attempt})`;
+          console.log(`Name already exists, trying again with: "${currentName}"`);
+        } else {
+          // Different error, break the loop
+          console.error('Error creating project:', projectInsertResponse.error);
+          break;
+        }
+      } else {
+        // Success!
+        console.log('Project created successfully with name:', currentName);
+        break;
+      }
+    }
     
-    const { data, error } = response;
-
-    if (error) {
-      console.error('Error creating project:', error);
+    // Check final result
+    if (!projectInsertResponse?.data) {
+      console.error('Failed to create project after multiple attempts:', projectInsertResponse?.error);
       return null;
     }
     
-    console.log('Project created successfully:', data);
-    const projectId = data.id;
+    const projectId = projectInsertResponse.data.id;
     
     // If there are notes, create them in the notes table
     if (validNotesData.notes.length > 0) {
       // Convert hierarchical notes to flat DB records
       const flatNotes = flattenNoteHierarchy(validNotesData.notes, projectId, userData.user.id);
-      console.log('Flattened notes for DB insertion:', flatNotes);
+      console.log('Flattened notes for DB insertion:', flatNotes.length, 'notes');
       
-      // Insert notes
-      const { error: notesError } = await supabase
-        .from('notes')
-        .insert(flatNotes);
+      // Insert notes in batches to avoid payload size limits
+      const BATCH_SIZE = 50;
+      for (let i = 0; i < flatNotes.length; i += BATCH_SIZE) {
+        const batch = flatNotes.slice(i, i + BATCH_SIZE);
+        console.log(`Inserting batch ${i/BATCH_SIZE + 1}/${Math.ceil(flatNotes.length/BATCH_SIZE)}, size: ${batch.length}`);
         
-      if (notesError) {
-        console.error('Error inserting notes:', notesError);
-        // Continue anyway to return the project
+        const { error: notesError } = await supabase
+          .from('notes')
+          .insert(batch);
+          
+        if (notesError) {
+          console.error(`Error inserting notes batch ${i/BATCH_SIZE + 1}:`, notesError);
+          // Continue with next batch
+        }
       }
     }
 
-    // Return project with hierarchical notes
+    // Return project with hierarchical notes and the name actually used in the database
     return {
       id: projectId,
-      name: data.title,
-      created_at: data.created_at,
-      updated_at: data.updated_at,
-      user_id: data.user_id,
+      name: projectInsertResponse.data.title,  // Use the actual saved title
+      created_at: projectInsertResponse.data.created_at,
+      updated_at: projectInsertResponse.data.updated_at,
+      user_id: projectInsertResponse.data.user_id,
       data: validNotesData
     };
   } catch (error) {
