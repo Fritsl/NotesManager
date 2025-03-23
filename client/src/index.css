@@ -11,3 +11,32 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+@layer components {
+  .note-item {
+    @apply rounded-md shadow-md transition-all duration-200 hover:shadow-lg;
+    border-width: 1px;
+  }
+  
+  .note-item-content {
+    @apply p-3 rounded-md transition-all duration-150;
+  }
+
+  .selected-note {
+    @apply ring-2 ring-offset-2 ring-primary !important;
+  }
+
+  /* Scrollbar styling for dark theme */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-black/10 rounded-md;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary/50 rounded-md hover:bg-primary/70 transition-colors;
+  }
+}

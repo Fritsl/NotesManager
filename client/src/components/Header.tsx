@@ -48,28 +48,28 @@ export default function Header() {
   const [showExportModal, setShowExportModal] = useState(false);
 
   return (
-    <header className="bg-white border-b border-gray-200 py-2 px-4 flex justify-between items-center">
+    <header className="bg-gray-950 border-b border-gray-800 py-2 px-4 flex justify-between items-center">
       <div className="flex items-center space-x-2">
         <div className="flex items-center space-x-2">
-          <h1 className="text-base font-semibold text-gray-800">
-            <span className="text-gray-600">Project:</span> {currentProjectName}
+          <h1 className="text-base font-semibold text-gray-100">
+            <span className="text-gray-400">Project:</span> {currentProjectName}
           </h1>
         </div>
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className="h-7 w-7 p-0 ml-1">
-                <Info className="h-4 w-4 text-gray-400" />
+                <Info className="h-4 w-4 text-gray-400 hover:text-primary" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-xs text-xs">
+            <TooltipContent side="bottom" className="max-w-xs text-xs bg-gray-900 border-gray-700">
               <p className="font-medium mb-1">Keyboard Shortcuts:</p>
               <ul className="list-disc ml-3 space-y-0.5">
-                <li><kbd className="px-1 bg-gray-100 rounded text-[9px]">Z</kbd> Collapse one level</li>
-                <li><kbd className="px-1 bg-gray-100 rounded text-[9px]">X</kbd> Expand one more level</li>
-                <li><kbd className="px-1 bg-gray-100 rounded text-[9px]">Ctrl+1-5</kbd> Jump to level</li>
-                <li><kbd className="px-1 bg-gray-100 rounded text-[9px]">Ctrl+E</kbd> Expand all</li>
-                <li><kbd className="px-1 bg-gray-100 rounded text-[9px]">Ctrl+C</kbd> Collapse all</li>
+                <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Z</kbd> Collapse one level</li>
+                <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">X</kbd> Expand one more level</li>
+                <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Ctrl+1-5</kbd> Jump to level</li>
+                <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Ctrl+E</kbd> Expand all</li>
+                <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Ctrl+C</kbd> Collapse all</li>
               </ul>
             </TooltipContent>
           </Tooltip>
