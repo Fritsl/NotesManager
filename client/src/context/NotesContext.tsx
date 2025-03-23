@@ -25,6 +25,9 @@ interface NotesContextType {
   maxDepth: number;
   currentProjectName: string;
   setCurrentProjectName: (name: string) => void;
+  hasActiveProject: boolean;
+  setHasActiveProject: (hasProject: boolean) => void;
+  createNewProject: (name: string) => void;
 }
 
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
@@ -35,7 +38,8 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const [breadcrumbs, setBreadcrumbs] = useState<Note[]>([]);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [currentLevel, setCurrentLevel] = useState<number>(1);
-  const [currentProjectName, setCurrentProjectName] = useState<string>('Untitled Project');
+  const [currentProjectName, setCurrentProjectName] = useState<string>('');
+  const [hasActiveProject, setHasActiveProject] = useState<boolean>(false);
   const { toast } = useToast();
 
   // Clean note positions to ensure sequential ordering without gaps
@@ -585,6 +589,21 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     setExpandedNodes(new Set(idsToExpand));
   }, [notes]);
 
+  // Create a new project with the given name
+  const createNewProject = useCallback((name: string) => {
+    // Initialize empty project
+    setNotes([]);
+    setSelectedNote(null);
+    setBreadcrumbs([]);
+    setCurrentProjectName(name);
+    setHasActiveProject(true);
+    
+    toast({
+      title: "Project Created",
+      description: `New project "${name}" has been created`,
+    });
+  }, [toast]);
+  
   return (
     <NotesContext.Provider
       value={{
@@ -609,6 +628,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         maxDepth,
         currentProjectName,
         setCurrentProjectName,
+        hasActiveProject,
+        setHasActiveProject,
+        createNewProject,
       }}
     >
       {children}
