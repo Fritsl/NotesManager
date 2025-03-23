@@ -51,8 +51,10 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
   }, [isOpen]);
 
   const fetchProjects = async () => {
+    console.log('ProjectsModal: Starting to fetch projects...');
     setLoading(true);
     const projectsList = await getProjects();
+    console.log('ProjectsModal: Received projects list:', projectsList);
     setProjects(projectsList);
     setLoading(false);
   };

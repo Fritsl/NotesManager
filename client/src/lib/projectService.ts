@@ -128,6 +128,8 @@ export function flattenNoteHierarchy(notes: Note[], projectId: string, userId: s
 
 export async function getProjects(): Promise<Project[]> {
   try {
+    console.log('--- getProjects: Starting to fetch projects ---');
+    
     // Get current user
     const { data: userData, error: userError } = await supabase.auth.getUser();
     
@@ -136,7 +138,10 @@ export async function getProjects(): Promise<Project[]> {
       return [];
     }
     
+    console.log('Current user ID:', userData.user.id);
+    
     // Query settings table for projects belonging to the current user
+    console.log('Querying settings table for projects...');
     const { data, error } = await supabase
       .from('settings')
       .select('*')
@@ -148,6 +153,9 @@ export async function getProjects(): Promise<Project[]> {
       console.error('Error fetching projects:', error);
       return [];
     }
+    
+    console.log('Raw projects data from settings table:', data);
+    console.log('Number of projects found:', data ? data.length : 0);
 
     // Create projects array with empty notes
     const projects: Project[] = data?.map(item => ({
@@ -245,6 +253,9 @@ export async function getProject(id: string): Promise<Project | null> {
 
 export async function createProject(name: string, notesData: NotesData): Promise<Project | null> {
   try {
+    console.log('--- createProject: Starting to create project ---');
+    console.log('Project name:', name);
+    
     const { data: userData, error: userError } = await supabase.auth.getUser();
     
     if (userError || !userData.user) {
@@ -252,6 +263,7 @@ export async function createProject(name: string, notesData: NotesData): Promise
       return null;
     }
     
+    console.log('Current user ID:', userData.user.id);
     const now = new Date().toISOString();
     
     // Format data for settings table
@@ -265,6 +277,7 @@ export async function createProject(name: string, notesData: NotesData): Promise
     console.log('Validated notes data for storage:', validNotesData);
     
     // Create the project in settings table first
+    console.log('Inserting into settings table...');
     const { data, error } = await supabase
       .from('settings')
       .insert({
@@ -272,7 +285,8 @@ export async function createProject(name: string, notesData: NotesData): Promise
         user_id: userData.user.id,
         created_at: now,
         updated_at: now,
-        last_modified_at: now
+        last_modified_at: now,
+        metadata: {} // Adding metadata field with empty object
       })
       .select()
       .single();
@@ -339,12 +353,14 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
     console.log('Validated notes data for update:', validNotesData);
     
     // First update the project name
+    console.log('Updating project in settings table...');
     const { data, error } = await supabase
       .from('settings')
       .update({
         title: name,
         updated_at: now,
-        last_modified_at: now
+        last_modified_at: now,
+        metadata: {} // Adding metadata field with empty object
       })
       .eq('id', id)
       .eq('user_id', userData.user.id) // Ensure user can only update their own projects
