@@ -547,8 +547,8 @@ export function NotesProvider({ children }: { children: ReactNode }) {
 
   // Expand to a specific level
   const expandToLevel = useCallback((level: number) => {
-    // Ensure level is at least 0
-    const targetLevel = Math.max(0, level);
+    // Ensure level is at least 0 and no more than the maximum depth
+    const targetLevel = Math.max(0, Math.min(level, maxDepth));
     
     if (targetLevel === 0) {
       // Level 0 means collapse all
@@ -590,7 +590,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     
     // Update expanded nodes set
     setExpandedNodes(new Set(idsToExpand));
-  }, [notes]);
+  }, [notes, maxDepth]);
 
   // Create a new project with the given name
   const createNewProject = useCallback((name: string) => {

@@ -16,7 +16,8 @@ export default function NoteTree() {
     expandToLevel, 
     currentLevel,
     currentProjectName,
-    hasActiveProject
+    hasActiveProject,
+    maxDepth
   } = useNotes();
   
   // Debug current project name
@@ -27,9 +28,11 @@ export default function NoteTree() {
     return expandedNodes.has(noteId);
   };
   
-  // Expand one more level
+  // Expand one more level, but cap at maxDepth
   const expandMoreLevel = () => {
-    expandToLevel(currentLevel + 1);
+    // Ensure we don't exceed the maximum depth of the hierarchy
+    const newLevel = Math.min(currentLevel + 1, maxDepth);
+    expandToLevel(newLevel);
   };
   
   // Collapse one level
@@ -94,7 +97,7 @@ export default function NoteTree() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [notes, expandAll, collapseAll, expandToLevel, currentLevel]);
+  }, [notes, expandAll, collapseAll, expandToLevel, currentLevel, maxDepth, expandMoreLevel, collapseOneLevel]);
 
   return (
     <div className="p-2">
