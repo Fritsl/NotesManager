@@ -39,6 +39,11 @@ interface NotesContextType {
   currentProjectId: string | null;
   setCurrentProjectId: (id: string | null) => void;
   debugInfo: () => any; // For debugging purposes
+  
+  // Image handling functions
+  uploadImage: (noteId: string, file: File) => Promise<NoteImage | null>;
+  removeImage: (imageId: string) => Promise<boolean>;
+  reorderImage: (noteId: string, imageId: string, newPosition: number) => Promise<boolean>;
 }
 
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
@@ -671,6 +676,289 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     }
   }, [currentProjectId, currentProjectName, notes, cleanNotePositions, toast]);
 
+  // Image handling functions
+  // Upload an image to a note
+  const uploadImage = useCallback(async (noteId: string, file: File): Promise<NoteImage | null> => {
+    if (!currentProjectId) {
+      toast({
+        title: "Upload Failed",
+        description: "You need to create or load a project before adding images",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    try {
+      const imageData = await addImageToNote(noteId, file);
+      
+      if (!imageData) {
+        toast({
+          title: "Upload Failed",
+          description: "Failed to upload image. Please try again.",
+          variant: "destructive",
+        });
+        return null;
+      }
+      
+      // Update the note with the new image
+      setNotes(prevNotes => {
+        const updatedNotes = [...prevNotes];
+        
+        // Find the note to update
+        const updateNoteImages = (nodes: Note[]): boolean => {
+          for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i].id === noteId) {
+              // Initialize images array if it doesn't exist
+              if (!nodes[i].images) {
+                nodes[i].images = [];
+              }
+              
+              // Add the new image to the images array
+              nodes[i].images.push(imageData);
+              return true;
+            }
+            
+            if (nodes[i].children.length > 0) {
+              if (updateNoteImages(nodes[i].children)) {
+                return true;
+              }
+            }
+          }
+          
+          return false;
+        };
+        
+        updateNoteImages(updatedNotes);
+        return updatedNotes;
+      });
+      
+      // Update selected note if it's the note we added an image to
+      if (selectedNote && selectedNote.id === noteId) {
+        setSelectedNote(prevSelected => {
+          if (!prevSelected) return null;
+          
+          const updatedSelected = { ...prevSelected };
+          if (!updatedSelected.images) {
+            updatedSelected.images = [];
+          }
+          updatedSelected.images.push(imageData);
+          return updatedSelected;
+        });
+      }
+      
+      toast({
+        title: "Image Uploaded",
+        description: "Image has been added to the note",
+      });
+      
+      return imageData;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: "Upload Failed",
+        description: "An error occurred while uploading the image",
+        variant: "destructive",
+      });
+      return null;
+    }
+  }, [currentProjectId, selectedNote, toast]);
+
+  // Remove an image from a note
+  const removeImage = useCallback(async (imageId: string): Promise<boolean> => {
+    if (!currentProjectId) {
+      toast({
+        title: "Operation Failed",
+        description: "You need to have an active project to remove images",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    try {
+      const success = await removeImageFromNote(imageId);
+      
+      if (!success) {
+        toast({
+          title: "Removal Failed",
+          description: "Failed to remove image. Please try again.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      // Update the notes state to remove the image
+      setNotes(prevNotes => {
+        const updatedNotes = [...prevNotes];
+        
+        // Function to find and remove the image from a note
+        const removeImageFromNote = (nodes: Note[]): boolean => {
+          for (let i = 0; i < nodes.length; i++) {
+            // Check if this note has the image
+            if (nodes[i].images && nodes[i].images.length > 0) {
+              const imageIndex = nodes[i].images.findIndex(img => img.id === imageId);
+              if (imageIndex !== -1) {
+                // Remove the image from the array
+                nodes[i].images.splice(imageIndex, 1);
+                return true;
+              }
+            }
+            
+            // Check children
+            if (nodes[i].children.length > 0) {
+              if (removeImageFromNote(nodes[i].children)) {
+                return true;
+              }
+            }
+          }
+          
+          return false;
+        };
+        
+        removeImageFromNote(updatedNotes);
+        return updatedNotes;
+      });
+      
+      // Update the selected note if it contains the image
+      if (selectedNote && selectedNote.images && selectedNote.images.some(img => img.id === imageId)) {
+        setSelectedNote(prevSelected => {
+          if (!prevSelected) return null;
+          
+          const updatedSelected = { ...prevSelected };
+          if (updatedSelected.images) {
+            updatedSelected.images = updatedSelected.images.filter(img => img.id !== imageId);
+          }
+          return updatedSelected;
+        });
+      }
+      
+      toast({
+        title: "Image Removed",
+        description: "Image has been removed from the note",
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error removing image:', error);
+      toast({
+        title: "Removal Failed",
+        description: "An error occurred while removing the image",
+        variant: "destructive",
+      });
+      return false;
+    }
+  }, [currentProjectId, selectedNote, toast]);
+
+  // Reorder images within a note
+  const reorderImage = useCallback(async (noteId: string, imageId: string, newPosition: number): Promise<boolean> => {
+    if (!currentProjectId) {
+      toast({
+        title: "Operation Failed",
+        description: "You need to have an active project to reorder images",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    try {
+      const success = await updateImagePosition(noteId, imageId, newPosition);
+      
+      if (!success) {
+        toast({
+          title: "Reorder Failed",
+          description: "Failed to reorder image. Please try again.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      // Update the notes state to reflect the new position
+      setNotes(prevNotes => {
+        const updatedNotes = [...prevNotes];
+        
+        // Function to find and update the image position in a note
+        const updateImageInNote = (nodes: Note[]): boolean => {
+          for (let i = 0; i < nodes.length; i++) {
+            // Check if this is the note with the image
+            if (nodes[i].id === noteId && nodes[i].images && nodes[i].images.length > 0) {
+              // Find the image to move
+              const imageIndex = nodes[i].images.findIndex(img => img.id === imageId);
+              if (imageIndex !== -1) {
+                // Get the image to move
+                const image = nodes[i].images[imageIndex];
+                
+                // Remove from current position
+                nodes[i].images.splice(imageIndex, 1);
+                
+                // Insert at new position
+                const insertPos = Math.min(newPosition, nodes[i].images.length);
+                nodes[i].images.splice(insertPos, 0, image);
+                
+                // Update position property on all images to match their index
+                nodes[i].images.forEach((img, idx) => {
+                  img.position = idx;
+                });
+                
+                return true;
+              }
+            }
+            
+            // Check children
+            if (nodes[i].children.length > 0) {
+              if (updateImageInNote(nodes[i].children)) {
+                return true;
+              }
+            }
+          }
+          
+          return false;
+        };
+        
+        updateImageInNote(updatedNotes);
+        return updatedNotes;
+      });
+      
+      // Update the selected note if it's the note containing the image
+      if (selectedNote && selectedNote.id === noteId) {
+        setSelectedNote(prevSelected => {
+          if (!prevSelected || !prevSelected.images) return prevSelected;
+          
+          const updatedSelected = { ...prevSelected };
+          
+          // Find the image to move
+          const imageIndex = updatedSelected.images.findIndex(img => img.id === imageId);
+          if (imageIndex !== -1) {
+            // Get the image to move
+            const image = updatedSelected.images[imageIndex];
+            
+            // Remove from current position
+            updatedSelected.images.splice(imageIndex, 1);
+            
+            // Insert at new position
+            const insertPos = Math.min(newPosition, updatedSelected.images.length);
+            updatedSelected.images.splice(insertPos, 0, image);
+            
+            // Update position property on all images
+            updatedSelected.images.forEach((img, idx) => {
+              img.position = idx;
+            });
+          }
+          
+          return updatedSelected;
+        });
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error reordering image:', error);
+      toast({
+        title: "Reorder Failed",
+        description: "An error occurred while reordering the image",
+        variant: "destructive",
+      });
+      return false;
+    }
+  }, [currentProjectId, selectedNote, toast]);
+  
   // Debug info function to examine project state
   const debugInfo = useCallback(() => {
     return {
@@ -716,7 +1004,10 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         saveProject,
         currentProjectId,
         setCurrentProjectId,
-        debugInfo
+        debugInfo,
+        uploadImage,
+        removeImage,
+        reorderImage
       }}
     >
       {children}

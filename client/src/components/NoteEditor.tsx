@@ -5,12 +5,23 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Save, Youtube, Link, CheckCircle2, FileEdit } from "lucide-react";
+import { Save, Youtube, Link, CheckCircle2, FileEdit, ImagePlus, X, ArrowUp, ArrowDown, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
+import { NoteImage } from "@/types/notes";
 
 export default function NoteEditor() {
-  const { selectedNote, updateNote, breadcrumbs, hasActiveProject, saveProject, currentProjectId } = useNotes();
+  const { 
+    selectedNote, 
+    updateNote, 
+    breadcrumbs, 
+    hasActiveProject, 
+    saveProject, 
+    currentProjectId,
+    uploadImage,
+    removeImage,
+    reorderImage
+  } = useNotes();
   const { toast } = useToast();
   
   const [content, setContent] = useState<string>("");
@@ -340,6 +351,137 @@ export default function NoteEditor() {
                 </Label>
               </div>
             </div>
+          </div>
+
+          {/* Images Section */}
+          <div className="mt-3 border-t border-gray-800 pt-2">
+            <div className="text-xs text-gray-400 flex justify-between items-center mb-2">
+              <span>Images</span>
+              <label 
+                htmlFor="image-upload" 
+                className="inline-flex items-center text-primary hover:text-primary-hover cursor-pointer text-xs"
+              >
+                <ImagePlus size={14} className="mr-1" />
+                <span>Add Image</span>
+                <input
+                  id="image-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const files = e.target.files;
+                    if (!files || files.length === 0 || !selectedNote) return;
+                    
+                    const file = files[0];
+                    if (!file.type.startsWith('image/')) {
+                      toast({
+                        title: "Invalid File",
+                        description: "Please select an image file",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    
+                    // Check file size (limit to 5MB)
+                    if (file.size > 5 * 1024 * 1024) {
+                      toast({
+                        title: "File Too Large",
+                        description: "Image file must be less than 5MB",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    
+                    try {
+                      // Upload the image
+                      const image = await uploadImage(selectedNote.id, file);
+                      
+                      if (image) {
+                        toast({
+                          title: "Image Uploaded",
+                          description: "Image has been added to the note",
+                        });
+                        
+                        // Reset the file input
+                        e.target.value = '';
+                      }
+                    } catch (error) {
+                      console.error('Error uploading image:', error);
+                      toast({
+                        title: "Upload Failed",
+                        description: "There was a problem uploading the image",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                />
+              </label>
+            </div>
+            
+            {/* Display images if any */}
+            {selectedNote.images && selectedNote.images.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                {selectedNote.images.sort((a, b) => a.position - b.position).map((image) => (
+                  <div 
+                    key={image.id} 
+                    className="relative group border border-gray-800 rounded-md overflow-hidden"
+                  >
+                    <img 
+                      src={image.url} 
+                      alt="Note attachment" 
+                      className="w-full h-auto object-cover cursor-pointer"
+                      onClick={() => window.open(image.url, '_blank')}
+                    />
+                    <div className="absolute top-0 right-0 p-1 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
+                      {/* Move up button */}
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6 bg-gray-900/80 hover:bg-gray-800 rounded-full"
+                        onClick={async () => {
+                          if (image.position > 0) {
+                            await reorderImage(selectedNote.id, image.id, image.position - 1);
+                          }
+                        }}
+                        disabled={image.position === 0}
+                      >
+                        <ArrowUp size={14} />
+                      </Button>
+                      
+                      {/* Move down button */}
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6 bg-gray-900/80 hover:bg-gray-800 rounded-full"
+                        onClick={async () => {
+                          const maxPosition = (selectedNote.images?.length || 1) - 1;
+                          if (image.position < maxPosition) {
+                            await reorderImage(selectedNote.id, image.id, image.position + 1);
+                          }
+                        }}
+                        disabled={image.position === (selectedNote.images?.length || 1) - 1}
+                      >
+                        <ArrowDown size={14} />
+                      </Button>
+                      
+                      {/* Delete button */}
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6 bg-gray-900/80 hover:bg-red-900/80 text-gray-400 hover:text-red-300 rounded-full"
+                        onClick={async () => {
+                          if (confirm('Are you sure you want to remove this image?')) {
+                            await removeImage(image.id);
+                          }
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Links Section */}
