@@ -29,6 +29,9 @@ interface NotesContextType {
   hasActiveProject: boolean;
   setHasActiveProject: (hasProject: boolean) => void;
   createNewProject: (name: string) => void;
+  saveProject: () => Promise<void>;
+  currentProjectId: string | null;
+  setCurrentProjectId: (id: string | null) => void;
 }
 
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
@@ -40,6 +43,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [currentLevel, setCurrentLevel] = useState<number>(1);
   const [currentProjectName, setCurrentProjectName] = useState<string>('');
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [hasActiveProject, setHasActiveProject] = useState<boolean>(false);
   const { toast } = useToast();
 
@@ -594,6 +598,42 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   }, [notes, maxDepth]);
 
   // Create a new project with the given name
+  // Save current project
+  const saveProject = useCallback(async () => {
+    if (!currentProjectId || !hasActiveProject) {
+      console.warn("Cannot save project: No active project or missing project ID");
+      return;
+    }
+
+    try {
+      console.log(`Saving project ${currentProjectId} - ${currentProjectName}`);
+      const notesData = { notes };
+      const result = await updateProject(currentProjectId, currentProjectName, notesData);
+      
+      if (result) {
+        console.log("Project saved successfully:", result);
+        toast({
+          title: "Project Saved",
+          description: `Project "${currentProjectName}" has been saved`,
+        });
+      } else {
+        console.error("Failed to save project");
+        toast({
+          title: "Save Failed",
+          description: "Could not save project changes",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error saving project:", error);
+      toast({
+        title: "Save Error",
+        description: "An error occurred while saving the project",
+        variant: "destructive",
+      });
+    }
+  }, [currentProjectId, currentProjectName, hasActiveProject, notes, toast]);
+
   const createNewProject = useCallback(async (baseName: string) => {
     // Initialize empty project
     setNotes([]);
@@ -601,6 +641,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     setBreadcrumbs([]);
     setCurrentProjectName(baseName); // Use base name for UI display
     setHasActiveProject(true);
+    setCurrentProjectId(null); // Reset project ID until we get one from the server
     
     // Create project in database
     try {
@@ -612,6 +653,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       
       if (result) {
         console.log("Project saved to database:", result);
+        // Store the project ID for later use
+        setCurrentProjectId(result.id);
+        
         toast({
           title: "Project Created",
           description: `New project "${baseName}" has been created and saved`,
@@ -636,7 +680,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         variant: "destructive",
       });
     }
-  }, [toast]);
+  }, [toast, setCurrentProjectId]);
   
   return (
     <NotesContext.Provider
@@ -665,6 +709,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         hasActiveProject,
         setHasActiveProject,
         createNewProject,
+        saveProject,
+        currentProjectId,
+        setCurrentProjectId,
       }}
     >
       {children}
