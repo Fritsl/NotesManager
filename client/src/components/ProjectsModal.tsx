@@ -210,11 +210,10 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
         return;
       }
       
-      // Pass both the data and the project name
-      importNotes(fullProject.data, fullProject.name);
+      // Pass data, project name, and project ID to importNotes
+      importNotes(fullProject.data, fullProject.name, fullProject.id);
       
-      // Set the current project ID and mark as having an active project
-      setCurrentProjectId(fullProject.id);
+      // Mark as having an active project
       setHasActiveProject(true);
       
       console.log('Set current project ID:', fullProject.id);
