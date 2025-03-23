@@ -1,9 +1,7 @@
-import { createContext, useContext, useState, ReactNode, useCallback, useMemo, useRef, useEffect } from "react";
+import { createContext, useContext, useState, ReactNode, useCallback, useMemo, useRef } from "react";
 import { Note, NotesData } from "@/types/notes";
 import { useToast } from "@/components/ui/use-toast";
 import { v4 as uuidv4 } from "uuid";
-import { notesService } from "@/lib/supabase";
-import { useSingletonWebSocket, WebSocketMessage } from "@/hooks/use-singleton-websocket";
 
 interface NotesContextType {
   notes: Note[];
@@ -12,9 +10,9 @@ interface NotesContextType {
   selectNote: (note: Note | null) => void;
   breadcrumbs: Note[];
   addNote: (parent: Note | null) => void;
-  updateNote: (updatedNote: Note, skipBroadcast?: boolean) => void;
-  deleteNote: (noteId: string, skipBroadcast?: boolean) => void;
-  moveNote: (noteId: string, targetParentId: string | null, position: number, skipBroadcast?: boolean) => void;
+  updateNote: (updatedNote: Note) => void;
+  deleteNote: (noteId: string) => void;
+  moveNote: (noteId: string, targetParentId: string | null, position: number) => void;
   importNotes: (data: NotesData) => void;
   exportNotes: () => NotesData;
   expandedNodes: Set<string>;
@@ -25,9 +23,6 @@ interface NotesContextType {
   expandToLevel: (level: number) => void;
   currentLevel: number;
   maxDepth: number;
-  isLoading: boolean;
-  isSaving: boolean;
-  saveAllNotes: () => Promise<boolean>;
 }
 
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
@@ -38,11 +33,8 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const [breadcrumbs, setBreadcrumbs] = useState<Note[]>([]);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [currentLevel, setCurrentLevel] = useState<number>(1);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isSaving, setIsSaving] = useState<boolean>(false);
-  const [processingRemoteUpdate, setProcessingRemoteUpdate] = useState<boolean>(false);
   const { toast } = useToast();
-  
+
   // Clean note positions to ensure sequential ordering without gaps
   const cleanNotePositions = useCallback((noteList: Note[]): Note[] => {
     // Sort the notes by their current position
@@ -58,156 +50,6 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     
     return cleanedNotes;
   }, []);
-  
-  // Find a note and its path by ID
-  const findNoteAndPath = useCallback((
-    noteId: string,
-    currentNodes: Note[] = notes,
-    path: Note[] = []
-  ): { note: Note | null; path: Note[] } => {
-    for (const note of currentNodes) {
-      if (note.id === noteId) {
-        return { note, path };
-      }
-      
-      if (note.children.length > 0) {
-        const result = findNoteAndPath(noteId, note.children, [...path, note]);
-        if (result.note) {
-          return result;
-        }
-      }
-    }
-    
-    return { note: null, path: [] };
-  }, [notes]);
-  
-  // Find a note and its parent
-  const findNoteAndParent = useCallback((
-    noteId: string,
-    currentNodes: Note[] = notes,
-    parent: Note | null = null
-  ): { note: Note | null; parent: Note | null; index: number } => {
-    for (let i = 0; i < currentNodes.length; i++) {
-      if (currentNodes[i].id === noteId) {
-        return { note: currentNodes[i], parent, index: i };
-      }
-      
-      if (currentNodes[i].children.length > 0) {
-        const result = findNoteAndParent(noteId, currentNodes[i].children, currentNodes[i]);
-        if (result.note) {
-          return result;
-        }
-      }
-    }
-    
-    return { note: null, parent: null, index: -1 };
-  }, [notes]);
-  
-  // WebSocket connection setup
-  const { isConnected, sendMessage } = useSingletonWebSocket({
-    onMessage: (message: WebSocketMessage) => {
-      // Only process messages if they are note updates and we're not already processing another update
-      if (message.type === 'noteUpdate' && !processingRemoteUpdate) {
-        try {
-          console.log('[WebSocket] Received note update:', message.data);
-          setProcessingRemoteUpdate(true);
-          
-          const operation = message.data.operation;
-          const data = message.data.data;
-          
-          if (operation === 'update' && data.note) {
-            // Handle note update
-            console.log('[WebSocket] Processing remote note update');
-            updateNote(data.note, true); // true means skip broadcasting (to avoid loops)
-          } 
-          else if (operation === 'delete' && data.noteId) {
-            // Handle note deletion
-            console.log('[WebSocket] Processing remote note deletion');
-            deleteNote(data.noteId, true);
-          }
-          else if (operation === 'add' && data.note) {
-            // Handle new note
-            console.log('[WebSocket] Processing remote note addition');
-            // Find parent if specified
-            if (data.parentId) {
-              // Add as child of specified parent
-              setNotes(prevNotes => {
-                const updatedNotes = [...prevNotes];
-                const addToParent = (nodes: Note[]): boolean => {
-                  for (let i = 0; i < nodes.length; i++) {
-                    if (nodes[i].id === data.parentId) {
-                      const newNote = {...data.note};
-                      newNote.position = nodes[i].children.length;
-                      nodes[i].children.push(newNote);
-                      return true;
-                    }
-                    if (nodes[i].children.length > 0 && addToParent(nodes[i].children)) {
-                      return true;
-                    }
-                  }
-                  return false;
-                };
-                addToParent(updatedNotes);
-                return cleanNotePositions(updatedNotes);
-              });
-            } else {
-              // Add as root note
-              setNotes(prevNotes => {
-                const updatedNotes = [...prevNotes];
-                const newNote = {...data.note};
-                newNote.position = updatedNotes.length;
-                updatedNotes.push(newNote);
-                return cleanNotePositions(updatedNotes);
-              });
-            }
-          }
-          else if (operation === 'move' && data.noteId) {
-            // Handle note movement
-            console.log('[WebSocket] Processing remote note move');
-            moveNote(data.noteId, data.targetParentId, data.position, true);
-          }
-        } catch (error) {
-          console.error('[WebSocket] Error processing remote update:', error);
-        } finally {
-          // Clear processing flag after a short delay to ensure UI updates
-          setTimeout(() => setProcessingRemoteUpdate(false), 100);
-        }
-      }
-    }
-  });
-
-  // Load notes from Supabase on initial mount
-  useEffect(() => {
-    async function loadNotes() {
-      setIsLoading(true);
-      try {
-        const data = await notesService.getNotes();
-        if (data && data.notes) {
-          // Clean the positions just to be safe
-          const cleanedNotes = cleanNotePositions(data.notes);
-          setNotes(cleanedNotes);
-          toast({
-            title: "Notes Loaded",
-            description: `Loaded ${data.notes.length} root notes from Supabase`,
-          });
-        } else {
-          // If no notes exist yet, just start with an empty array
-          setNotes([]);
-        }
-      } catch (error) {
-        console.error("Error loading notes:", error);
-        toast({
-          title: "Error Loading Notes",
-          description: "Could not load your notes from the database",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    
-    loadNotes();
-  }, [cleanNotePositions, toast]);
 
   // Import notes from JSON
   const importNotes = useCallback((data: NotesData) => {
@@ -235,6 +77,28 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     return { notes };
   }, [notes]);
 
+  // Find a note and its path by ID
+  const findNoteAndPath = useCallback((
+    noteId: string,
+    currentNodes: Note[] = notes,
+    path: Note[] = []
+  ): { note: Note | null; path: Note[] } => {
+    for (const note of currentNodes) {
+      if (note.id === noteId) {
+        return { note, path };
+      }
+      
+      if (note.children.length > 0) {
+        const result = findNoteAndPath(noteId, note.children, [...path, note]);
+        if (result.note) {
+          return result;
+        }
+      }
+    }
+    
+    return { note: null, path: [] };
+  }, [notes]);
+
   // Select a note and update breadcrumbs
   const selectNote = useCallback((note: Note | null) => {
     if (!note) {
@@ -247,6 +111,28 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     setSelectedNote(note);
     setBreadcrumbs(path);
   }, [findNoteAndPath]);
+
+  // Find a note and its parent
+  const findNoteAndParent = useCallback((
+    noteId: string,
+    currentNodes: Note[] = notes,
+    parent: Note | null = null
+  ): { note: Note | null; parent: Note | null; index: number } => {
+    for (let i = 0; i < currentNodes.length; i++) {
+      if (currentNodes[i].id === noteId) {
+        return { note: currentNodes[i], parent, index: i };
+      }
+      
+      if (currentNodes[i].children.length > 0) {
+        const result = findNoteAndParent(noteId, currentNodes[i].children, currentNodes[i]);
+        if (result.note) {
+          return result;
+        }
+      }
+    }
+    
+    return { note: null, parent: null, index: -1 };
+  }, [notes]);
 
   // Add a new note
   const addNote = useCallback((parent: Note | null) => {
@@ -290,30 +176,15 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       });
     }
 
-    // Broadcast the new note to other clients
-    if (isConnected && !processingRemoteUpdate) {
-      console.log('[WebSocket] Broadcasting note addition');
-      sendMessage({
-        type: 'noteUpdate',
-        data: {
-          operation: 'add',
-          data: {
-            note: newNote,
-            parentId: parent ? parent.id : null
-          }
-        }
-      });
-    }
-
     selectNote(newNote);
     toast({
       title: "Note Added",
       description: "A new note has been added",
     });
-  }, [findNoteAndPath, selectNote, cleanNotePositions, toast, isConnected, sendMessage, processingRemoteUpdate]);
+  }, [findNoteAndPath, selectNote, cleanNotePositions, toast]);
 
   // Update a note
-  const updateNote = useCallback((updatedNote: Note, skipBroadcast = false) => {
+  const updateNote = useCallback((updatedNote: Note) => {
     setNotes((prevNotes) => {
       const updatedNotes = [...prevNotes];
       
@@ -344,29 +215,14 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     });
     
     setSelectedNote(updatedNote);
-    
-    // Broadcast the update to other clients if connected and not processing a remote update
-    if (isConnected && !skipBroadcast && !processingRemoteUpdate) {
-      console.log('[WebSocket] Broadcasting note update');
-      sendMessage({
-        type: 'noteUpdate',
-        data: {
-          operation: 'update',
-          data: {
-            note: updatedNote
-          }
-        }
-      });
-    }
-    
     toast({
       title: "Note Updated",
       description: "Your changes have been saved",
     });
-  }, [toast, isConnected, sendMessage, processingRemoteUpdate]);
+  }, [toast]);
 
   // Delete a note
-  const deleteNote = useCallback((noteId: string, skipBroadcast = false) => {
+  const deleteNote = useCallback((noteId: string) => {
     setNotes((prevNotes) => {
       const updatedNotes = [...prevNotes];
       let parentWithUpdatedChildren: Note | null = null;
@@ -415,36 +271,17 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       setBreadcrumbs([]);
     }
     
-    // Broadcast the deletion to other clients
-    if (isConnected && !skipBroadcast && !processingRemoteUpdate) {
-      console.log('[WebSocket] Broadcasting note deletion');
-      sendMessage({
-        type: 'noteUpdate',
-        data: {
-          operation: 'delete',
-          data: {
-            noteId
-          }
-        }
-      });
-    }
-    
     toast({
       title: "Note Deleted",
       description: "The note has been removed",
     });
-  }, [selectedNote, cleanNotePositions, toast, isConnected, sendMessage, processingRemoteUpdate]);
+  }, [selectedNote, cleanNotePositions, toast]);
 
   // Reference to track if a move operation is in progress to prevent multiple simultaneous moves
   const isMovingRef = useRef<boolean>(false);
   
   // Move a note in the tree
-  const moveNote = useCallback((
-    noteId: string, 
-    targetParentId: string | null, 
-    position: number,
-    skipBroadcast = false
-  ) => {
+  const moveNote = useCallback((noteId: string, targetParentId: string | null, position: number) => {
     // Prevent multiple drop handlers from triggering simultaneously
     if (isMovingRef.current) {
       console.log("⚠️ Ignoring duplicate move operation - operation already in progress");
@@ -525,6 +362,8 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         const findAndInsert = (nodes: Note[]): boolean => {
           for (let i = 0; i < nodes.length; i++) {
             if (nodes[i].id === targetParentId) {
+              console.log(`INSERTING note ${noteToMove.id} as child of ${targetParentId} at position ${position}`);
+              
               // Make sure we have a valid position (defensive)
               const insertPosition = Math.min(position, nodes[i].children.length);
               
@@ -560,27 +399,11 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       return cleanNotePositions(updatedNotes);
     });
     
-    // Broadcast the move to other clients
-    if (isConnected && !skipBroadcast && !processingRemoteUpdate) {
-      console.log('[WebSocket] Broadcasting note move');
-      sendMessage({
-        type: 'noteUpdate',
-        data: {
-          operation: 'move',
-          data: {
-            noteId,
-            targetParentId,
-            position
-          }
-        }
-      });
-    }
-    
     toast({
       title: "Note Moved",
       description: "The note has been moved to a new position",
     });
-  }, [findNoteAndParent, cleanNotePositions, toast, isConnected, sendMessage, processingRemoteUpdate]);
+  }, [findNoteAndParent, cleanNotePositions, toast]);
 
   // Toggle expansion for a single node
   const toggleExpand = useCallback((noteId: string) => {
@@ -620,6 +443,40 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     setCurrentLevel(0);
   }, []);
 
+  // Helper function to get nodes at a specific level
+  const getNoteIdsByLevel = useCallback((
+    notesArray: Note[], 
+    maxLevel: number, 
+    currentLevel = 0, 
+    exactLevel = false
+  ): string[] => {
+    let ids: string[] = [];
+    
+    notesArray.forEach(note => {
+      // If we're collecting notes up to a specific level
+      if (!exactLevel && currentLevel <= maxLevel) {
+        ids.push(note.id);
+      }
+      
+      // If we're collecting notes at an exact level
+      if (exactLevel && currentLevel === maxLevel) {
+        ids.push(note.id);
+      }
+      
+      // If the note has children, recursively collect their IDs
+      if (note.children.length > 0 && currentLevel < maxLevel) {
+        ids = [...ids, ...getNoteIdsByLevel(
+          note.children, 
+          maxLevel, 
+          currentLevel + 1, 
+          exactLevel
+        )];
+      }
+    });
+    
+    return ids;
+  }, []);
+
   // Calculate the maximum depth of notes in the tree
   const calculateMaxDepth = useCallback((notesArray: Note[], currentDepth = 0): number => {
     if (notesArray.length === 0) {
@@ -638,6 +495,12 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     return maxChildDepth;
   }, []);
   
+  // Get the maximum depth of the notes tree (limit to 9)
+  const maxDepth = useMemo(() => {
+    const depth = calculateMaxDepth(notes);
+    return Math.min(Math.max(depth + 1, 1), 9); // +1 because depth is 0-based, limit to max 9
+  }, [notes, calculateMaxDepth]);
+
   // Expand to a specific level
   const expandToLevel = useCallback((level: number) => {
     // Ensure level is at least 0
@@ -685,46 +548,6 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     setExpandedNodes(new Set(idsToExpand));
   }, [notes]);
 
-  // Save all notes to Supabase
-  const saveAllNotes = useCallback(async (): Promise<boolean> => {
-    setIsSaving(true);
-    try {
-      const notesData = { notes };
-      const result = await notesService.saveNotes(notesData);
-      
-      if (result) {
-        toast({
-          title: "Notes Saved",
-          description: "All notes have been saved to the database",
-        });
-        return true;
-      } else {
-        toast({
-          title: "Save Failed",
-          description: "Failed to save notes to the database",
-          variant: "destructive",
-        });
-        return false;
-      }
-    } catch (error) {
-      console.error("Error saving notes:", error);
-      toast({
-        title: "Save Error",
-        description: "An error occurred while saving notes",
-        variant: "destructive",
-      });
-      return false;
-    } finally {
-      setIsSaving(false);
-    }
-  }, [notes, toast]);
-  
-  // Get the maximum depth of the notes tree (limit to 9)
-  const maxDepth = useMemo(() => {
-    const depth = calculateMaxDepth(notes);
-    return Math.min(Math.max(depth + 1, 1), 9); // +1 because depth is 0-based, limit to max 9
-  }, [notes, calculateMaxDepth]);
-
   return (
     <NotesContext.Provider
       value={{
@@ -747,9 +570,6 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         expandToLevel,
         currentLevel,
         maxDepth,
-        isLoading,
-        isSaving,
-        saveAllNotes
       }}
     >
       {children}

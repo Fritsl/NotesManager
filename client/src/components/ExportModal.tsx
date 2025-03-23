@@ -9,14 +9,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { useNotes } from "@/context/NotesContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Database, Download } from "lucide-react";
 
 interface ExportModalProps {
   onClose: () => void;
 }
 
 export default function ExportModal({ onClose }: ExportModalProps) {
-  const { exportNotes, saveAllNotes, isSaving } = useNotes();
+  const { exportNotes } = useNotes();
 
   const handleExport = () => {
     const data = exportNotes();
@@ -53,30 +52,13 @@ export default function ExportModal({ onClose }: ExportModalProps) {
           </pre>
         </ScrollArea>
         
-        <DialogFooter className="mt-4 flex flex-col sm:flex-row gap-2">
-          <div className="flex-1 flex justify-start">
-            <Button 
-              variant="outline" 
-              onClick={async () => {
-                await saveAllNotes();
-                onClose();
-              }}
-              disabled={isSaving}
-              className="bg-blue-50 hover:bg-blue-100 border-blue-200"
-            >
-              <Database className="h-4 w-4 mr-2" />
-              {isSaving ? "Saving..." : "Save to Supabase"}
-            </Button>
-          </div>
-          <div className="flex space-x-2">
-            <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button variant="default" onClick={handleExport}>
-              <Download className="h-4 w-4 mr-2" />
-              Download JSON
-            </Button>
-          </div>
+        <DialogFooter className="mt-4">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="default" onClick={handleExport}>
+            Download JSON
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

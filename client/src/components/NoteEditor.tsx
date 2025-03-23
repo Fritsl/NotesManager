@@ -5,13 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Save, Youtube, Link, CheckCircle2, Database } from "lucide-react";
+import { Save, Youtube, Link, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
-import { notesService } from "@/lib/supabase";
 
 export default function NoteEditor() {
-  const { selectedNote, updateNote, breadcrumbs, saveAllNotes, isSaving } = useNotes();
+  const { selectedNote, updateNote, breadcrumbs } = useNotes();
   const { toast } = useToast();
   
   const [content, setContent] = useState<string>("");
@@ -196,33 +195,20 @@ export default function NoteEditor() {
           )}
         </div>
         
-        <div className="flex items-center space-x-2">
-          {/* Save to Supabase button */}
+        {/* Only show save button when there are unsaved changes */}
+        {hasChanges && (
           <Button
-            onClick={() => saveAllNotes()}
-            className="flex items-center space-x-1 bg-blue-600 hover:bg-blue-700"
-            disabled={isSaving}
-            title="Save all notes to database"
+            onClick={handleSave}
+            className={`
+              flex items-center space-x-1
+              ${saveStatus === "saved" ? "bg-green-500 hover:bg-green-600" : ""}
+            `}
+            disabled={saveStatus === "saving"}
           >
-            <Database size={16} />
-            <span>{isSaving ? "Saving..." : "Save to Database"}</span>
+            <Save size={16} />
+            <span>{saveStatus === "saving" ? "Saving..." : "Save"}</span>
           </Button>
-          
-          {/* Only show local save button when there are unsaved changes */}
-          {hasChanges && (
-            <Button
-              onClick={handleSave}
-              className={`
-                flex items-center space-x-1
-                ${saveStatus === "saved" ? "bg-green-500 hover:bg-green-600" : ""}
-              `}
-              disabled={saveStatus === "saving"}
-            >
-              <Save size={16} />
-              <span>{saveStatus === "saving" ? "Saving..." : "Save"}</span>
-            </Button>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Compact note editor form */}

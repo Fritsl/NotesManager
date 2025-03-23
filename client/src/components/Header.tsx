@@ -9,18 +9,11 @@ import {
   ChevronUp, 
   ChevronDown,
   ChevronsUpDown,
-  Info,
-  Database,
-  Save,
-  LogIn
+  Info
 } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
-import { useAuth } from "@/context/AuthContext";
 import ImportModal from "@/components/ImportModal";
 import ExportModal from "@/components/ExportModal";
-import WebSocketStatus from "@/components/WebSocketStatus";
-import { AuthModal } from "@/components/auth";
-import { UserProfileButton } from "@/components/auth/UserProfileButton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,14 +37,10 @@ export default function Header() {
     collapseAll, 
     expandToLevel, 
     currentLevel,
-    maxDepth,
-    saveAllNotes,
-    isSaving
+    maxDepth
   } = useNotes();
-  const { user } = useAuth();
   const [showImportModal, setShowImportModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
 
   return (
     <header className="bg-white border-b border-gray-200 py-2 px-4 flex justify-between items-center">
@@ -76,7 +65,6 @@ export default function Header() {
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        <WebSocketStatus />
       </div>
       <div className="flex items-center space-x-2">
         {/* Level Controls */}
@@ -157,14 +145,6 @@ export default function Header() {
               <FileDown className="h-4 w-4 mr-2" />
               <span>Export</span>
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              onClick={() => saveAllNotes()}
-              disabled={isSaving}
-            >
-              <Database className="h-4 w-4 mr-2" />
-              <span>{isSaving ? "Saving..." : "Save to Supabase"}</span>
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -175,28 +155,6 @@ export default function Header() {
 
       {showExportModal && (
         <ExportModal onClose={() => setShowExportModal(false)} />
-      )}
-
-      {showAuthModal && (
-        <AuthModal 
-          isOpen={showAuthModal} 
-          onClose={() => setShowAuthModal(false)} 
-        />
-      )}
-
-      {/* Add the login button or user profile based on auth state */}
-      {user ? (
-        <UserProfileButton onProjectsClick={() => {}} />
-      ) : (
-        <Button 
-          variant="outline"
-          size="sm"
-          className="absolute right-4 top-4"
-          onClick={() => setShowAuthModal(true)}
-        >
-          <LogIn className="h-4 w-4 mr-2" />
-          Login
-        </Button>
       )}
     </header>
   );
