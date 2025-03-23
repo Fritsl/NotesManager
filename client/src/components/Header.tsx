@@ -17,9 +17,14 @@ import {
   Plus,
   Save,
   FileText,
-  FolderOpen
+  FolderOpen,
+  LogOut,
+  Settings,
+  User
 } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import ImportModal from "@/components/ImportModal";
 import ExportModal from "@/components/ExportModal";
 import ProjectsModal from "@/components/ProjectsModal";
@@ -55,6 +60,8 @@ export default function Header() {
     setHasActiveProject,
     createNewProject
   } = useNotes();
+  const { signOut } = useAuth();
+  const { toast } = useToast();
   
   // Debug
   console.log("Header - Current Project Name:", currentProjectName);
@@ -260,14 +267,15 @@ export default function Header() {
               Add Note
             </Button>
             
-            {/* Main Menu */}
+            {/* Consolidated Hamburger Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Menu className="h-4 w-4" />
+                  <Menu className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-56">
+                {/* File Operations */}
                 <DropdownMenuItem onClick={() => {
                   // Create a new project
                   setNewProjectName('New Project');
@@ -285,8 +293,11 @@ export default function Header() {
                 }}>
                   <Save className="h-4 w-4 mr-2" />
                   <span>Save</span>
+                  <span className="ml-auto text-xs text-muted-foreground">(Auto)</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                
+                {/* Import/Export */}
                 <DropdownMenuItem onClick={() => setShowImportModal(true)}>
                   <FileUp className="h-4 w-4 mr-2" />
                   <span>Import from JSON</span>
@@ -295,13 +306,17 @@ export default function Header() {
                   <FileDown className="h-4 w-4 mr-2" />
                   <span>Export to JSON</span>
                 </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                {/* User Options - Incorporating UserMenu items here */}
+                <DropdownMenuItem onClick={() => {
+                  // Sign out functionality
+                }}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  <span>Sign Out</span>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            
-            {/* User Menu */}
-            <div className="ml-2">
-              <UserMenu />
-            </div>
           </div>
         </>
       ) : (
@@ -313,38 +328,8 @@ export default function Header() {
             </h1>
           </div>
           <div className="flex items-center space-x-2">
-            {/* Main menu for new project and load */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8">
-                  <FileText className="h-3.5 w-3.5 mr-1" />
-                  <span>File</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => {
-                  // Give focus to the input for a new project
-                  if (newProjectNameInputRef.current) {
-                    newProjectNameInputRef.current.focus();
-                  }
-                }}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  <span>New</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowProjectsModal(true)}>
-                  <FolderOpen className="h-4 w-4 mr-2" />
-                  <span>Load</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setShowImportModal(true)}>
-                  <FileUp className="h-4 w-4 mr-2" />
-                  <span>Import from JSON</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
             {/* New project input */}
-            <div className="flex items-center ml-2">
+            <div className="flex items-center">
               <Input
                 ref={newProjectNameInputRef}
                 value={newProjectName}
@@ -366,10 +351,46 @@ export default function Header() {
               </Button>
             </div>
             
-            {/* User Menu */}
-            <div className="ml-2">
-              <UserMenu />
-            </div>
+            {/* Consolidated Hamburger Menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 ml-2">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                {/* File Operations */}
+                <DropdownMenuItem onClick={() => {
+                  // Give focus to the input for a new project
+                  if (newProjectNameInputRef.current) {
+                    newProjectNameInputRef.current.focus();
+                  }
+                }}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  <span>New</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowProjectsModal(true)}>
+                  <FolderOpen className="h-4 w-4 mr-2" />
+                  <span>Load</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                
+                {/* Import/Export */}
+                <DropdownMenuItem onClick={() => setShowImportModal(true)}>
+                  <FileUp className="h-4 w-4 mr-2" />
+                  <span>Import from JSON</span>
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                {/* User Options - Incorporating UserMenu items here */}
+                <DropdownMenuItem onClick={() => {
+                  // Sign out functionality
+                }}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  <span>Sign Out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </>
       )}
