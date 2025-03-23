@@ -54,14 +54,27 @@ export function buildNoteHierarchy(flatNotes: DbNote[]): Note[] {
   
   // First pass: create Note objects without children
   sortedNotes.forEach(dbNote => {
-    // Parse additional properties from _meta if it exists
+    // Parse content that might contain metadata
+    let contentText = dbNote.content;
     let metaData: any = {};
-    if (dbNote._meta) {
-      try {
-        metaData = JSON.parse(dbNote._meta);
-      } catch (e) {
-        console.error('Error parsing _meta JSON:', e);
+    
+    try {
+      // Check if content is JSON containing both text and metadata
+      const contentObj = JSON.parse(dbNote.content);
+      if (contentObj && typeof contentObj === 'object') {
+        if (contentObj.text) {
+          // New format: { text: "content", meta: {...} }
+          contentText = contentObj.text;
+          
+          if (contentObj.meta) {
+            metaData = contentObj.meta;
+          }
+        }
       }
+    } catch (e) {
+      // Not JSON or not in expected format, use content as-is
+      // This handles legacy notes that aren't in JSON format
+      console.log('Note content is not JSON or not in expected format, using as plain text');
     }
     
     // Use the correct position field and ensure it's always a number
@@ -70,7 +83,7 @@ export function buildNoteHierarchy(flatNotes: DbNote[]): Note[] {
     // Create Note object with all properties
     noteMap.set(dbNote.id, {
       id: dbNote.id,
-      content: dbNote.content,
+      content: contentText,
       position: position,
       // Use meta properties if available, otherwise use direct properties if they exist
       is_discussion: metaData.is_discussion || !!dbNote.is_discussion || false,
@@ -123,24 +136,29 @@ export function flattenNoteHierarchy(notes: Note[], projectId: string, userId: s
     // Create a DB record for this note
     const now = new Date().toISOString();
     
-    // Use the correct field names based on the Supabase schema
-    const dbNote = {
-      id: note.id,
-      content: note.content,
-      user_id: userId,
-      project_id: projectId,
-      parent_id: parentId,
-      // Use 'position' not 'note_position' as per Supabase schema
-      position: note.position, 
-      // Store additional properties as JSON in the content field if they don't exist in schema
-      // We'll need to parse these out when loading
-      _meta: JSON.stringify({
+    // Create a structure that includes both the content and metadata
+    // Store the metadata inline with the content since there's no _meta column
+    const contentWithMeta = {
+      text: note.content,
+      meta: {
         is_discussion: note.is_discussion || false,
         time_set: note.time_set,
         youtube_url: note.youtube_url,
         url: note.url,
         url_display_text: note.url_display_text
-      }),
+      }
+    };
+    
+    // Use the correct field names based on the Supabase schema
+    const dbNote = {
+      id: note.id,
+      // Serialize the combined content+metadata to JSON string
+      content: JSON.stringify(contentWithMeta),
+      user_id: userId,
+      project_id: projectId,
+      parent_id: parentId,
+      // Use 'position' not 'note_position' as per Supabase schema
+      position: note.position,
       created_at: now,
       updated_at: now
     };

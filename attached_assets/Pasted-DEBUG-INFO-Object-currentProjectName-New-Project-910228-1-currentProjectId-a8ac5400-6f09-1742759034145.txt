@@ -1,0 +1,51 @@
+DEBUG INFO: 
+Object {currentProjectName: "New Project (910228-1)", currentProjectId: "a8ac5400-6f09-406d-b277-6447580cd3b5", noteCount: 1, hasActiveProject: true}
+Header - Current Project Name: New Project (910228-1)
+NoteTree - Current Project Name: New Project (910228-1)
+Header - Current Project Name: New Project (910228-1)
+NoteTree - Current Project Name: New Project (910228-1)
+Header - Current Project Name: New Project (910228-1)
+NoteTree - Current Project Name: New Project (910228-1)
+DEBUG INFO: 
+Object {currentProjectName: "New Project (910228-1)", currentProjectId: "a8ac5400-6f09-406d-b277-6447580cd3b5", noteCount: 1, hasActiveProject: true}
+Header - Current Project Name: New Project (910228-1)
+NoteTree - Current Project Name: New Project (910228-1)
+Manual save for project ID: a8ac5400-6f09-406d-b277-6447580cd3b5
+Saving project: 
+Object {id: "a8ac5400-6f09-406d-b277-6447580cd3b5", name: "New Project (910228-1)", notesCount: 1, firstNote: "New note"}
+--- updateProject: Starting to update project ---
+Project ID: a8ac5400-6f09-406d-b277-6447580cd3b5
+Project name: New Project (910228-1)
+Notes data structure: {"noteCount":1,"hasNotes":true,"sample":"201a5942-e38c-4246-8e7e-4013bd97e307"}
+Current user ID: 2df0798b-b535-4015-8c5e-15ed98a09481
+Updating project with notes count: 1
+Validated notes data for update, count: 1
+Updating project in settings table...
+Project settings successfully updated, now updating notes
+Deleting existing notes for project: a8ac5400-6f09-406d-b277-6447580cd3b5
+Successfully deleted existing notes, now inserting new notes
+Flattened notes for DB insertion: 4 notes
+First flattened note sample: {"id":"201a5942-e38c-4246-8e7e-4013bd97e307","content":"New note","user_id":"2df0798b-b535-4015-8c5e-15ed98a09481","project_id":"a8ac5400-6f09-406d-b277-6447580cd3b5","parent_id":null,"position":0,"_meta":"{\"is_discussion\":false,\"time_set\":null,\"youtube_url\":null,\"url\":null,\"url_display_text\":null}","created_at":"2025-03-23T19:43:00.782Z","updated_at":"2025-03-23T19:43:00.782Z"}
+Inserting batch 1/1, size: 4
+Error inserting notes batch 1: 
+Object {code: "PGRST204", details: null, hint: null, message: "Could not find the '_meta' column of 'notes' in the schema cache"}
+code: "PGRST204"
+details: null
+hint: null
+message: "Could not find the '_meta' column of 'notes' in the schema cache"
+[[Prototype]]: Object
+
+at t.value (https://3243e722-ac0b-41a9-9cda-5c6989309426-00-5cj9stwfo8t8.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://3243e722-ac0b-41a9-9cda-5c6989309426-00-5cj9stwfo8t8.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://3243e722-ac0b-41a9-9cda-5c6989309426-00-5cj9stwfo8t8.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://3243e722-ac0b-41a9-9cda-5c6989309426-00-5cj9stwfo8t8.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Project update completed successfully
+Project saved successfully: 
+Object {id: "a8ac5400-6f09-406d-b277-6447580cd3b5", name: "New Project (910228-1)", created_at: "2025-03-23T19:41:50.228+00:00", updated_at: "2025-03-23T19:43:00.602+00:00", user_id: "2df0798b-b535-4015-8c5e-15ed98a09481", …}
+Manual save completed
+Header - Current Project Name: New Project (910228-1)
+NoteTree - Current Project Name: New Project (910228-1)
+Header - Current Project Name: New Project (910228-1)
+NoteTree - Current Project Name: New Project (910228-1)
+Header - Current Project Name: New Project (910228-1)
+NoteTree - Current Project Name: New Project (910228-1)
