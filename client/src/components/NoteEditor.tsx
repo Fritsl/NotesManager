@@ -6,11 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Save, Youtube, Link, CheckCircle2, FileEdit } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function NoteEditor() {
-  const { selectedNote, updateNote, breadcrumbs, hasActiveProject } = useNotes();
+  const { selectedNote, updateNote, breadcrumbs, hasActiveProject, saveProject, currentProjectId } = useNotes();
   const { toast } = useToast();
   
   const [content, setContent] = useState<string>("");
@@ -70,7 +70,7 @@ export default function NoteEditor() {
         clearTimeout(autoSaveTimerRef.current);
       }
       
-      autoSaveTimerRef.current = setTimeout(() => {
+      autoSaveTimerRef.current = setTimeout(async () => {
         const updatedNote = {
           ...selectedNote,
           content,
@@ -84,6 +84,16 @@ export default function NoteEditor() {
         updateNote(updatedNote);
         setHasChanges(false);
         
+        // Save the entire project if we have a project ID
+        if (currentProjectId) {
+          try {
+            await saveProject();
+            console.log("Project auto-saved after note update");
+          } catch (error) {
+            console.error("Failed to auto-save project:", error);
+          }
+        }
+        
         // Show a subtle toast notification for auto-save
         toast({
           title: "Auto-saved",
@@ -92,7 +102,7 @@ export default function NoteEditor() {
         });
       }, 500);
     }
-  }, [selectedNote, hasChanges, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, updateNote, toast]);
+  }, [selectedNote, hasChanges, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, updateNote, toast, saveProject, currentProjectId]);
   
   // Set up change tracking with proper state updates
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -125,28 +135,46 @@ export default function NoteEditor() {
     setHasChanges(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!selectedNote) return;
 
     setSaveStatus("saving");
     
-    const updatedNote = {
-      ...selectedNote,
-      content,
-      youtube_url: youtubeUrl || null,
-      url: externalUrl || null,
-      url_display_text: externalUrl ? (urlDisplayText || null) : null,
-      is_discussion: isDiscussion,
-    };
-    
-    updateNote(updatedNote);
-    setSaveStatus("saved");
-    setHasChanges(false); // Reset changes flag after saving
-    
-    // Reset status after a delay
-    setTimeout(() => {
+    try {
+      const updatedNote = {
+        ...selectedNote,
+        content,
+        youtube_url: youtubeUrl || null,
+        url: externalUrl || null,
+        url_display_text: externalUrl ? (urlDisplayText || null) : null,
+        is_discussion: isDiscussion,
+      };
+      
+      // Update the note in local state
+      updateNote(updatedNote);
+      
+      // Save the entire project if we have a project ID
+      if (currentProjectId) {
+        await saveProject();
+        console.log("Project saved manually after note update");
+      }
+      
+      setSaveStatus("saved");
+      setHasChanges(false); // Reset changes flag after saving
+      
+      // Reset status after a delay
+      setTimeout(() => {
+        setSaveStatus("idle");
+      }, 1500);
+    } catch (error) {
+      console.error("Failed to save note and project:", error);
+      toast({
+        title: "Save Error",
+        description: "Failed to save changes. Please try again.",
+        variant: "destructive",
+      });
       setSaveStatus("idle");
-    }, 1500);
+    }
   };
 
   if (!hasActiveProject) {

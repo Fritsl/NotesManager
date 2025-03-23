@@ -1,0 +1,127 @@
+I'll provide a clear overview of how projects are stored and managed in the database.
+
+Database Structure Overview
+Core Tables
+settings table (represents projects):
+
+
+- id (uuid, primary key)
+- user_id (uuid, references auth.users)
+- title (text, max 50 chars)
+- description (text)
+- created_at (timestamp)
+- updated_at (timestamp)
+- last_modified_at (timestamp)
+- note_count (integer)
+- deleted_at (timestamp, for soft deletes)
+notes table:
+
+
+- id (uuid, primary key)
+- content (text)
+- user_id (uuid, references auth.users)
+- project_id (uuid, references settings)
+- parent_id (uuid, self-reference for hierarchy)
+- is_discussion (boolean)
+- note_position (integer)
+How Projects Are Saved
+Creating a New Project
+
+const { data: project } = await supabase
+  .from('settings')
+  .insert({
+    user_id: currentUserId,
+    title: 'New Project',
+    description: ''
+  })
+  .select()
+  .single();
+Updating a Project
+
+const { data: project } = await supabase
+  .from('settings')
+  .update({ 
+    title: newTitle,
+    description: newDescription,
+    updated_at: new Date().toISOString()
+  })
+  .eq('id', projectId)
+  .select();
+Project Metadata
+The last_modified_at field updates automatically via triggers when:
+Notes are added/modified/deleted
+Project settings change
+note_count is maintained automatically by triggers
+Security & Access Control
+Row Level Security (RLS)
+Each table has RLS enabled
+Users can only access their own projects and notes
+Example policy:
+
+CREATE POLICY "Users can manage their own settings"
+  ON settings FOR ALL TO authenticated
+  USING (user_id = auth.uid());
+Project Loading Flow
+Initial Load
+
+// Get user's projects
+const { data: projects } = await supabase
+  .from('settings')
+  .select('*')
+  .is('deleted_at', null)
+  .order('last_modified_at', { ascending: false });
+
+// Load specific project's notes
+const { data: notes } = await supabase
+  .from('notes')
+  .select(`
+    *,
+    images:note_images(*)
+  `)
+  .eq('project_id', projectId)
+  .order('note_position');
+Project Switching
+URL contains project ID: ?project=uuid
+When switching:
+Update URL with new project ID
+Load project metadata
+Load project's notes
+Build note hierarchy from flat data
+Data Consistency
+Transactions
+Complex operations use database functions to ensure atomicity
+Example: Moving notes maintains positions via move_note function
+Soft Deletes
+Projects aren't permanently deleted initially
+deleted_at timestamp allows for recovery
+Permanent deletion available after soft delete
+Best Practices for Integration
+Project Creation
+
+// Create project
+const { data: project } = await supabase
+  .from('settings')
+  .insert({
+    title: 'New Project',
+    user_id: userId
+  })
+  .select()
+  .single();
+
+// Update URL
+const newUrl = new URL(window.location.href);
+newUrl.searchParams.set('project', project.id);
+window.history.replaceState({}, '', newUrl.toString());
+Error Handling
+
+try {
+  const { data, error } = await supabase
+    .from('settings')
+    .update({ title })
+    .eq('id', projectId);
+    
+  if (error) throw error;
+} catch (error) {
+  // Handle database errors
+}
+This structure provides a robust foundation for managing hierarchical note data while maintaining data integrity and proper access control.
