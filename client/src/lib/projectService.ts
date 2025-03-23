@@ -651,82 +651,41 @@ export async function addImageToNote(noteId: string, file: File): Promise<NoteIm
       return null;
     }
     
-    // Convert the file to the correct format if needed
-    let fileToUpload = file;
-    let mimeType = file.type;
+    const userId = userData.user.id;
+    console.log(`User ID: ${userId}`);
     
-    // If the file isn't a JPEG or PNG, we might want to convert it
-    // For now, we'll just use the original file
+    // Create a FormData object for the file upload
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('noteId', noteId);
+    formData.append('userId', userId);
     
-    // Generate a unique filename
-    const fileName = `${uuidv4()}.jpg`;
-    const filePath = `images/${fileName}`;
+    console.log('Uploading image via API endpoint');
     
-    console.log(`Uploading file to path: ${filePath}`);
+    // Use the server-side API to handle the upload
+    const response = await fetch('/api/upload-image', {
+      method: 'POST',
+      body: formData,
+    });
     
-    // Upload file to storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('note-images')
-      .upload(filePath, fileToUpload, {
-        contentType: mimeType,
-        cacheControl: '3600'
-      });
+    if (!response.ok) {
+      // Try to parse the error response
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        errorData = { error: 'Unknown error', status: response.status };
+      }
       
-    if (uploadError) {
-      console.error('Error uploading image:', uploadError);
+      console.error('Error uploading image via API:', errorData);
       return null;
     }
     
-    console.log('File uploaded successfully');
+    // Parse the successful response
+    const imageData = await response.json();
+    console.log('Image uploaded successfully:', imageData);
     
-    // Get the public URL for the uploaded file
-    const { data: { publicUrl } } = supabase.storage
-      .from('note-images')
-      .getPublicUrl(filePath);
-    
-    console.log(`Public URL: ${publicUrl}`);
-    
-    // Get the highest position of existing images for this note
-    const { data: existingImages } = await supabase
-      .from('note_images')
-      .select('position')
-      .eq('note_id', noteId)
-      .order('position', { ascending: false })
-      .limit(1);
-      
-    const position = existingImages && existingImages.length > 0 
-      ? existingImages[0].position + 1 
-      : 0;
-    
-    console.log(`Image position: ${position}`);
-    
-    // Create a record in the note_images table
-    const imageRecord = {
-      note_id: noteId,
-      storage_path: filePath,
-      url: publicUrl,
-      position: position
-    };
-    
-    console.log('Creating note_images record:', imageRecord);
-    
-    const { data: imageData, error: imageError } = await supabase
-      .from('note_images')
-      .insert(imageRecord)
-      .select()
-      .single();
-      
-    if (imageError) {
-      console.error('Error creating image record:', imageError);
-      // Try to delete the uploaded file to avoid orphaned files
-      await supabase.storage
-        .from('note-images')
-        .remove([filePath]);
-      return null;
-    }
-    
-    console.log('Image record created successfully:', imageData);
-    
+    // Return the image data
     return {
       id: imageData.id,
       note_id: imageData.note_id,
@@ -753,46 +712,28 @@ export async function removeImageFromNote(imageId: string): Promise<boolean> {
       return false;
     }
     
-    // Get the image record to find its storage path
-    const { data: imageData, error: getError } = await supabase
-      .from('note_images')
-      .select('storage_path')
-      .eq('id', imageId)
-      .single();
+    const userId = userData.user.id;
+    console.log(`User ID: ${userId}`);
+    
+    // Use the API endpoint to delete the image
+    const response = await fetch(`/api/remove-image/${imageId}?userId=${userId}`, {
+      method: 'DELETE'
+    });
+    
+    if (!response.ok) {
+      // Try to parse the error response
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        errorData = { error: 'Unknown error', status: response.status };
+      }
       
-    if (getError || !imageData) {
-      console.error('Error getting image data:', getError);
+      console.error('Error removing image via API:', errorData);
       return false;
     }
     
-    console.log(`Deleting image from storage path: ${imageData.storage_path}`);
-    
-    // Delete the image from storage
-    const { error: deleteStorageError } = await supabase.storage
-      .from('note-images')
-      .remove([imageData.storage_path]);
-      
-    if (deleteStorageError) {
-      console.error('Error deleting image from storage:', deleteStorageError);
-      // Continue to delete the database entry anyway
-    } else {
-      console.log('Storage file deleted successfully');
-    }
-    
-    console.log('Deleting image database record');
-    
-    // Delete the image record from the database
-    const { error: deleteRecordError } = await supabase
-      .from('note_images')
-      .delete()
-      .eq('id', imageId);
-      
-    if (deleteRecordError) {
-      console.error('Error deleting image record:', deleteRecordError);
-      return false;
-    }
-    
-    console.log('Image record deleted successfully');
+    console.log('Image removed successfully');
     return true;
   } catch (error) {
     console.error('Error in removeImageFromNote:', error);
@@ -812,15 +753,33 @@ export async function updateImagePosition(noteId: string, imageId: string, newPo
       return false;
     }
     
-    // Update the image position
-    const { error } = await supabase
-      .from('note_images')
-      .update({ position: newPosition })
-      .eq('id', imageId)
-      .eq('note_id', noteId);
+    const userId = userData.user.id;
+    console.log(`User ID: ${userId}`);
+    
+    // Use the API endpoint to update the image position
+    const response = await fetch('/api/update-image-position', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        imageId,
+        noteId,
+        userId,
+        newPosition
+      })
+    });
+    
+    if (!response.ok) {
+      // Try to parse the error response
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        errorData = { error: 'Unknown error', status: response.status };
+      }
       
-    if (error) {
-      console.error('Error updating image position:', error);
+      console.error('Error updating image position via API:', errorData);
       return false;
     }
     
