@@ -40,3 +40,29 @@
     @apply bg-primary/50 rounded-md hover:bg-primary/70 transition-colors;
   }
 }
+
+@layer utilities {
+  /* Custom color classes for dark theme */
+  .bg-gray-850 {
+    background-color: #1a1a1a;
+  }
+  
+  .bg-gray-950 {
+    background-color: #0a0a0a;
+  }
+  
+  /* Tree line styling */
+  .tree-line {
+    position: relative;
+  }
+  
+  .tree-line::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -10px;
+    width: 1px;
+    @apply bg-gray-700 opacity-40;
+  }
+}

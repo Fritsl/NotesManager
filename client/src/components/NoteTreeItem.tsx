@@ -354,14 +354,14 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             {(note.youtube_url || note.url) && (
               <div className="flex space-x-2 mt-1">
                 {note.youtube_url && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-950 text-red-300 border border-red-700">
                     <Youtube size={12} className="mr-1" />
                     YouTube
                   </span>
                 )}
                 
                 {note.url && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-950 text-blue-300 border border-blue-700">
                     <Link size={12} className="mr-1" />
                     {note.url_display_text || "Link"}
                   </span>
@@ -465,7 +465,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             <div className="h-2 flex items-center justify-center">
               <div className={cn(
                 "h-[1px] w-1/3 transition-all duration-200",
-                isOverChildArea ? "bg-primary opacity-70" : "bg-gray-200 opacity-20 group-hover:opacity-40"
+                isOverChildArea ? "bg-primary opacity-70" : "bg-gray-500 opacity-20 group-hover:opacity-40"
               )}></div>
             </div>
           )}

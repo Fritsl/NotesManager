@@ -160,14 +160,14 @@ export default function NoteEditor() {
   return (
     <>
       {/* Toolbar with breadcrumbs */}
-      <div className="bg-white border-b border-gray-200 p-2 flex items-center justify-between shadow-sm">
-        <div className="breadcrumbs text-sm text-gray-500 flex items-center overflow-x-auto whitespace-nowrap">
-          <span className="px-2 py-1 cursor-pointer hover:bg-gray-100 rounded">Root</span>
+      <div className="bg-gray-900 border-b border-gray-800 p-2 flex items-center justify-between shadow-sm">
+        <div className="breadcrumbs text-sm text-gray-400 flex items-center overflow-x-auto whitespace-nowrap">
+          <span className="px-2 py-1 cursor-pointer hover:bg-gray-800 rounded">Root</span>
           
           {breadcrumbs.map((crumb, index) => (
             <div key={crumb.id} className="flex items-center">
-              <span className="mx-1 text-gray-400">/</span>
-              <span className="px-2 py-1 cursor-pointer hover:bg-gray-100 rounded">
+              <span className="mx-1 text-gray-500">/</span>
+              <span className="px-2 py-1 cursor-pointer hover:bg-gray-800 rounded">
                 {crumb.content.split('\n')[0].slice(0, 20)}
                 {crumb.content.length > 20 ? '...' : ''}
               </span>
@@ -176,8 +176,8 @@ export default function NoteEditor() {
           
           {breadcrumbs.length > 0 && (
             <div className="flex items-center">
-              <span className="mx-1 text-gray-400">/</span>
-              <span className="px-2 py-1 font-medium text-primary bg-blue-50 rounded">
+              <span className="mx-1 text-gray-500">/</span>
+              <span className="px-2 py-1 font-medium text-primary bg-gray-800 rounded">
                 {selectedNote.content.split('\n')[0].slice(0, 20)}
                 {selectedNote.content.length > 20 ? '...' : ''}
               </span>
@@ -186,8 +186,8 @@ export default function NoteEditor() {
           
           {breadcrumbs.length === 0 && (
             <div className="flex items-center">
-              <span className="mx-1 text-gray-400">/</span>
-              <span className="px-2 py-1 font-medium text-primary bg-blue-50 rounded">
+              <span className="mx-1 text-gray-500">/</span>
+              <span className="px-2 py-1 font-medium text-primary bg-gray-800 rounded">
                 {selectedNote.content.split('\n')[0].slice(0, 20)}
                 {selectedNote.content.length > 20 ? '...' : ''}
               </span>
@@ -212,18 +212,18 @@ export default function NoteEditor() {
       </div>
 
       {/* Compact note editor form */}
-      <div className="p-3 flex-1 overflow-auto">
-        <div className="bg-white rounded-lg shadow-sm p-3 mx-auto note-editor-form">
+      <div className="p-3 flex-1 overflow-auto bg-gray-950">
+        <div className="bg-gray-900 rounded-lg shadow-md border border-gray-800 p-3 mx-auto note-editor-form">
           {/* Content area - more compact now */}
           <div className="mb-3">
-            <Label htmlFor="noteContent" className="block text-xs font-medium text-gray-500 mb-1">
+            <Label htmlFor="noteContent" className="block text-xs font-medium text-gray-400 mb-1">
               Edit Content
             </Label>
             <Textarea 
               id="noteContent" 
               ref={contentRef}
               rows={6} 
-              className="w-full p-2 text-sm"
+              className="w-full p-2 text-sm bg-gray-850 border-gray-700 focus:border-primary"
               placeholder="Enter note content..."
               value={content}
               onChange={handleContentChange}
@@ -232,18 +232,18 @@ export default function NoteEditor() {
           </div>
           
           {/* Optional fields in tabs */}
-          <div className="border-t border-gray-100 pt-2 mt-2">
+          <div className="border-t border-gray-800 pt-2 mt-2">
             <div className="grid grid-cols-1 gap-2">
               {/* YouTube URL - more compact */}
               <div className="flex items-center space-x-2">
                 <div className="flex-shrink-0">
-                  <Youtube size={14} className="text-gray-500" />
+                  <Youtube size={14} className="text-gray-400" />
                 </div>
                 <Input
                   type="url"
                   id="youtubeUrl"
                   ref={youtubeUrlRef}
-                  className="h-8 text-xs"
+                  className="h-8 text-xs bg-gray-850 border-gray-700"
                   placeholder="YouTube URL (optional)"
                   value={youtubeUrl}
                   onChange={handleYoutubeUrlChange}
@@ -254,13 +254,13 @@ export default function NoteEditor() {
               {/* External URL - more compact */}
               <div className="flex items-center space-x-2">
                 <div className="flex-shrink-0">
-                  <Link size={14} className="text-gray-500" />
+                  <Link size={14} className="text-gray-400" />
                 </div>
                 <Input
                   type="url"
                   id="externalUrl"
                   ref={externalUrlRef}
-                  className="h-8 text-xs"
+                  className="h-8 text-xs bg-gray-850 border-gray-700"
                   placeholder="Link URL (optional)"
                   value={externalUrl}
                   onChange={handleExternalUrlChange}
@@ -275,7 +275,7 @@ export default function NoteEditor() {
                     type="text"
                     id="urlDisplayText"
                     ref={urlDisplayTextRef}
-                    className="h-8 text-xs"
+                    className="h-8 text-xs bg-gray-850 border-gray-700"
                     placeholder="Link text (optional)"
                     value={urlDisplayText}
                     onChange={handleUrlDisplayTextChange}
@@ -288,12 +288,12 @@ export default function NoteEditor() {
               <div className="flex items-center space-x-2 mt-1">
                 <Checkbox
                   id="isDiscussion"
-                  className="h-3 w-3"
+                  className="h-3 w-3 border-gray-600"
                   checked={isDiscussion}
                   onCheckedChange={handleDiscussionChange}
                   onBlur={handleBlur}
                 />
-                <Label htmlFor="isDiscussion" className="text-xs text-gray-600">
+                <Label htmlFor="isDiscussion" className="text-xs text-gray-400">
                   Mark as discussion
                 </Label>
               </div>
@@ -302,8 +302,8 @@ export default function NoteEditor() {
 
           {/* Links Section */}
           {(youtubeUrl || externalUrl) && (
-            <div className="mt-3 border-t border-gray-100 pt-2">
-              <div className="text-xs text-gray-500 flex justify-between items-center mb-1">
+            <div className="mt-3 border-t border-gray-800 pt-2">
+              <div className="text-xs text-gray-400 flex justify-between items-center mb-1">
                 <span>Links</span>
                 <div className="flex space-x-2">
                   {youtubeUrl && (
@@ -311,7 +311,7 @@ export default function NoteEditor() {
                       href={youtubeUrl} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="inline-flex items-center text-red-600 hover:text-red-700 text-xs"
+                      className="inline-flex items-center text-red-400 hover:text-red-300 text-xs"
                     >
                       <Youtube size={12} className="mr-1" />
                       <span>YouTube</span>
@@ -323,7 +323,7 @@ export default function NoteEditor() {
                       href={externalUrl} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="inline-flex items-center text-blue-600 hover:text-blue-700 text-xs"
+                      className="inline-flex items-center text-blue-400 hover:text-blue-300 text-xs"
                     >
                       <Link size={12} className="mr-1" />
                       <span>{urlDisplayText || "Link"}</span>

@@ -83,9 +83,9 @@ export default function DropZone({ index, parentId = null }: DropZoneProps) {
       <div className={cn(
         "absolute inset-x-0 top-1/2 transform -translate-y-1/2 h-[1px] transition-all duration-200",
         // Normal state: barely visible line
-        !isOver && "bg-gray-200 opacity-30",
+        !isOver && "bg-gray-500 opacity-25",
         // Active drop target: prominent indicator without changing size
-        isOver && canDrop && "bg-primary h-[2px] opacity-70"
+        isOver && canDrop && "bg-primary h-[2px] opacity-80"
       )} />
     </div>
   );
