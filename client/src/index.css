@@ -65,4 +65,30 @@
     width: 1px;
     @apply bg-gray-700 opacity-40;
   }
+  
+  /* Mobile optimizations */
+  .mobile-touch-scrolling {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Touch target sizing for better mobile accessibility */
+  .touch-target {
+    @apply p-2;
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Hide elements on small screens */
+  .hide-on-mobile {
+    @apply hidden sm:block;
+  }
+  
+  /* Responsive text adjustments */
+  .mobile-text-base {
+    @apply text-sm sm:text-base;
+  }
+  
+  .mobile-text-sm {
+    @apply text-xs sm:text-sm;
+  }
 }

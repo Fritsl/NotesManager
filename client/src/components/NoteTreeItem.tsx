@@ -270,7 +270,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         <div 
           ref={ref}
           className={cn(
-            "note-item note-card border rounded-md p-2 transition flex items-start group shadow-sm hover:shadow relative",
+            "note-item note-card border rounded-md p-2 sm:p-2 transition flex items-start group shadow-sm hover:shadow relative",
             // Use the level color themes for consistent styling with the header buttons
             levelColors[Math.min(level, levelColors.length - 1)].bg,
             `border-l-[4px] ${levelColors[Math.min(level, levelColors.length - 1)].border}`,
@@ -301,7 +301,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             isOver && isOverRight && "bg-primary opacity-80 w-4"
           )}></div>
           
-          <div className="drag-handle mr-2 text-gray-400 hover:text-gray-600 cursor-grab">
+          {/* Drag handle - larger touch target on mobile */}
+          <div className="drag-handle mr-1 sm:mr-2 text-gray-400 hover:text-gray-600 cursor-grab touch-target flex items-center justify-center">
             <GripVertical size={16} />
           </div>
           
@@ -309,16 +310,16 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             <Button
               variant="ghost" 
               size="sm" 
-              className="h-5 min-w-[1.5rem] p-0 mr-1 flex items-center justify-start text-gray-500 hover:text-gray-700"
+              className="h-6 w-6 min-w-[1.5rem] p-0 mr-1 flex items-center justify-center text-gray-500 hover:text-gray-700 touch-target"
               onClick={(e) => {
                 e.stopPropagation();
                 toggleExpand(note.id);
               }}
             >
               {isExpanded 
-                ? <ChevronDown size={14} /> 
+                ? <ChevronDown size={16} /> 
                 : <div className="flex items-center">
-                    <ChevronRight size={14} />
+                    <ChevronRight size={16} />
                     {note.children.length > 0 && (
                       <span className="ml-1 text-xs text-gray-400 font-mono">{note.children.length}</span>
                     )}
@@ -332,8 +333,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           <div className="flex-1 overflow-hidden">
             {/* Title line - larger and more prominent with position badge */}
             <div className="flex items-center">
-              <div className={`text-sm font-medium ${levelColors[Math.min(level, levelColors.length - 1)].text} truncate flex-1`}>{displayContent}</div>
-              <div className="text-xs text-gray-300 bg-gray-800 rounded px-1.5 py-0.5 ml-2">pos: {note.position}</div>
+              <div className={`mobile-text-base font-medium ${levelColors[Math.min(level, levelColors.length - 1)].text} truncate flex-1`}>{displayContent}</div>
+              <div className="mobile-text-sm text-gray-300 bg-gray-800 rounded px-1.5 py-0.5 ml-2">pos: {note.position}</div>
             </div>
             
             {/* Multiple preview lines */}
@@ -350,7 +351,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             
             {/* Badges for special attributes */}
             {(note.youtube_url || note.url) && (
-              <div className="flex space-x-2 mt-1">
+              <div className="flex flex-wrap gap-2 mt-1">
                 {note.youtube_url && (
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-950 text-red-300 border border-red-700">
                     <Youtube size={12} className="mr-1" />
@@ -368,18 +369,19 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             )}
           </div>
           
-          <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition">
+          {/* Action buttons - always visible on mobile, larger touch targets */}
+          <div className="flex space-x-1 sm:opacity-0 sm:group-hover:opacity-100 transition">
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 text-gray-400 hover:text-primary p-1"
+              className="h-8 w-8 text-gray-400 hover:text-primary p-1 touch-target"
               title="Add Child"
               onClick={(e) => {
                 e.stopPropagation();
                 addNote(note);
               }}
             >
-              <Plus size={14} />
+              <Plus size={16} />
             </Button>
             
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -387,13 +389,13 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 text-gray-400 hover:text-red-500 p-1"
+                  className="h-8 w-8 text-gray-400 hover:text-red-500 p-1 touch-target"
                   title="Delete"
                   onClick={(e) => {
                     e.stopPropagation();
                   }}
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={16} />
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>

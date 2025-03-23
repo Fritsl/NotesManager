@@ -125,41 +125,41 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-gray-950 border-b border-gray-800 py-2 px-4 flex justify-between items-center">
+    <header className="bg-gray-950 border-b border-gray-800 py-2 px-2 sm:px-4 flex justify-between items-center">
       {hasActiveProject ? (
         <>
-          <div className="flex items-center space-x-2">
-            <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 sm:space-x-2">
+            <div className="flex items-center">
               {!isEditingProjectName ? (
                 <div 
                   className="flex items-center cursor-pointer group"
                   onClick={startEditing}
                 >
-                  <h1 className="text-base font-semibold text-gray-100 flex items-center">
-                    <span className="text-gray-400">Project:</span>
-                    <span className="ml-1 max-w-[250px] truncate group-hover:text-primary transition-colors">
+                  <h1 className="mobile-text-base font-semibold text-gray-100 flex items-center">
+                    <span className="text-gray-400 hidden sm:inline">Project:</span>
+                    <span className="ml-0 sm:ml-1 max-w-[120px] sm:max-w-[250px] truncate group-hover:text-primary transition-colors">
                       {currentProjectName}
                     </span>
-                    <Edit2 className="h-3.5 w-3.5 ml-1.5 opacity-0 group-hover:opacity-100 text-gray-400 transition-opacity" />
+                    <Edit2 className="h-3.5 w-3.5 ml-1 opacity-0 group-hover:opacity-100 text-gray-400 transition-opacity" />
                   </h1>
                 </div>
               ) : (
                 <div className="flex items-center">
-                  <span className="text-gray-400 text-base mr-1">Project:</span>
+                  <span className="text-gray-400 text-sm sm:text-base mr-1 hidden sm:inline">Project:</span>
                   <div className="flex items-center">
                     <Input
                       ref={projectNameInputRef}
                       value={editedProjectName}
                       onChange={(e) => setEditedProjectName(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      className="h-7 py-0 text-base font-semibold bg-gray-800 border-gray-700 focus-visible:ring-primary text-gray-100"
+                      className="h-7 py-0 w-28 sm:w-auto text-sm sm:text-base font-semibold bg-gray-800 border-gray-700 focus-visible:ring-primary text-gray-100"
                       maxLength={50}
                     />
                     <div className="flex ml-1">
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-6 w-6 p-0 text-green-500 hover:text-green-400 hover:bg-gray-800"
+                        className="h-6 w-6 p-0 text-green-500 hover:text-green-400 hover:bg-gray-800 touch-target"
                         onClick={saveProjectName}
                       >
                         <Check className="h-4 w-4" />
@@ -167,7 +167,7 @@ export default function Header() {
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-6 w-6 p-0 text-red-500 hover:text-red-400 hover:bg-gray-800"
+                        className="h-6 w-6 p-0 text-red-500 hover:text-red-400 hover:bg-gray-800 touch-target"
                         onClick={cancelEditing}
                       >
                         <X className="h-4 w-4" />
@@ -180,7 +180,7 @@ export default function Header() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 p-0 ml-1">
+                  <Button variant="ghost" size="icon" className="h-7 w-7 p-0 ml-1 hidden sm:flex">
                     <Info className="h-4 w-4 text-gray-400 hover:text-primary" />
                   </Button>
                 </TooltipTrigger>
@@ -198,9 +198,9 @@ export default function Header() {
               </Tooltip>
             </TooltipProvider>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center">
             {/* Level Controls */}
-            <div className="flex items-center mr-2 border-r pr-3 border-gray-700 flex-wrap">
+            <div className="hidden sm:flex items-center mr-2 border-r pr-3 border-gray-700 flex-wrap">
               {/* Create buttons for L0 through maxDepth */}
               {Array.from({ length: maxDepth + 1 }, (_, i) => i).map(level => {
                 // Get the color theme for this level - now directly using the level as index
@@ -227,12 +227,12 @@ export default function Header() {
             </div>
             
             {/* Expand/Collapse Controls */}
-            <div className="flex items-center mr-2 border-r pr-3 border-gray-700">
+            <div className="hidden sm:flex items-center mr-2 border-r pr-3 border-gray-700">
               <Button 
                 variant="ghost" 
                 size="icon"
                 onClick={collapseAll}
-                className="h-7 w-7"
+                className="h-7 w-7 touch-target"
                 title="Collapse All"
               >
                 <ChevronUp className="h-4 w-4" />
@@ -242,7 +242,7 @@ export default function Header() {
                 variant="ghost" 
                 size="icon"
                 onClick={expandAll}
-                className="h-7 w-7"
+                className="h-7 w-7 touch-target"
                 title="Expand All"
               >
                 <ChevronDown className="h-4 w-4" />
@@ -254,20 +254,76 @@ export default function Header() {
               variant="outline"
               size="sm"
               onClick={() => addNote(null)}
-              className="h-7 mr-2"
+              className="h-7 mr-2 px-2 sm:px-3"
             >
-              <PlusCircle className="h-3.5 w-3.5 mr-1" />
-              Add Note
+              <PlusCircle className="h-3.5 w-3.5 sm:mr-1" />
+              <span className="hidden sm:inline">Add Note</span>
             </Button>
             
             {/* Consolidated Hamburger Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button variant="ghost" size="icon" className="h-8 w-8 touch-target">
                   <Menu className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
+                {/* Mobile-only Level Controls */}
+                <div className="sm:hidden p-2 border-b border-gray-700">
+                  <div className="text-xs text-gray-400 mb-1">Level Controls</div>
+                  <div className="flex flex-wrap gap-1">
+                    {Array.from({ length: maxDepth + 1 }, (_, i) => i).slice(0, 5).map(level => {
+                      const colorTheme = levelColors[Math.min(level, levelColors.length - 1)];
+                      return (
+                        <Button 
+                          key={level}
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            expandToLevel(level);
+                            // Close dropdown on mobile after selecting
+                            document.body.click();
+                          }}
+                          className={cn(
+                            "h-8 w-8 p-0",
+                            currentLevel === level 
+                              ? `${colorTheme.highlight} border-l-[3px] ${colorTheme.border} ${colorTheme.text}`
+                              : `border border-gray-700 hover:${colorTheme.highlight} hover:${colorTheme.text} hover:border-l-[3px] hover:${colorTheme.border}`
+                          )}
+                        >
+                          {colorTheme.label}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex justify-between mt-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        collapseAll();
+                        document.body.click();
+                      }}
+                      className="h-8 px-2 text-xs"
+                    >
+                      <ChevronUp className="h-3 w-3 mr-1" />
+                      Collapse All
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        expandAll();
+                        document.body.click();
+                      }}
+                      className="h-8 px-2 text-xs"
+                    >
+                      <ChevronDown className="h-3 w-3 mr-1" />
+                      Expand All
+                    </Button>
+                  </div>
+                </div>
+
                 {/* File Operations */}
                 <DropdownMenuItem onClick={() => {
                   // Create a new project
@@ -322,7 +378,7 @@ export default function Header() {
             {/* Consolidated Hamburger Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 ml-2">
+                <Button variant="ghost" size="icon" className="h-8 w-8 touch-target">
                   <Menu className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
