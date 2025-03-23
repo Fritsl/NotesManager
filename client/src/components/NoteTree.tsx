@@ -17,6 +17,9 @@ export default function NoteTree() {
     currentLevel,
     currentProjectName
   } = useNotes();
+  
+  // Debug current project name
+  console.log("NoteTree - Current Project Name:", currentProjectName);
 
   // Check if a node is expanded
   const isExpanded = (noteId: string) => {
@@ -94,10 +97,7 @@ export default function NoteTree() {
 
   return (
     <div className="p-2">
-      {/* Project name header */}
-      <div className="mb-4 pb-2 border-b">
-        <h2 className="text-lg font-semibold text-center">{currentProjectName}</h2>
-      </div>
+      {/* Remove project name header from here since it's now in the main header */}
       
       <div className="relative">
         {/* First drop zone for moving items to beginning */}

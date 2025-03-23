@@ -38,15 +38,23 @@ export default function Header() {
     collapseAll, 
     expandToLevel, 
     currentLevel,
-    maxDepth
+    maxDepth,
+    currentProjectName
   } = useNotes();
+  
+  // Debug
+  console.log("Header - Current Project Name:", currentProjectName);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
 
   return (
     <header className="bg-white border-b border-gray-200 py-2 px-4 flex justify-between items-center">
       <div className="flex items-center space-x-2">
-        <h1 className="text-base font-semibold text-gray-800">Notes Tree</h1>
+        <div className="flex items-center space-x-2">
+          <h1 className="text-base font-semibold text-gray-800">
+            <span className="text-gray-600">Project:</span> {currentProjectName}
+          </h1>
+        </div>
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
