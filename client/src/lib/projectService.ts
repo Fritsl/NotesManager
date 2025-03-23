@@ -13,8 +13,9 @@ export interface Project {
 export async function getProjects(): Promise<Project[]> {
   try {
     const { data, error } = await supabase
-      .from('projects')
+      .from('settings')
       .select('*')
+      .is('deleted_at', null) // Only get non-deleted projects
       .order('updated_at', { ascending: false });
 
     if (error) {
@@ -22,7 +23,17 @@ export async function getProjects(): Promise<Project[]> {
       return [];
     }
 
-    return data || [];
+    // Map settings table fields to Project interface
+    const projects = data?.map(item => ({
+      id: item.id,
+      name: item.title || 'Untitled Project',
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+      user_id: item.user_id,
+      data: item.metadata?.notes_data || { notes: [] }
+    })) || [];
+
+    return projects;
   } catch (error) {
     console.error('Error in getProjects:', error);
     return [];
@@ -32,9 +43,10 @@ export async function getProjects(): Promise<Project[]> {
 export async function getProject(id: string): Promise<Project | null> {
   try {
     const { data, error } = await supabase
-      .from('projects')
+      .from('settings')
       .select('*')
       .eq('id', id)
+      .is('deleted_at', null)
       .single();
 
     if (error) {
@@ -42,7 +54,19 @@ export async function getProject(id: string): Promise<Project | null> {
       return null;
     }
 
-    return data;
+    // Map settings table fields to Project interface
+    if (data) {
+      return {
+        id: data.id,
+        name: data.title || 'Untitled Project',
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        user_id: data.user_id,
+        data: data.metadata?.notes_data || { notes: [] }
+      };
+    }
+
+    return null;
   } catch (error) {
     console.error('Error in getProject:', error);
     return null;
@@ -58,12 +82,18 @@ export async function createProject(name: string, notesData: NotesData): Promise
       return null;
     }
     
+    const now = new Date().toISOString();
+    
+    // Format data for settings table
     const { data, error } = await supabase
-      .from('projects')
+      .from('settings')
       .insert({
-        name,
+        title: name,
         user_id: userData.user.id,
-        data: notesData,
+        created_at: now,
+        updated_at: now,
+        last_modified_at: now,
+        metadata: { notes_data: notesData }
       })
       .select()
       .single();
@@ -73,7 +103,15 @@ export async function createProject(name: string, notesData: NotesData): Promise
       return null;
     }
 
-    return data;
+    // Map settings data to Project interface
+    return {
+      id: data.id,
+      name: data.title,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      user_id: data.user_id,
+      data: data.metadata?.notes_data || { notes: [] }
+    };
   } catch (error) {
     console.error('Error in createProject:', error);
     return null;
@@ -82,14 +120,18 @@ export async function createProject(name: string, notesData: NotesData): Promise
 
 export async function updateProject(id: string, name: string, notesData: NotesData): Promise<Project | null> {
   try {
+    const now = new Date().toISOString();
+    
     const { data, error } = await supabase
-      .from('projects')
+      .from('settings')
       .update({
-        name,
-        data: notesData,
-        updated_at: new Date().toISOString(),
+        title: name,
+        updated_at: now,
+        last_modified_at: now,
+        metadata: { notes_data: notesData }
       })
       .eq('id', id)
+      .is('deleted_at', null)
       .select()
       .single();
 
@@ -98,7 +140,15 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
       return null;
     }
 
-    return data;
+    // Map settings data to Project interface
+    return {
+      id: data.id,
+      name: data.title,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      user_id: data.user_id,
+      data: data.metadata?.notes_data || { notes: [] }
+    };
   } catch (error) {
     console.error('Error in updateProject:', error);
     return null;
@@ -107,9 +157,15 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
 
 export async function deleteProject(id: string): Promise<boolean> {
   try {
+    // Use soft delete (set deleted_at) instead of actual deletion
+    const now = new Date().toISOString();
+    
     const { error } = await supabase
-      .from('projects')
-      .delete()
+      .from('settings')
+      .update({
+        deleted_at: now,
+        updated_at: now
+      })
       .eq('id', id);
 
     if (error) {

@@ -12,30 +12,97 @@ type Json =
 interface Database {
   public: {
     Tables: {
-      projects: {
+      settings: {
         Row: {
           id: string;
           created_at: string;
           updated_at: string;
-          name: string;
+          last_modified_at: string;
+          deleted_at: string | null;
+          title: string;
+          description?: string;
           user_id: string;
-          data: Json;
+          metadata: Json;
         };
         Insert: {
           id?: string;
           created_at?: string;
           updated_at?: string;
-          name: string;
+          last_modified_at?: string;
+          deleted_at?: string | null;
+          title: string;
+          description?: string;
           user_id: string;
-          data: Json;
+          metadata: Json;
         };
         Update: {
           id?: string;
           created_at?: string;
           updated_at?: string;
-          name?: string;
+          last_modified_at?: string;
+          deleted_at?: string | null;
+          title?: string;
+          description?: string;
           user_id?: string;
-          data?: Json;
+          metadata?: Json;
+        };
+      };
+      notes: {
+        Row: {
+          id: string;
+          user_id: string;
+          project_id: string;
+          parent_id: string | null;
+          position: number;
+          content: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          project_id: string;
+          parent_id?: string | null;
+          position: number;
+          content: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          project_id?: string;
+          parent_id?: string | null;
+          position?: number;
+          content?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      note_images: {
+        Row: {
+          id: string;
+          note_id: string;
+          storage_path: string;
+          url: string;
+          position: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          note_id: string;
+          storage_path: string;
+          url: string;
+          position: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          note_id?: string;
+          storage_path?: string;
+          url?: string;
+          position?: number;
+          created_at?: string;
         };
       };
     };
