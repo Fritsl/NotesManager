@@ -594,26 +594,33 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   }, [notes, maxDepth]);
 
   // Create a new project with the given name
-  const createNewProject = useCallback(async (name: string) => {
+  const createNewProject = useCallback(async (baseName: string) => {
+    // Use the timestamp to ensure a unique project name
+    const timestamp = new Date().toISOString().replace(/[-:.]/g, '').slice(0, 14);
+    const uniqueName = `${baseName} ${timestamp}`;
+    
     // Initialize empty project
     setNotes([]);
     setSelectedNote(null);
     setBreadcrumbs([]);
-    setCurrentProjectName(name);
+    setCurrentProjectName(baseName); // Use base name for UI display
     setHasActiveProject(true);
     
     // Create project in database
     try {
-      console.log("Creating new project in database:", name);
+      console.log("Creating new project in database with unique name:", uniqueName);
       const emptyProject = { notes: [] };
-      const result = await createProject(name, emptyProject);
+      const result = await createProject(uniqueName, emptyProject);
       
       if (result) {
         console.log("Project saved to database:", result);
         toast({
           title: "Project Created",
-          description: `New project "${name}" has been created and saved`,
+          description: `New project "${baseName}" has been created and saved`,
         });
+        
+        // Update UI with the saved project name
+        setCurrentProjectName(result.name);
       } else {
         console.error("Failed to save project to database");
         toast({
