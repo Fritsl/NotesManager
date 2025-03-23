@@ -183,7 +183,8 @@ export default function Header() {
                   <ul className="list-disc ml-3 space-y-0.5">
                     <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Z</kbd> Collapse one level</li>
                     <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">X</kbd> Expand one more level</li>
-                    <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Ctrl+1-5</kbd> Jump to level</li>
+                    <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Ctrl+0</kbd> Collapse all (L0)</li>
+                    <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Ctrl+1-5</kbd> Jump to levels L1-L5</li>
                     <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Ctrl+E</kbd> Expand all</li>
                     <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Ctrl+C</kbd> Collapse all</li>
                   </ul>
@@ -194,11 +195,10 @@ export default function Header() {
           <div className="flex items-center space-x-2">
             {/* Level Controls */}
             <div className="flex items-center mr-2 border-r pr-3 border-gray-700 flex-wrap">
-              {Array.from({ length: Math.max(1, maxDepth) }, (_, i) => i + 1).map(level => {
-                // Get the color theme for this level
-                // Use level-1 to match colors with actual hierarchy level (0-based index)
-                // This ensures L1 button shows L1 colors from the levelColors array
-                const colorTheme = levelColors[level - 1];
+              {/* Create buttons for L0 through maxDepth */}
+              {Array.from({ length: maxDepth + 1 }, (_, i) => i).map(level => {
+                // Get the color theme for this level - now directly using the level as index
+                const colorTheme = levelColors[Math.min(level, levelColors.length - 1)];
                 return (
                   <Button 
                     key={level}
@@ -207,14 +207,14 @@ export default function Header() {
                     onClick={() => expandToLevel(level)}
                     className={cn(
                       "h-7 w-7 p-0",
-                      level > 1 ? "ml-1" : "",
-                      // Apply the level color
+                      level > 0 ? "ml-1" : "", // Spacing between buttons
+                      // Apply the level color - now checking if currentLevel matches exactly
                       currentLevel === level 
                         ? `${colorTheme.highlight} border-l-[3px] ${colorTheme.border} ${colorTheme.text}`
                         : `border border-gray-700 hover:${colorTheme.highlight} hover:${colorTheme.text} hover:border-l-[3px] hover:${colorTheme.border}`
                     )}
                   >
-                    L{level}
+                    {colorTheme.label} {/* Use the label from the color theme */}
                   </Button>
                 );
               })}

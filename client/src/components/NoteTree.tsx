@@ -37,8 +37,12 @@ export default function NoteTree() {
   
   // Collapse one level
   const collapseOneLevel = () => {
+    // Don't allow collapsing below level 0 (fully collapsed)
     if (currentLevel > 0) {
       expandToLevel(currentLevel - 1);
+    } else {
+      // If already at level 0, ensure it's properly collapsed
+      expandToLevel(0);
     }
   };
   
