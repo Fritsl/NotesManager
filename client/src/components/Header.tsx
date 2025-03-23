@@ -219,12 +219,14 @@ export default function Header() {
                       expandToLevel(level);
                     }}
                     className={cn(
-                      "h-7 w-7 p-0 font-bold",
+                      "h-7 w-7 p-0 font-bold text-white",
                       level > 0 ? "ml-1" : "", // Spacing between buttons
-                      // Apply the level color - checking if currentLevel matches exactly
+                      // Apply the level color - now with colors always showing but highlighted when active
+                      `${colorTheme.bg} border ${colorTheme.border}`,
+                      // Additional styling when the button is active
                       currentLevel === level 
-                        ? `${colorTheme.highlight} border-2 ${colorTheme.border} ${colorTheme.text} shadow-md`
-                        : `border border-gray-700 hover:${colorTheme.highlight} hover:${colorTheme.text} hover:border-2 hover:${colorTheme.border}`
+                        ? `${colorTheme.highlight} border-2 shadow-md` 
+                        : `opacity-70 hover:opacity-100 hover:${colorTheme.highlight} hover:border-2`
                     )}
                   >
                     {colorTheme.label} {/* Use the label from the color theme */}
@@ -293,10 +295,13 @@ export default function Header() {
                             document.body.click();
                           }}
                           className={cn(
-                            "h-8 w-8 p-0 font-bold",
+                            "h-8 w-8 p-0 font-bold text-white",
+                            // Apply the level color - now with colors always showing but highlighted when active
+                            `${colorTheme.bg} border ${colorTheme.border}`,
+                            // Additional styling when the button is active
                             currentLevel === level 
-                              ? `${colorTheme.highlight} border-2 ${colorTheme.border} ${colorTheme.text} shadow-md`
-                              : `border border-gray-700 hover:${colorTheme.highlight} hover:${colorTheme.text} hover:border-2 hover:${colorTheme.border}`
+                              ? `${colorTheme.highlight} border-2 shadow-md` 
+                              : `opacity-70 hover:opacity-100 hover:${colorTheme.highlight} hover:border-2`
                           )}
                         >
                           {colorTheme.label}
