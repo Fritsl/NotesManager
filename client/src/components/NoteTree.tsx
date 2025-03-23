@@ -3,7 +3,7 @@ import { useNotes } from "@/context/NotesContext";
 import NoteTreeItem from "./NoteTreeItem";
 import DropZone from "./DropZone";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, FilePlus } from "lucide-react";
 
 export default function NoteTree() {
   const { 
@@ -15,7 +15,8 @@ export default function NoteTree() {
     collapseAll, 
     expandToLevel, 
     currentLevel,
-    currentProjectName
+    currentProjectName,
+    hasActiveProject
   } = useNotes();
   
   // Debug current project name
@@ -97,41 +98,41 @@ export default function NoteTree() {
 
   return (
     <div className="p-2">
-      {/* Remove project name header from here since it's now in the main header */}
-      
-      <div className="relative">
-        {/* First drop zone for moving items to beginning */}
-        {notes.length > 0 && <DropZone index={0} />}
-        
-        {/* Map notes and add drop zones between each */}
-        {notes.map((note, index) => (
-          <div key={note.id}>
-            <NoteTreeItem
-              note={note}
-              level={0}
-              toggleExpand={toggleExpand}
-              isExpanded={isExpanded(note.id)}
-              index={index}
-              isRoot={true}
-            />
-            <DropZone index={index + 1} />
-          </div>
-        ))}
-        
-        {notes.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <p className="mb-4">No notes yet in "{currentProjectName}"</p>
-            <Button
-              variant="outline"
-              onClick={() => addNote(null)}
-              className="flex items-center mx-auto"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add your first note
-            </Button>
-          </div>
-        )}
-      </div>
+      {hasActiveProject && (
+        <div className="relative">
+          {/* First drop zone for moving items to beginning */}
+          {notes.length > 0 && <DropZone index={0} />}
+          
+          {/* Map notes and add drop zones between each */}
+          {notes.map((note, index) => (
+            <div key={note.id}>
+              <NoteTreeItem
+                note={note}
+                level={0}
+                toggleExpand={toggleExpand}
+                isExpanded={isExpanded(note.id)}
+                index={index}
+                isRoot={true}
+              />
+              <DropZone index={index + 1} />
+            </div>
+          ))}
+          
+          {notes.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              <p className="mb-4">No notes yet in "{currentProjectName}"</p>
+              <Button
+                variant="outline"
+                onClick={() => addNote(null)}
+                className="flex items-center mx-auto"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add your first note
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

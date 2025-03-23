@@ -5,12 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Save, Youtube, Link, CheckCircle2 } from "lucide-react";
+import { Save, Youtube, Link, CheckCircle2, FileEdit } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function NoteEditor() {
-  const { selectedNote, updateNote, breadcrumbs } = useNotes();
+  const { selectedNote, updateNote, breadcrumbs, hasActiveProject } = useNotes();
   const { toast } = useToast();
   
   const [content, setContent] = useState<string>("");
@@ -149,10 +149,24 @@ export default function NoteEditor() {
     }, 1500);
   };
 
+  if (!hasActiveProject) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-6">
+        <div className="text-center">
+          <FileEdit className="h-12 w-12 mx-auto mb-3 text-gray-500" />
+          <p className="text-gray-500">No active project</p>
+        </div>
+      </div>
+    );
+  }
+  
   if (!selectedNote) {
     return (
       <div className="flex-1 flex items-center justify-center p-6">
-        {/* Empty editor state - no message shown */}
+        <div className="text-center">
+          <FileEdit className="h-12 w-12 mx-auto mb-3 text-gray-500" />
+          <p className="text-gray-500">Select a note to edit</p>
+        </div>
       </div>
     );
   }

@@ -8,6 +8,8 @@ import {
   DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { X, FileUp, AlertCircle } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { NotesData } from "@/types/notes";
@@ -18,18 +20,24 @@ interface ImportModalProps {
 }
 
 export default function ImportModal({ onClose }: ImportModalProps) {
-  const { importNotes } = useNotes();
+  const { importNotes, setHasActiveProject, currentProjectName } = useNotes();
   const { toast } = useToast();
   const [fileName, setFileName] = useState<string | null>(null);
   const [isHovering, setIsHovering] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [projectName, setProjectName] = useState<string>(
+    currentProjectName || 
+    (fileName ? fileName.replace(/\.json$/, '') : 'Imported Project')
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     
+    const baseName = file.name.replace(/\.json$/, '');
     setFileName(file.name);
+    setProjectName(baseName); // Auto-set project name based on file name
     setError(null);
 
     const reader = new FileReader();
@@ -48,8 +56,9 @@ export default function ImportModal({ onClose }: ImportModalProps) {
           fileInputRef.current.value = "";
         }
         
-        // Import the notes
-        importNotes(parsedData);
+        // Import the notes with project name and set active
+        setHasActiveProject(true); // Set project as active
+        importNotes(parsedData, projectName);
         onClose();
       } catch (error) {
         setError(error instanceof Error ? error.message : "Invalid JSON format");
@@ -87,7 +96,9 @@ export default function ImportModal({ onClose }: ImportModalProps) {
       return;
     }
     
+    const baseName = file.name.replace(/\.json$/, '');
     setFileName(file.name);
+    setProjectName(baseName); // Auto-set project name based on file name
     setError(null);
     
     const reader = new FileReader();
@@ -101,8 +112,9 @@ export default function ImportModal({ onClose }: ImportModalProps) {
           throw new Error("Invalid notes format. Expected { notes: [] }");
         }
         
-        // Import the notes
-        importNotes(parsedData);
+        // Import the notes with project name and set active
+        setHasActiveProject(true); // Set project as active
+        importNotes(parsedData, projectName);
         onClose();
       } catch (error) {
         setError(error instanceof Error ? error.message : "Invalid JSON format");
@@ -162,6 +174,24 @@ export default function ImportModal({ onClose }: ImportModalProps) {
           </label>
         </div>
         
+        {fileName && !error && (
+          <div className="mt-4">
+            <Label htmlFor="projectName" className="text-sm font-medium text-gray-700">
+              Project Name
+            </Label>
+            <Input
+              id="projectName"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              className="mt-1"
+              placeholder="Enter project name"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              The project will be created with this name
+            </p>
+          </div>
+        )}
+        
         <div className="mt-2 text-sm text-gray-500">
           <p>File should be a valid JSON with the notes array structure.</p>
         </div>
@@ -172,10 +202,30 @@ export default function ImportModal({ onClose }: ImportModalProps) {
           </Button>
           <Button 
             variant="default" 
-            disabled={!fileName || !!error}
+            disabled={!fileName || !!error || !projectName.trim()}
             onClick={() => {
-              if (fileName && !error) {
-                onClose();
+              if (fileName && !error && projectName.trim()) {
+                // This re-reads the file, but the previous handlers already
+                // validated it should be OK. In a production app, we might
+                // store the parsed data to avoid re-reading.
+                const file = fileInputRef.current?.files?.[0];
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onload = (e) => {
+                    try {
+                      const content = e.target?.result as string;
+                      const parsedData = JSON.parse(content) as NotesData;
+                      
+                      // Import with project name and set active
+                      setHasActiveProject(true);
+                      importNotes(parsedData, projectName);
+                      onClose();
+                    } catch (error) {
+                      // Error handling is already done in the initial read
+                    }
+                  };
+                  reader.readAsText(file);
+                }
               }
             }}
           >
