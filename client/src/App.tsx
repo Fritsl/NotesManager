@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import NotesEditor from "@/pages/NotesEditor";
 import { NotesProvider } from "@/context/NotesContext";
+import { AuthProvider } from "@/context/AuthContext";
 
 function Router() {
   return (
@@ -18,10 +19,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <NotesProvider>
-        <Router />
-        <Toaster />
-      </NotesProvider>
+      <AuthProvider>
+        <NotesProvider>
+          <Router />
+          <Toaster />
+        </NotesProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

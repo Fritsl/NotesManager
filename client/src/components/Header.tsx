@@ -14,6 +14,7 @@ import {
 import { useNotes } from "@/context/NotesContext";
 import ImportModal from "@/components/ImportModal";
 import ExportModal from "@/components/ExportModal";
+import UserMenu from "@/components/UserMenu";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -147,6 +148,11 @@ export default function Header() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        
+        {/* User Menu */}
+        <div className="ml-2">
+          <UserMenu />
+        </div>
       </div>
 
       {showImportModal && (
