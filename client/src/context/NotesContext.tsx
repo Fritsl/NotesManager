@@ -691,6 +691,21 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     }
   }, [toast, setCurrentProjectId, setCurrentProjectName]);
   
+  // Debug info function to examine project state
+  const debugInfo = useCallback(() => {
+    return {
+      hasActiveProject,
+      currentProjectId,
+      currentProjectName,
+      noteCount: notes.length,
+      selectedNoteId: selectedNote?.id || null,
+      firstNoteId: notes.length > 0 ? notes[0].id : null,
+      firstNoteContent: notes.length > 0 ? notes[0].content : null,
+      expandedNodesCount: expandedNodes.size,
+      breadcrumbsCount: breadcrumbs.length
+    };
+  }, [hasActiveProject, currentProjectId, currentProjectName, notes, selectedNote, expandedNodes, breadcrumbs]);
+
   return (
     <NotesContext.Provider
       value={{
@@ -721,6 +736,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         saveProject,
         currentProjectId,
         setCurrentProjectId,
+        debugInfo
       }}
     >
       {children}
