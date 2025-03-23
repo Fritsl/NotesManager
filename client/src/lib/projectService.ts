@@ -171,6 +171,8 @@ export async function getProjects(): Promise<Project[]> {
 
 export async function getProject(id: string): Promise<Project | null> {
   try {
+    console.log('getProject called with id:', id);
+    
     // Get current user
     const { data: userData, error: userError } = await supabase.auth.getUser();
     
@@ -178,6 +180,8 @@ export async function getProject(id: string): Promise<Project | null> {
       console.error('User not authenticated:', userError);
       return null;
     }
+    
+    console.log('Current user:', userData.user.id);
     
     // Query settings table for project belonging to current user
     const { data: projectData, error: projectError } = await supabase
@@ -189,9 +193,11 @@ export async function getProject(id: string): Promise<Project | null> {
       .single();
 
     if (projectError || !projectData) {
-      console.error('Error fetching project:', projectError);
+      console.error('Error fetching project from settings table:', projectError);
       return null;
     }
+    
+    console.log('Project found in settings:', projectData.title);
 
     // Now fetch notes for this project from the notes table
     console.log('Fetching notes for project:', id);
@@ -206,11 +212,16 @@ export async function getProject(id: string): Promise<Project | null> {
       console.error('Error fetching notes:', notesError);
     }
     
-    console.log('Raw notes data from DB:', notesData);
+    console.log('Raw notes data from DB count:', notesData ? notesData.length : 0);
+    if (notesData && notesData.length > 0) {
+      console.log('First note sample:', notesData[0]);
+    } else {
+      console.log('No notes found for this project');
+    }
     
     // Convert flat notes to hierarchical structure
     const hierarchicalNotes = notesData ? buildNoteHierarchy(notesData) : [];
-    console.log('Hierarchical notes:', hierarchicalNotes);
+    console.log('Hierarchical notes count:', hierarchicalNotes.length);
     
     // Format data for Project interface with notes
     const formattedProject = {
@@ -224,8 +235,7 @@ export async function getProject(id: string): Promise<Project | null> {
       }
     };
     
-    console.log('Formatted project for return:', formattedProject);
-    console.log('Notes array length:', formattedProject.data.notes.length);
+    console.log('Formatted project:', formattedProject.name, 'Notes count:', formattedProject.data.notes.length);
     return formattedProject;
   } catch (error) {
     console.error('Error in getProject:', error);

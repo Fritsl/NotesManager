@@ -7,6 +7,7 @@ import { PlusCircle, LoaderCircle, Trash2, Save, FileDown } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 import { 
   getProjects, 
+  getProject,
   createProject, 
   deleteProject, 
   updateProject,
@@ -159,13 +160,30 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
     }
   };
 
-  const handleLoadProject = (project: Project) => {
+  const handleLoadProject = async (project: Project) => {
     try {
-      console.log('Loading project data:', project.data);
-      console.log('Project details:', project.name, project.id);
+      console.log('Loading project from list:', project.name, project.id);
       
-      if (!project.data || !project.data.notes) {
-        console.error('Project data is missing or malformed:', project.data);
+      // Get full project with notes from database
+      setLoading(true);
+      const fullProject = await getProject(project.id);
+      setLoading(false);
+      
+      if (!fullProject) {
+        console.error('Failed to fetch full project data');
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch full project data',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      console.log('Full project data loaded:', fullProject.data);
+      console.log('Notes count:', fullProject.data.notes.length);
+      
+      if (!fullProject.data || !fullProject.data.notes) {
+        console.error('Project data is missing or malformed:', fullProject.data);
         toast({
           title: 'Error',
           description: 'Project data is missing or malformed',
@@ -175,11 +193,11 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
       }
       
       // Pass both the data and the project name
-      importNotes(project.data, project.name);
+      importNotes(fullProject.data, fullProject.name);
       
       toast({
         title: 'Success',
-        description: `Project "${project.name}" loaded successfully`,
+        description: `Project "${fullProject.name}" loaded successfully`,
       });
       onClose();
     } catch (error) {
@@ -189,6 +207,7 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
         description: 'Failed to load project',
         variant: 'destructive',
       });
+      setLoading(false);
     }
   };
 
