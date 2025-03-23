@@ -22,7 +22,8 @@ interface Database {
           title: string;
           description?: string;
           user_id: string;
-          metadata: Json;
+          note_count?: number;
+          last_level?: number;
         };
         Insert: {
           id?: string;
@@ -33,7 +34,8 @@ interface Database {
           title: string;
           description?: string;
           user_id: string;
-          metadata: Json;
+          note_count?: number;
+          last_level?: number;
         };
         Update: {
           id?: string;
@@ -44,7 +46,8 @@ interface Database {
           title?: string;
           description?: string;
           user_id?: string;
-          metadata?: Json;
+          note_count?: number;
+          last_level?: number;
         };
       };
       notes: {

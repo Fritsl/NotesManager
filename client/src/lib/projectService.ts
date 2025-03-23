@@ -286,7 +286,9 @@ export async function createProject(name: string, notesData: NotesData): Promise
         created_at: now,
         updated_at: now,
         last_modified_at: now,
-        metadata: {} // Adding metadata field with empty object
+        description: '',
+        note_count: validNotesData.notes.length,
+        last_level: 0
       })
       .select()
       .single();
@@ -360,7 +362,8 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
         title: name,
         updated_at: now,
         last_modified_at: now,
-        metadata: {} // Adding metadata field with empty object
+        note_count: validNotesData.notes.length,
+        last_level: 0
       })
       .eq('id', id)
       .eq('user_id', userData.user.id) // Ensure user can only update their own projects
