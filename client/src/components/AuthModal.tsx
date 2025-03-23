@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -124,6 +124,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 ? 'Create an Account' 
                 : 'Reset Password'}
           </DialogTitle>
+          <DialogDescription className="text-center">
+            {activeTab === 'login' 
+              ? 'Enter your credentials to access your account' 
+              : activeTab === 'register' 
+                ? 'Create a new account to use the application' 
+                : 'Enter your email to reset your password'}
+          </DialogDescription>
         </DialogHeader>
         
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
