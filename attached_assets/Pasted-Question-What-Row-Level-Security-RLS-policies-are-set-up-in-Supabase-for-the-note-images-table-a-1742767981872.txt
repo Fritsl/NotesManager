@@ -1,0 +1,93 @@
+Question:
+What Row Level Security (RLS) policies are set up in Supabase for the note_images table and the storage bucket?
+
+Answer:
+Currently, there are no explicit RLS policies defined for the note_images table or storage bucket.
+
+----
+
+Question:
+Is the working app using the Supabase client directly for uploading or is it going through a server-side API?
+
+Answer:
+The app is using the Supabase client directly for both storage operations and database operations. Here's how it works:
+
+For image uploads:
+
+const { data: uploadData, error: uploadError } = await supabase.storage
+  .from('note-images')
+  .upload(filePath, blob, {
+    contentType: mimeType,
+    cacheControl: '3600'
+  });
+For getting public URLs:
+
+const { data: { publicUrl } } = supabase.storage
+  .from('note-images')
+  .getPublicUrl(filePath);
+For image deletion:
+
+const { error: storageError } = await supabase.storage
+  .from('note-images')
+  .remove([image.storage_path]);
+The app is using the client-side Supabase SDK directly without an intermediary server-side API. All storage operations are performed directly from the browser, with security being handled by Supabase's Row Level Security (RLS) policies and storage bucket policies.
+
+The only server-side component is the Edge Function for image optimization (supabase/functions/optimize-image/index.ts), but this is used for processing images before storage, not for the actual storage operations.
+
+----
+
+Question:
+What's the exact structure of the storage_path being used in the working app?
+
+Answer:
+the storage_path structure is:
+
+
+images/${filename}
+where filename is generated as:
+
+
+const filename = `${crypto.randomUUID()}.jpg`;
+const filePath = `images/${filename}`;
+So the complete structure is:
+
+A root folder called "images"
+Inside it, files named with a UUID followed by .jpg extension
+Example: images/123e4567-e89b-12d3-a456-426614174000.jpg
+This structure is used consistently throughout the application for both:
+
+Storing images: When uploading to the 'note-images' bucket
+Database references: The storage_path column in the note_images table stores this exact path
+The path is always relative to the root of the storage bucket, so when used with Supabase storage operations, it's always referenced from the 'note-images' bucket root.
+
+-----
+
+Question:
+What user authentication method is being used for storage access?
+
+Answer:
+The app uses Supabase's built-in JWT token authentication for storage access.
+
+The authentication flow works as follows:
+
+When a user signs in, Supabase automatically handles the JWT token generation
+The token is stored in localStorage (configured in the Supabase client setup)
+All storage operations automatically use this token for authentication through the Supabase client:
+
+// From src/lib/supabase.ts
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+    storage: localStorage
+  }
+});
+This means:
+
+No separate authentication is needed for storage operations
+The same JWT token used for database access is used for storage access
+Token refresh is handled automatically by the Supabase client
+Storage permissions are enforced through Supabase's RLS policies
+The storage access is tied directly to the user's authentication state - if they're not authenticated, they won't have access to storage operations.

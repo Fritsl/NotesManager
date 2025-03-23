@@ -651,37 +651,25 @@ export async function addImageToNote(noteId: string, file: File): Promise<NoteIm
       return null;
     }
     
-    // First verify the note belongs to the current user
-    const { data: noteData, error: noteError } = await supabase
-      .from('notes')
-      .select('user_id')
-      .eq('id', noteId)
-      .single();
-      
-    if (noteError || !noteData) {
-      console.error('Error verifying note ownership:', noteError);
-      return null;
-    }
+    // Convert the file to the correct format if needed
+    let fileToUpload = file;
+    let mimeType = file.type;
     
-    // Check if note belongs to current user
-    if (noteData.user_id !== userData.user.id) {
-      console.error('Note does not belong to current user');
-      return null;
-    }
+    // If the file isn't a JPEG or PNG, we might want to convert it
+    // For now, we'll just use the original file
     
-    // Generate a unique filename with original extension
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${uuidv4()}.${fileExt}`;
-    const filePath = `${userData.user.id}/${noteId}/${fileName}`;
+    // Generate a unique filename
+    const fileName = `${uuidv4()}.jpg`;
+    const filePath = `images/${fileName}`;
     
     console.log(`Uploading file to path: ${filePath}`);
     
     // Upload file to storage
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('note-images')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
+      .upload(filePath, fileToUpload, {
+        contentType: mimeType,
+        cacheControl: '3600'
       });
       
     if (uploadError) {
@@ -765,10 +753,10 @@ export async function removeImageFromNote(imageId: string): Promise<boolean> {
       return false;
     }
     
-    // Get the image record to find its storage path and verify ownership
+    // Get the image record to find its storage path
     const { data: imageData, error: getError } = await supabase
       .from('note_images')
-      .select('storage_path, note_id')
+      .select('storage_path')
       .eq('id', imageId)
       .single();
       
@@ -777,27 +765,7 @@ export async function removeImageFromNote(imageId: string): Promise<boolean> {
       return false;
     }
     
-    console.log(`Found image record with note_id: ${imageData.note_id}`);
-    
-    // Verify the note belongs to the current user
-    const { data: noteData, error: noteError } = await supabase
-      .from('notes')
-      .select('user_id')
-      .eq('id', imageData.note_id)
-      .single();
-    
-    if (noteError || !noteData) {
-      console.error('Error verifying note ownership:', noteError);
-      return false;
-    }
-    
-    // Check if note belongs to current user
-    if (noteData.user_id !== userData.user.id) {
-      console.error('Cannot delete image: Note does not belong to current user');
-      return false;
-    }
-    
-    console.log(`Verified ownership. Deleting image from storage path: ${imageData.storage_path}`);
+    console.log(`Deleting image from storage path: ${imageData.storage_path}`);
     
     // Delete the image from storage
     const { error: deleteStorageError } = await supabase.storage
@@ -843,26 +811,6 @@ export async function updateImagePosition(noteId: string, imageId: string, newPo
       console.error('User not authenticated:', userError);
       return false;
     }
-    
-    // Verify the note belongs to the current user
-    const { data: noteData, error: noteError } = await supabase
-      .from('notes')
-      .select('user_id')
-      .eq('id', noteId)
-      .single();
-    
-    if (noteError || !noteData) {
-      console.error('Error verifying note ownership:', noteError);
-      return false;
-    }
-    
-    // Check if note belongs to current user
-    if (noteData.user_id !== userData.user.id) {
-      console.error('Cannot update image: Note does not belong to current user');
-      return false;
-    }
-    
-    console.log('Verified ownership, updating image position');
     
     // Update the image position
     const { error } = await supabase
