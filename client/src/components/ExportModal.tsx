@@ -25,7 +25,7 @@ export default function ExportModal({ onClose }: ExportModalProps) {
     
     const a = document.createElement("a");
     a.href = url;
-    a.download = "notes-export.json";
+    a.download = "project-export.json";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -40,9 +40,9 @@ export default function ExportModal({ onClose }: ExportModalProps) {
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-xl">Export Notes</DialogTitle>
+          <DialogTitle className="text-xl">JSON Export</DialogTitle>
           <DialogDescription>
-            Your notes will be exported as a JSON file.
+            Your project will be exported as a JSON file that can be imported later.
           </DialogDescription>
         </DialogHeader>
         

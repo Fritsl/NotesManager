@@ -132,9 +132,9 @@ export default function ImportModal({ onClose }: ImportModalProps) {
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl">Import Notes</DialogTitle>
+          <DialogTitle className="text-xl">JSON Import</DialogTitle>
           <DialogDescription>
-            Select a JSON file containing notes structure to import.
+            Select a JSON file to import as a new project or replace the current one.
           </DialogDescription>
         </DialogHeader>
         
