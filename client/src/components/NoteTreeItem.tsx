@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { Note } from "@/types/notes";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, Link, Youtube } from "lucide-react";
+import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, Link, Youtube, ArrowDownRightFromCircle } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { cn } from "@/lib/utils";
 import DropZone from "./DropZone";
@@ -371,17 +371,39 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           
           {/* Action buttons - always visible on mobile, larger touch targets */}
           <div className="flex space-x-1 sm:opacity-0 sm:group-hover:opacity-100 transition">
+            {/* Add Sibling Button */}
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-gray-400 hover:text-primary p-1 touch-target"
-              title="Add Child"
+              title="Add Sibling"
               onClick={(e) => {
                 e.stopPropagation();
-                addNote(note);
+                // If it's a root note, create another root note
+                if (isRoot) {
+                  addNote(null);
+                } else {
+                  // Create a sibling by using parent as the parent
+                  addNote(parentId ? { id: parentId, children: [] } as any : null);
+                }
               }}
             >
               <Plus size={16} />
+            </Button>
+            
+            {/* Add Child Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-gray-400 hover:text-indigo-500 p-1 touch-target"
+              title="Add Child"
+              onClick={(e) => {
+                e.stopPropagation();
+                // Create a child note
+                addNote(note);
+              }}
+            >
+              <ArrowDownRightFromCircle size={16} />
             </Button>
             
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
