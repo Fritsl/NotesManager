@@ -14,7 +14,7 @@ interface NotesContextType {
   updateNote: (updatedNote: Note) => void;
   deleteNote: (noteId: string) => void;
   moveNote: (noteId: string, targetParentId: string | null, position: number) => void;
-  importNotes: (data: NotesData, projectName?: string, projectId?: string) => void;
+  importNotes: (data: NotesData, projectName?: string, projectId?: string | null) => void;
   exportNotes: () => NotesData;
   expandedNodes: Set<string>;
   setExpandedNodes: React.Dispatch<React.SetStateAction<Set<string>>>;

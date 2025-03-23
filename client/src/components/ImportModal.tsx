@@ -58,7 +58,7 @@ export default function ImportModal({ onClose }: ImportModalProps) {
         
         // Import the notes with project name and set active
         setHasActiveProject(true); // Set project as active
-        importNotes(parsedData, projectName);
+        importNotes(parsedData, projectName, null);
         onClose();
       } catch (error) {
         setError(error instanceof Error ? error.message : "Invalid JSON format");
@@ -114,7 +114,7 @@ export default function ImportModal({ onClose }: ImportModalProps) {
         
         // Import the notes with project name and set active
         setHasActiveProject(true); // Set project as active
-        importNotes(parsedData, projectName);
+        importNotes(parsedData, projectName, null);
         onClose();
       } catch (error) {
         setError(error instanceof Error ? error.message : "Invalid JSON format");
@@ -218,7 +218,7 @@ export default function ImportModal({ onClose }: ImportModalProps) {
                       
                       // Import with project name and set active
                       setHasActiveProject(true);
-                      importNotes(parsedData, projectName);
+                      importNotes(parsedData, projectName, null);
                       onClose();
                     } catch (error) {
                       // Error handling is already done in the initial read

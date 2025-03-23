@@ -44,8 +44,8 @@ export function buildNoteHierarchy(flatNotes: DbNote[]): Note[] {
   // First, sort by position
   const sortedNotes = [...flatNotes].sort((a, b) => {
     // Handle different field names (note_position vs position)
-    const posA = a.note_position !== undefined ? a.note_position : a.position;
-    const posB = b.note_position !== undefined ? b.note_position : b.position;
+    const posA = a.note_position !== undefined ? a.note_position : (a.position ?? 0);
+    const posB = b.note_position !== undefined ? b.note_position : (b.position ?? 0);
     return posA - posB;
   });
   
@@ -64,8 +64,8 @@ export function buildNoteHierarchy(flatNotes: DbNote[]): Note[] {
       }
     }
     
-    // Use the correct position field
-    const position = dbNote.note_position !== undefined ? dbNote.note_position : dbNote.position;
+    // Use the correct position field and ensure it's always a number
+    const position = dbNote.note_position !== undefined ? dbNote.note_position : (dbNote.position ?? 0);
     
     // Create Note object with all properties
     noteMap.set(dbNote.id, {
