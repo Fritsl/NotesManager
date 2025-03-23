@@ -1,8 +1,8 @@
-import { createContext, useContext, useState, ReactNode, useCallback, useMemo, useRef } from "react";
+import { createContext, useContext, useState, ReactNode, useCallback, useMemo, useRef, useEffect } from "react";
 import { Note, NotesData } from "@/types/notes";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
-import { createProject } from "@/lib/projectService";
+import { createProject, updateProject } from "@/lib/projectService";
 
 interface NotesContextType {
   notes: Note[];
