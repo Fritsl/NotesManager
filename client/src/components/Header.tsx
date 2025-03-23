@@ -51,7 +51,9 @@ export default function Header() {
     setCurrentProjectName,
     hasActiveProject,
     setHasActiveProject,
-    createNewProject
+    createNewProject,
+    saveProject,
+    currentProjectId
   } = useNotes();
   const { signOut } = useAuth();
   const { toast } = useToast();
@@ -336,12 +338,23 @@ export default function Header() {
                   <FolderOpen className="h-4 w-4 mr-2" />
                   <span>Load</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {
-                  // Save project (currently auto-saved)
+                <DropdownMenuItem onClick={async () => {
+                  // Manual save button for testing
+                  if (currentProjectId) {
+                    console.log("Manual save for project ID:", currentProjectId);
+                    try {
+                      await saveProject();
+                      console.log("Manual save completed");
+                    } catch (err) {
+                      console.error("Manual save failed:", err);
+                    }
+                  } else {
+                    console.warn("Cannot save - no project ID");
+                  }
                 }}>
                   <Save className="h-4 w-4 mr-2" />
                   <span>Save</span>
-                  <span className="ml-auto text-xs text-muted-foreground">(Auto)</span>
+                  <span className="ml-auto text-xs text-muted-foreground">{currentProjectId ? "(Manual)" : "(No Project)"}</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 

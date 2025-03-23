@@ -32,6 +32,7 @@ interface NotesContextType {
   saveProject: () => Promise<void>;
   currentProjectId: string | null;
   setCurrentProjectId: (id: string | null) => void;
+  debugInfo: () => any; // For debugging purposes
 }
 
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
