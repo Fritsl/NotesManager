@@ -246,7 +246,7 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
           <DialogHeader className="border-b border-gray-800 pb-4">
             <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">Your Projects</DialogTitle>
             <DialogDescription className="text-gray-400">
-              Click on a project to load it. Use Save to update the current project or Delete to remove it.
+              Click on a project to load it. Projects are auto-saved as you work. Use Delete to remove unwanted projects.
             </DialogDescription>
           </DialogHeader>
           
@@ -305,18 +305,6 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="border-gray-700 hover:bg-gray-700 hover:text-gray-200"
-                            onClick={(e) => {
-                              e.stopPropagation(); // Prevent triggering the parent div's onClick
-                              handleUpdateProject(project);
-                            }}
-                          >
-                            <Save className="h-4 w-4 mr-1" />
-                            Save
-                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
