@@ -53,23 +53,51 @@ export function NotesProvider({ children }: { children: ReactNode }) {
 
   // Import notes from JSON
   const importNotes = useCallback((data: NotesData) => {
-    if (data && Array.isArray(data.notes)) {
-      // Clean up the positions before setting the notes
-      const cleanedNotes = cleanNotePositions(data.notes);
-      setNotes(cleanedNotes);
-      setSelectedNote(null);
-      setBreadcrumbs([]);
-      toast({
-        title: "Import Successful",
-        description: `Imported ${data.notes.length} notes with cleaned positions`,
-      });
-    } else {
+    console.log('ImportNotes received data:', data);
+    
+    if (!data) {
+      console.error('ImportNotes failed: data is null or undefined');
       toast({
         title: "Import Failed",
-        description: "Invalid notes data format",
+        description: "No data provided for import",
         variant: "destructive",
       });
+      return;
     }
+    
+    if (!data.notes) {
+      console.error('ImportNotes failed: data.notes is missing', data);
+      toast({
+        title: "Import Failed",
+        description: "Invalid notes data format: missing notes array",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!Array.isArray(data.notes)) {
+      console.error('ImportNotes failed: data.notes is not an array', typeof data.notes, data);
+      toast({
+        title: "Import Failed",
+        description: "Invalid notes data format: notes is not an array",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Clean up the positions before setting the notes
+    console.log('Cleaning note positions for', data.notes.length, 'notes');
+    const cleanedNotes = cleanNotePositions(data.notes);
+    console.log('Cleaned notes:', cleanedNotes);
+    
+    setNotes(cleanedNotes);
+    setSelectedNote(null);
+    setBreadcrumbs([]);
+    
+    toast({
+      title: "Import Successful",
+      description: `Imported ${data.notes.length} notes with cleaned positions`,
+    });
   }, [toast, cleanNotePositions]);
 
   // Export notes to JSON

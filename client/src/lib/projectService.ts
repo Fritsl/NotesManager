@@ -76,7 +76,11 @@ export async function getProject(id: string): Promise<Project | null> {
 
     // Map settings table fields to Project interface
     if (data) {
-      return {
+      console.log('Raw data from settings table:', data);
+      console.log('Notes data from metadata:', data.metadata?.notes_data);
+      
+      // Format data for Project interface
+      const formattedProject = {
         id: data.id,
         name: data.title || 'Untitled Project',
         created_at: data.created_at,
@@ -84,6 +88,9 @@ export async function getProject(id: string): Promise<Project | null> {
         user_id: data.user_id,
         data: data.metadata?.notes_data || { notes: [] }
       };
+      
+      console.log('Formatted project for return:', formattedProject);
+      return formattedProject;
     }
 
     return null;
@@ -105,6 +112,15 @@ export async function createProject(name: string, notesData: NotesData): Promise
     const now = new Date().toISOString();
     
     // Format data for settings table
+    console.log('Creating project with notes data:', notesData);
+    
+    // Ensure notesData has proper structure
+    const validNotesData = notesData && Array.isArray(notesData.notes) 
+      ? notesData 
+      : { notes: [] };
+    
+    console.log('Validated notes data for storage:', validNotesData);
+    
     const { data, error } = await supabase
       .from('settings')
       .insert({
@@ -113,7 +129,7 @@ export async function createProject(name: string, notesData: NotesData): Promise
         created_at: now,
         updated_at: now,
         last_modified_at: now,
-        metadata: { notes_data: notesData }
+        metadata: { notes_data: validNotesData }
       })
       .select()
       .single();
@@ -151,13 +167,22 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
     const now = new Date().toISOString();
     
     // Update project in settings table
+    console.log('Updating project with notes data:', notesData);
+    
+    // Ensure notesData has proper structure
+    const validNotesData = notesData && Array.isArray(notesData.notes) 
+      ? notesData 
+      : { notes: [] };
+    
+    console.log('Validated notes data for update:', validNotesData);
+    
     const { data, error } = await supabase
       .from('settings')
       .update({
         title: name,
         updated_at: now,
         last_modified_at: now,
-        metadata: { notes_data: notesData }
+        metadata: { notes_data: validNotesData }
       })
       .eq('id', id)
       .eq('user_id', userData.user.id) // Ensure user can only update their own projects
