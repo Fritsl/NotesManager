@@ -13,11 +13,11 @@ function Router() {
     <>
       <nav className="bg-gray-800 text-white p-4">
         <div className="container mx-auto flex gap-4">
-          <Link href="/">
-            <a className="hover:underline">Notes Editor</a>
+          <Link href="/" className="hover:underline">
+            Notes Editor
           </Link>
-          <Link href="/test-image">
-            <a className="hover:underline">Image Test</a>
+          <Link href="/test-image" className="hover:underline">
+            Image Test
           </Link>
         </div>
       </nav>
