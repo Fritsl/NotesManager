@@ -356,6 +356,24 @@ export default function Header() {
                   <span>Save</span>
                   <span className="ml-auto text-xs text-muted-foreground">{currentProjectId ? "(Manual)" : "(No Project)"}</span>
                 </DropdownMenuItem>
+                
+                {/* Debug button */}
+                <DropdownMenuItem onClick={() => {
+                  // Use the debugInfo function to get context state
+                  const { debugInfo } = useNotes();
+                  const debugData = debugInfo();
+                  console.log("DEBUG INFO:", debugData);
+                  
+                  // Show debug info in toast
+                  toast({
+                    title: "Debug Info",
+                    description: `Project: ${debugData.currentProjectName || 'None'}, ID: ${debugData.currentProjectId || 'None'}, Notes: ${debugData.noteCount}`,
+                  });
+                }}>
+                  <Info className="h-4 w-4 mr-2" />
+                  <span>Debug Info</span>
+                </DropdownMenuItem>
+                
                 <DropdownMenuSeparator />
                 
                 {/* Import/Export */}
@@ -414,6 +432,23 @@ export default function Header() {
                 <DropdownMenuItem onClick={() => setShowImportModal(true)}>
                   <FileUp className="h-4 w-4 mr-2" />
                   <span>Import from JSON</span>
+                </DropdownMenuItem>
+                
+                {/* Debug button in no-project mode */}
+                <DropdownMenuItem onClick={() => {
+                  // Use the debugInfo function to get context state
+                  const { debugInfo } = useNotes();
+                  const debugData = debugInfo();
+                  console.log("DEBUG INFO:", debugData);
+                  
+                  // Show debug info in toast
+                  toast({
+                    title: "Debug Info",
+                    description: `Project: ${debugData.currentProjectName || 'None'}, ID: ${debugData.currentProjectId || 'None'}, Notes: ${debugData.noteCount}`,
+                  });
+                }}>
+                  <Info className="h-4 w-4 mr-2" />
+                  <span>Debug Info</span>
                 </DropdownMenuItem>
                 
                 <DropdownMenuSeparator />
