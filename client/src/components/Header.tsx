@@ -347,7 +347,7 @@ export default function Header() {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setShowProjectsModal(true)}>
                   <FolderOpen className="h-4 w-4 mr-2" />
-                  <span>Load</span>
+                  <span>Projects</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={async () => {
                   // Manual save button for testing
@@ -441,7 +441,7 @@ export default function Header() {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setShowProjectsModal(true)}>
                   <FolderOpen className="h-4 w-4 mr-2" />
-                  <span>Load</span>
+                  <span>Projects</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 
