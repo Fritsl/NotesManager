@@ -77,7 +77,7 @@ export default function Header() {
       </div>
       <div className="flex items-center space-x-2">
         {/* Level Controls */}
-        <div className="flex items-center mr-2 border-r pr-3 border-gray-200 flex-wrap">
+        <div className="flex items-center mr-2 border-r pr-3 border-gray-700 flex-wrap">
           {Array.from({ length: Math.max(1, maxDepth) }, (_, i) => i + 1).map(level => {
             // Get the color theme for this level
             // Use level-1 to match colors with actual hierarchy level (0-based index)
@@ -95,7 +95,7 @@ export default function Header() {
                   // Apply the level color
                   currentLevel === level 
                     ? `${colorTheme.highlight} border-l-[3px] ${colorTheme.border} ${colorTheme.text}`
-                    : `border hover:${colorTheme.highlight} hover:${colorTheme.text} hover:border-l-[3px] hover:${colorTheme.border}`
+                    : `border border-gray-700 hover:${colorTheme.highlight} hover:${colorTheme.text} hover:border-l-[3px] hover:${colorTheme.border}`
                 )}
               >
                 L{level}
@@ -105,7 +105,7 @@ export default function Header() {
         </div>
         
         {/* Expand/Collapse Controls */}
-        <div className="flex items-center mr-2 border-r pr-3 border-gray-200">
+        <div className="flex items-center mr-2 border-r pr-3 border-gray-700">
           <Button 
             variant="ghost" 
             size="icon"

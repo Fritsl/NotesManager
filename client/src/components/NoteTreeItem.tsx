@@ -270,12 +270,12 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         <div 
           ref={ref}
           className={cn(
-            "note-card border rounded-md p-2 transition flex items-start group shadow-sm hover:shadow relative",
+            "note-item note-card border rounded-md p-2 transition flex items-start group shadow-sm hover:shadow relative",
             // Use the level color themes for consistent styling with the header buttons
             levelColors[Math.min(level, levelColors.length - 1)].bg,
             `border-l-[4px] ${levelColors[Math.min(level, levelColors.length - 1)].border}`,
             // Don't highlight the entire note, we'll use a bottom border instead
-            selectedNote?.id === note.id ? "border-primary ring-2 ring-primary ring-opacity-50" : "border-gray-200 hover:bg-opacity-80",
+            selectedNote?.id === note.id ? "selected-note border-primary ring-2 ring-primary ring-opacity-70" : "border-gray-700 hover:bg-opacity-80",
             isDragging && "opacity-50"
           )}
           onClick={() => selectNote(note)}
@@ -335,17 +335,17 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             {/* Title line - larger and more prominent with position badge */}
             <div className="flex items-center">
               <div className={`text-sm font-medium ${levelColors[Math.min(level, levelColors.length - 1)].text} truncate flex-1`}>{displayContent}</div>
-              <div className="text-xs text-gray-500 bg-gray-100 rounded px-1.5 py-0.5 ml-2">pos: {note.position}</div>
+              <div className="text-xs text-gray-300 bg-gray-800 rounded px-1.5 py-0.5 ml-2">pos: {note.position}</div>
             </div>
             
             {/* Multiple preview lines */}
             {previewLines.length > 0 && (
               <div className="mt-1 space-y-0.5">
                 {previewLines.map((line, index) => (
-                  <div key={index} className="text-xs text-gray-600 truncate leading-snug">{line}</div>
+                  <div key={index} className="text-xs text-gray-400 truncate leading-snug">{line}</div>
                 ))}
                 {hasMoreLines && (
-                  <div className="text-xs text-gray-400 italic">more...</div>
+                  <div className="text-xs text-gray-500 italic">more...</div>
                 )}
               </div>
             )}
