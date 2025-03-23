@@ -331,10 +331,9 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           )}
           
           <div className="flex-1 overflow-hidden">
-            {/* Title line - larger and more prominent with position badge */}
+            {/* Title line - larger and more prominent */}
             <div className="flex items-center">
               <div className={`mobile-text-base font-medium ${level >= 0 && level < levelColors.length ? levelColors[level].text : levelColors[0].text} truncate flex-1`}>{displayContent}</div>
-              <div className="mobile-text-sm text-gray-300 bg-gray-800 rounded px-1.5 py-0.5 ml-2">pos: {note.position}</div>
             </div>
             
             {/* Multiple preview lines */}
