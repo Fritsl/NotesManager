@@ -41,6 +41,7 @@ import { levelColors } from "@/lib/level-colors";
 
 export default function Header() {
   const { 
+    notes,
     addNote, 
     expandAll, 
     collapseAll, 
@@ -359,15 +360,21 @@ export default function Header() {
                 
                 {/* Debug button */}
                 <DropdownMenuItem onClick={() => {
-                  // Use the debugInfo function to get context state
-                  const { debugInfo } = useNotes();
-                  const debugData = debugInfo();
+                  // Use the debugInfo function already passed to this component from context
+                  // Instead of trying to call useNotes() inside the event handler
+                  const noteCount = Array.isArray(notes) ? notes.length : 0;
+                  const debugData = {
+                    currentProjectName,
+                    currentProjectId, 
+                    noteCount,
+                    hasActiveProject
+                  };
                   console.log("DEBUG INFO:", debugData);
                   
                   // Show debug info in toast
                   toast({
                     title: "Debug Info",
-                    description: `Project: ${debugData.currentProjectName || 'None'}, ID: ${debugData.currentProjectId || 'None'}, Notes: ${debugData.noteCount}`,
+                    description: `Project: ${currentProjectName || 'None'}, ID: ${currentProjectId || 'None'}, Notes: ${noteCount}`,
                   });
                 }}>
                   <Info className="h-4 w-4 mr-2" />
@@ -436,15 +443,20 @@ export default function Header() {
                 
                 {/* Debug button in no-project mode */}
                 <DropdownMenuItem onClick={() => {
-                  // Use the debugInfo function to get context state
-                  const { debugInfo } = useNotes();
-                  const debugData = debugInfo();
+                  // Use the properties already available in this component
+                  const noteCount = Array.isArray(notes) ? notes.length : 0;
+                  const debugData = {
+                    currentProjectName,
+                    currentProjectId, 
+                    noteCount,
+                    hasActiveProject
+                  };
                   console.log("DEBUG INFO:", debugData);
                   
                   // Show debug info in toast
                   toast({
                     title: "Debug Info",
-                    description: `Project: ${debugData.currentProjectName || 'None'}, ID: ${debugData.currentProjectId || 'None'}, Notes: ${debugData.noteCount}`,
+                    description: `Project: ${currentProjectName || 'None'}, ID: ${currentProjectId || 'None'}, Notes: ${noteCount}`,
                   });
                 }}>
                   <Info className="h-4 w-4 mr-2" />
