@@ -3,6 +3,7 @@ import { Note, NotesData } from "@/types/notes";
 import { useToast } from "@/components/ui/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import { notesService } from "@/lib/supabase";
+import { useSingletonWebSocket, WebSocketMessage } from "@/hooks/use-singleton-websocket";
 
 interface NotesContextType {
   notes: Note[];

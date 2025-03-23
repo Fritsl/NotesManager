@@ -1,13 +1,13 @@
-import { useEffect } from 'react';
-import { useWebSocket } from '@/hooks/use-websocket';
+import { useEffect, useRef } from 'react';
+import { useSingletonWebSocket, WebSocketMessage } from '@/hooks/use-singleton-websocket';
 import { useNotes } from '@/context/NotesContext';
 import { Wifi, WifiOff, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function WebSocketStatus() {
-  const { isConnected, clientCount, sendMessage } = useWebSocket({
-    onMessage: (message) => {
+  const { isConnected, clientCount, sendMessage } = useSingletonWebSocket({
+    onMessage: (message: WebSocketMessage) => {
       // Handle incoming messages
       if (message.type === 'noteUpdate') {
         // Handle note updates from other clients
@@ -21,19 +21,21 @@ export default function WebSocketStatus() {
   });
   
   const { notes, isLoading } = useNotes();
+  const hasSentInitialData = useRef(false);
   
   // Broadcast notes loaded event when notes are loaded - but only once when connection is established
   useEffect(() => {
-    if (!isLoading && notes.length > 0 && isConnected) {
-      // Only send on connection established, not on every notes update
+    if (!isLoading && notes.length > 0 && isConnected && !hasSentInitialData.current) {
+      // Only send once per session
       const messageData = {
         type: 'notesLoaded',
         data: { notesCount: notes.length } // Just send count to avoid circular references
       };
-      console.log('Connection established, sending initial data');
+      console.log('[WebSocketStatus] Connection established, sending initial data');
       sendMessage(messageData);
+      hasSentInitialData.current = true;
     }
-  }, [isConnected]); // Only trigger when connection status changes
+  }, [isConnected, isLoading, notes, sendMessage]); // Include all dependencies but control with ref
   
   return (
     <div className="flex items-center space-x-2">
