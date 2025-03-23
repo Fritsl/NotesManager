@@ -64,7 +64,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Import notes from JSON
-  const importNotes = useCallback((data: NotesData, projectName?: string, projectId?: string) => {
+  const importNotes = useCallback((data: NotesData, projectName?: string, projectId?: string | null) => {
     console.log('ImportNotes received data:', data);
     console.log('Project name:', projectName);
     console.log('Project ID:', projectId);
@@ -304,8 +304,8 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       removeNoteFromTree(updatedNotes);
       
       // If we deleted from a parent's children, clean those children's positions
-      if (parentWithUpdatedChildren) {
-        parentWithUpdatedChildren.children = parentWithUpdatedChildren.children.map((child, index) => ({
+      if (parentWithUpdatedChildren && parentWithUpdatedChildren.children) {
+        parentWithUpdatedChildren.children = parentWithUpdatedChildren.children.map((child: Note, index: number) => ({
           ...child,
           position: index
         }));
