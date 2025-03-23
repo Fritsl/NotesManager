@@ -641,6 +641,8 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
 // Image handling functions
 export async function addImageToNote(noteId: string, file: File): Promise<NoteImage | null> {
   try {
+    console.log(`Adding image to note ${noteId}`);
+    
     // Get current user
     const { data: userData, error: userError } = await supabase.auth.getUser();
     
@@ -649,25 +651,52 @@ export async function addImageToNote(noteId: string, file: File): Promise<NoteIm
       return null;
     }
     
+    // First verify the note belongs to the current user
+    const { data: noteData, error: noteError } = await supabase
+      .from('notes')
+      .select('user_id')
+      .eq('id', noteId)
+      .single();
+      
+    if (noteError || !noteData) {
+      console.error('Error verifying note ownership:', noteError);
+      return null;
+    }
+    
+    // Check if note belongs to current user
+    if (noteData.user_id !== userData.user.id) {
+      console.error('Note does not belong to current user');
+      return null;
+    }
+    
     // Generate a unique filename with original extension
     const fileExt = file.name.split('.').pop();
     const fileName = `${uuidv4()}.${fileExt}`;
-    const filePath = `note-images/${fileName}`;
+    const filePath = `${userData.user.id}/${noteId}/${fileName}`;
+    
+    console.log(`Uploading file to path: ${filePath}`);
     
     // Upload file to storage
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('note-images')
-      .upload(filePath, file);
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
       
     if (uploadError) {
       console.error('Error uploading image:', uploadError);
       return null;
     }
     
+    console.log('File uploaded successfully');
+    
     // Get the public URL for the uploaded file
     const { data: { publicUrl } } = supabase.storage
       .from('note-images')
       .getPublicUrl(filePath);
+    
+    console.log(`Public URL: ${publicUrl}`);
     
     // Get the highest position of existing images for this note
     const { data: existingImages } = await supabase
@@ -681,6 +710,8 @@ export async function addImageToNote(noteId: string, file: File): Promise<NoteIm
       ? existingImages[0].position + 1 
       : 0;
     
+    console.log(`Image position: ${position}`);
+    
     // Create a record in the note_images table
     const imageRecord = {
       note_id: noteId,
@@ -688,6 +719,8 @@ export async function addImageToNote(noteId: string, file: File): Promise<NoteIm
       url: publicUrl,
       position: position
     };
+    
+    console.log('Creating note_images record:', imageRecord);
     
     const { data: imageData, error: imageError } = await supabase
       .from('note_images')
@@ -703,6 +736,8 @@ export async function addImageToNote(noteId: string, file: File): Promise<NoteIm
         .remove([filePath]);
       return null;
     }
+    
+    console.log('Image record created successfully:', imageData);
     
     return {
       id: imageData.id,
@@ -720,6 +755,8 @@ export async function addImageToNote(noteId: string, file: File): Promise<NoteIm
 
 export async function removeImageFromNote(imageId: string): Promise<boolean> {
   try {
+    console.log(`Removing image with ID: ${imageId}`);
+    
     // Get current user
     const { data: userData, error: userError } = await supabase.auth.getUser();
     
@@ -728,10 +765,10 @@ export async function removeImageFromNote(imageId: string): Promise<boolean> {
       return false;
     }
     
-    // Get the image record to find its storage path
+    // Get the image record to find its storage path and verify ownership
     const { data: imageData, error: getError } = await supabase
       .from('note_images')
-      .select('storage_path')
+      .select('storage_path, note_id')
       .eq('id', imageId)
       .single();
       
@@ -739,6 +776,28 @@ export async function removeImageFromNote(imageId: string): Promise<boolean> {
       console.error('Error getting image data:', getError);
       return false;
     }
+    
+    console.log(`Found image record with note_id: ${imageData.note_id}`);
+    
+    // Verify the note belongs to the current user
+    const { data: noteData, error: noteError } = await supabase
+      .from('notes')
+      .select('user_id')
+      .eq('id', imageData.note_id)
+      .single();
+    
+    if (noteError || !noteData) {
+      console.error('Error verifying note ownership:', noteError);
+      return false;
+    }
+    
+    // Check if note belongs to current user
+    if (noteData.user_id !== userData.user.id) {
+      console.error('Cannot delete image: Note does not belong to current user');
+      return false;
+    }
+    
+    console.log(`Verified ownership. Deleting image from storage path: ${imageData.storage_path}`);
     
     // Delete the image from storage
     const { error: deleteStorageError } = await supabase.storage
@@ -748,7 +807,11 @@ export async function removeImageFromNote(imageId: string): Promise<boolean> {
     if (deleteStorageError) {
       console.error('Error deleting image from storage:', deleteStorageError);
       // Continue to delete the database entry anyway
+    } else {
+      console.log('Storage file deleted successfully');
     }
+    
+    console.log('Deleting image database record');
     
     // Delete the image record from the database
     const { error: deleteRecordError } = await supabase
@@ -761,6 +824,7 @@ export async function removeImageFromNote(imageId: string): Promise<boolean> {
       return false;
     }
     
+    console.log('Image record deleted successfully');
     return true;
   } catch (error) {
     console.error('Error in removeImageFromNote:', error);
@@ -770,6 +834,8 @@ export async function removeImageFromNote(imageId: string): Promise<boolean> {
 
 export async function updateImagePosition(noteId: string, imageId: string, newPosition: number): Promise<boolean> {
   try {
+    console.log(`Updating image ${imageId} position to ${newPosition} for note ${noteId}`);
+    
     // Get current user
     const { data: userData, error: userError } = await supabase.auth.getUser();
     
@@ -777,6 +843,26 @@ export async function updateImagePosition(noteId: string, imageId: string, newPo
       console.error('User not authenticated:', userError);
       return false;
     }
+    
+    // Verify the note belongs to the current user
+    const { data: noteData, error: noteError } = await supabase
+      .from('notes')
+      .select('user_id')
+      .eq('id', noteId)
+      .single();
+    
+    if (noteError || !noteData) {
+      console.error('Error verifying note ownership:', noteError);
+      return false;
+    }
+    
+    // Check if note belongs to current user
+    if (noteData.user_id !== userData.user.id) {
+      console.error('Cannot update image: Note does not belong to current user');
+      return false;
+    }
+    
+    console.log('Verified ownership, updating image position');
     
     // Update the image position
     const { error } = await supabase
@@ -790,6 +876,7 @@ export async function updateImagePosition(noteId: string, imageId: string, newPo
       return false;
     }
     
+    console.log('Image position updated successfully');
     return true;
   } catch (error) {
     console.error('Error in updateImagePosition:', error);
