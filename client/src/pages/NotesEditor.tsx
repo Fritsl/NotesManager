@@ -34,7 +34,7 @@ export default function NotesEditor() {
   }, [selectedNote, isMobile, sidebarOpen]);
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen bg-gray-950 text-gray-100">
       <Header />
       
       <div className="flex flex-1 h-[calc(100vh-42px)] overflow-hidden">
@@ -42,12 +42,12 @@ export default function NotesEditor() {
         {!isMobile && (
           <>
             {/* Tree View - Now much larger */}
-            <div className="w-2/3 xl:w-3/4 border-r border-gray-200 bg-white overflow-auto custom-scrollbar">
+            <div className="w-2/3 xl:w-3/4 border-r border-gray-800 bg-gray-950 overflow-auto custom-scrollbar">
               <NoteTree />
             </div>
             
             {/* Editor Panel - Now smaller, collapsible */}
-            <aside className="w-1/3 xl:w-1/4 bg-gray-50 overflow-auto custom-scrollbar transition-all duration-300 ease-in-out">
+            <aside className="w-1/3 xl:w-1/4 bg-gray-950 overflow-auto custom-scrollbar transition-all duration-300 ease-in-out">
               <NoteEditor />
             </aside>
           </>
@@ -57,7 +57,7 @@ export default function NotesEditor() {
         {isMobile && (
           <>
             {/* Main tree view for mobile */}
-            <main className="flex-1 flex flex-col bg-white overflow-auto custom-scrollbar">
+            <main className="flex-1 flex flex-col bg-gray-950 overflow-auto custom-scrollbar">
               <NoteTree />
             </main>
             
@@ -67,12 +67,12 @@ export default function NotesEditor() {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  className="fixed right-4 bottom-4 z-10 rounded-full h-12 w-12 shadow-lg"
+                  className="fixed right-4 bottom-4 z-10 rounded-full h-12 w-12 shadow-lg bg-gray-800 border-gray-700 text-gray-300"
                 >
                   <Menu />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[90%] p-0">
+              <SheetContent side="right" className="w-[90%] p-0 bg-gray-950 border-l border-gray-800">
                 <NoteEditor />
               </SheetContent>
             </Sheet>
@@ -82,7 +82,7 @@ export default function NotesEditor() {
       
       <style>{`
         .tree-line {
-          border-left: 1px dashed #d1d5db;
+          border-left: 1px dashed #4b5563;
           margin-left: 8px;
           padding-left: 8px;
         }
@@ -90,14 +90,14 @@ export default function NotesEditor() {
           width: 8px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f1f1;
+          background: #1f2937;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #d1d5db;
+          background: #4b5563;
           border-radius: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #9ca3af;
+          background: #6b7280;
         }
       `}</style>
     </div>
