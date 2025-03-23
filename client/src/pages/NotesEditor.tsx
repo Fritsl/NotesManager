@@ -6,10 +6,10 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { FilePlus, Menu, Edit } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 
 export default function NotesEditor() {
-  const { isMobile } = useIsMobile();
+  const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { selectedNote, hasActiveProject, currentProjectName, addNote } = useNotes();
 
