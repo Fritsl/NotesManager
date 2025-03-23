@@ -2,6 +2,7 @@ import { createContext, useContext, useState, ReactNode, useCallback, useMemo, u
 import { Note, NotesData } from "@/types/notes";
 import { useToast } from "@/components/ui/use-toast";
 import { v4 as uuidv4 } from "uuid";
+import { createProject } from "@/lib/projectService";
 
 interface NotesContextType {
   notes: Note[];
@@ -593,7 +594,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   }, [notes, maxDepth]);
 
   // Create a new project with the given name
-  const createNewProject = useCallback((name: string) => {
+  const createNewProject = useCallback(async (name: string) => {
     // Initialize empty project
     setNotes([]);
     setSelectedNote(null);
@@ -601,10 +602,34 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     setCurrentProjectName(name);
     setHasActiveProject(true);
     
-    toast({
-      title: "Project Created",
-      description: `New project "${name}" has been created`,
-    });
+    // Create project in database
+    try {
+      console.log("Creating new project in database:", name);
+      const emptyProject = { notes: [] };
+      const result = await createProject(name, emptyProject);
+      
+      if (result) {
+        console.log("Project saved to database:", result);
+        toast({
+          title: "Project Created",
+          description: `New project "${name}" has been created and saved`,
+        });
+      } else {
+        console.error("Failed to save project to database");
+        toast({
+          title: "Warning",
+          description: "Project created but not saved to database",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error saving project to database:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save project to database",
+        variant: "destructive",
+      });
+    }
   }, [toast]);
   
   return (
