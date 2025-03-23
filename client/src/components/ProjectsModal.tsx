@@ -69,10 +69,15 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
       return;
     }
 
+    console.log('Creating new project with name:', newProjectName);
     setSavingNew(true);
     try {
       const notesData = exportNotes();
+      console.log('Exported notes data:', notesData);
+      console.log('Notes count for new project:', notesData.notes.length);
+      
       const newProject = await createProject(newProjectName, notesData);
+      console.log('Result from createProject:', newProject);
       
       if (newProject) {
         toast({
@@ -80,8 +85,10 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
           description: 'Project created successfully',
         });
         setNewProjectName('');
+        console.log('Refreshing projects list after creation...');
         await fetchProjects();
       } else {
+        console.error('createProject returned null');
         toast({
           title: 'Error',
           description: 'Failed to create project',
@@ -89,6 +96,7 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
         });
       }
     } catch (error) {
+      console.error('Error in handleCreateProject:', error);
       toast({
         title: 'Error',
         description: 'An unexpected error occurred',

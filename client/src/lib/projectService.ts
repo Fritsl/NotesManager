@@ -277,27 +277,35 @@ export async function createProject(name: string, notesData: NotesData): Promise
     console.log('Validated notes data for storage:', validNotesData);
     
     // Create the project in settings table first
-    console.log('Inserting into settings table...');
-    const { data, error } = await supabase
+    console.log('Inserting into settings table with fields:');
+    const projectFields = {
+      title: name,
+      user_id: userData.user.id,
+      created_at: now,
+      updated_at: now,
+      last_modified_at: now,
+      description: '',
+      note_count: validNotesData.notes.length,
+      last_level: 0
+    };
+    console.log('Project fields:', projectFields);
+    
+    const response = await supabase
       .from('settings')
-      .insert({
-        title: name,
-        user_id: userData.user.id,
-        created_at: now,
-        updated_at: now,
-        last_modified_at: now,
-        description: '',
-        note_count: validNotesData.notes.length,
-        last_level: 0
-      })
+      .insert(projectFields)
       .select()
       .single();
+      
+    console.log('Raw response from supabase insert:', response);
+    
+    const { data, error } = response;
 
     if (error) {
       console.error('Error creating project:', error);
       return null;
     }
     
+    console.log('Project created successfully:', data);
     const projectId = data.id;
     
     // If there are notes, create them in the notes table
