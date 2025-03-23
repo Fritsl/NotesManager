@@ -17,37 +17,67 @@ interface DbNote {
   user_id: string;
   project_id: string;
   parent_id: string | null;
+  // The field can be either note_position (old data) or position (new schema)
+  note_position?: number;
+  position?: number;
+  // Additional meta properties stored in _meta JSON
+  _meta?: string;
+  // Legacy properties that might exist in older records
   is_discussion?: boolean;
-  created_at: string;
-  updated_at: string;
-  note_position: number;
   time_set?: string | null;
   youtube_url?: string | null;
   url?: string | null;
   url_display_text?: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 // Function to build hierarchical notes from flat DB records
 export function buildNoteHierarchy(flatNotes: DbNote[]): Note[] {
   console.log('Building note hierarchy from flat notes:', flatNotes);
   
+  if (!flatNotes || flatNotes.length === 0) {
+    console.log('No notes to build hierarchy from');
+    return [];
+  }
+  
   // First, sort by position
-  const sortedNotes = [...flatNotes].sort((a, b) => a.note_position - b.note_position);
+  const sortedNotes = [...flatNotes].sort((a, b) => {
+    // Handle different field names (note_position vs position)
+    const posA = a.note_position !== undefined ? a.note_position : a.position;
+    const posB = b.note_position !== undefined ? b.note_position : b.position;
+    return posA - posB;
+  });
   
   // Create a map to store the hierarchy
   const noteMap = new Map<string, Note>();
   
   // First pass: create Note objects without children
   sortedNotes.forEach(dbNote => {
+    // Parse additional properties from _meta if it exists
+    let metaData: any = {};
+    if (dbNote._meta) {
+      try {
+        metaData = JSON.parse(dbNote._meta);
+      } catch (e) {
+        console.error('Error parsing _meta JSON:', e);
+      }
+    }
+    
+    // Use the correct position field
+    const position = dbNote.note_position !== undefined ? dbNote.note_position : dbNote.position;
+    
+    // Create Note object with all properties
     noteMap.set(dbNote.id, {
       id: dbNote.id,
       content: dbNote.content,
-      position: dbNote.note_position,
-      is_discussion: !!dbNote.is_discussion,
-      time_set: dbNote.time_set || null,
-      youtube_url: dbNote.youtube_url || null,
-      url: dbNote.url || null,
-      url_display_text: dbNote.url_display_text || null,
+      position: position,
+      // Use meta properties if available, otherwise use direct properties if they exist
+      is_discussion: metaData.is_discussion || !!dbNote.is_discussion || false,
+      time_set: metaData.time_set || dbNote.time_set || null,
+      youtube_url: metaData.youtube_url || dbNote.youtube_url || null,
+      url: metaData.url || dbNote.url || null,
+      url_display_text: metaData.url_display_text || dbNote.url_display_text || null,
       children: []
     });
   });
@@ -91,20 +121,28 @@ export function flattenNoteHierarchy(notes: Note[], projectId: string, userId: s
   // Recursive function to process each note
   const processNote = (note: Note, parentId: string | null, level: number) => {
     // Create a DB record for this note
+    const now = new Date().toISOString();
+    
+    // Use the correct field names based on the Supabase schema
     const dbNote = {
       id: note.id,
       content: note.content,
       user_id: userId,
       project_id: projectId,
       parent_id: parentId,
-      note_position: note.position,
-      is_discussion: note.is_discussion || false,
-      time_set: note.time_set,
-      youtube_url: note.youtube_url,
-      url: note.url,
-      url_display_text: note.url_display_text,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      // Use 'position' not 'note_position' as per Supabase schema
+      position: note.position, 
+      // Store additional properties as JSON in the content field if they don't exist in schema
+      // We'll need to parse these out when loading
+      _meta: JSON.stringify({
+        is_discussion: note.is_discussion || false,
+        time_set: note.time_set,
+        youtube_url: note.youtube_url,
+        url: note.url,
+        url_display_text: note.url_display_text
+      }),
+      created_at: now,
+      updated_at: now
     };
     
     // Add to flat list
