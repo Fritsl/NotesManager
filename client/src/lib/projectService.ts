@@ -445,6 +445,15 @@ export async function createProject(name: string, notesData: NotesData): Promise
 
 export async function updateProject(id: string, name: string, notesData: NotesData): Promise<Project | null> {
   try {
+    console.log('--- updateProject: Starting to update project ---');
+    console.log('Project ID:', id);
+    console.log('Project name:', name);
+    console.log('Notes data structure:', JSON.stringify({
+      noteCount: notesData?.notes?.length || 0,
+      hasNotes: !!notesData?.notes?.length,
+      sample: notesData?.notes?.length ? notesData.notes[0]?.id : 'no notes'
+    }));
+    
     // Get current user
     const { data: userData, error: userError } = await supabase.auth.getUser();
     
@@ -453,17 +462,18 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
       return null;
     }
     
+    console.log('Current user ID:', userData.user.id);
     const now = new Date().toISOString();
     
     // Update project in settings table
-    console.log('Updating project with notes data:', notesData);
+    console.log('Updating project with notes count:', notesData?.notes?.length || 0);
     
     // Ensure notesData has proper structure
     const validNotesData = notesData && Array.isArray(notesData.notes) 
       ? notesData 
       : { notes: [] };
     
-    console.log('Validated notes data for update:', validNotesData);
+    console.log('Validated notes data for update, count:', validNotesData.notes.length);
     
     // First update the project name
     console.log('Updating project in settings table...');
@@ -483,12 +493,15 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
       .single();
 
     if (error) {
-      console.error('Error updating project:', error);
+      console.error('Error updating project settings:', error);
       return null;
     }
     
+    console.log('Project settings successfully updated, now updating notes');
+    
     // Now handle notes update - convert hierarchical structure to flat DB records
     // First, delete all existing notes for this project
+    console.log('Deleting existing notes for project:', id);
     const { error: deleteError } = await supabase
       .from('notes')
       .delete()
@@ -500,27 +513,38 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
       return null;
     }
     
+    console.log('Successfully deleted existing notes, now inserting new notes');
+    
     // Then create new notes from the hierarchical structure
     const flatNotes = flattenNoteHierarchy(validNotesData.notes, id, userData.user.id);
     console.log('Flattened notes for DB insertion:', flatNotes.length, 'notes');
     
     if (flatNotes.length > 0) {
+      console.log('First flattened note sample:', JSON.stringify(flatNotes[0]));
+      
       // Insert notes in batches to avoid payload size limits
       const BATCH_SIZE = 50;
       for (let i = 0; i < flatNotes.length; i += BATCH_SIZE) {
         const batch = flatNotes.slice(i, i + BATCH_SIZE);
         console.log(`Inserting batch ${i/BATCH_SIZE + 1}/${Math.ceil(flatNotes.length/BATCH_SIZE)}, size: ${batch.length}`);
         
-        const { error: insertError } = await supabase
+        const { data: insertedData, error: insertError } = await supabase
           .from('notes')
-          .insert(batch);
+          .insert(batch)
+          .select();
           
         if (insertError) {
           console.error(`Error inserting notes batch ${i/BATCH_SIZE + 1}:`, insertError);
           // Continue with next batch
+        } else {
+          console.log(`Successfully inserted batch ${i/BATCH_SIZE + 1}, received:`, insertedData?.length || 0, 'records');
         }
       }
+    } else {
+      console.log('No notes to insert');
     }
+    
+    console.log('Project update completed successfully');
     
     // Return updated project with the hierarchical notes
     return {
