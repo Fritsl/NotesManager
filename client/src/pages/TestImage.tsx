@@ -17,6 +17,9 @@ export default function TestImage() {
   const [noteId, setNoteId] = useState<string>('');
   const [userId, setUserId] = useState<string>('');
   const [uploadResponse, setUploadResponse] = useState<any>(null);
+  const [imageId, setImageId] = useState<string>('');
+  const [newPosition, setNewPosition] = useState<number>(0);
+  const [updateResponse, setUpdateResponse] = useState<any>(null);
 
   useEffect(() => {
     // Get current user ID on component mount
@@ -144,6 +147,7 @@ export default function TestImage() {
       }
       
       setImageUrl(data.url);
+      setImageId(data.id); // Save the image ID for position updating
       
       toast({
         title: 'Success',
@@ -158,6 +162,51 @@ export default function TestImage() {
       });
     } finally {
       setUploading(false);
+    }
+  };
+  
+  const updateImagePosition = async () => {
+    if (!imageId || !noteId) {
+      toast({
+        title: 'Error',
+        description: 'Please upload an image or enter image ID and note ID',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/update-image-position', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          imageId,
+          noteId,
+          userId,
+          newPosition
+        })
+      });
+      
+      const data = await response.json();
+      setUpdateResponse(data);
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update image position');
+      }
+      
+      toast({
+        title: 'Success',
+        description: `Image position updated to ${newPosition}`,
+      });
+    } catch (error: any) {
+      console.error('Error updating image position:', error);
+      toast({
+        title: 'Update Error',
+        description: error.message || 'Failed to update image position',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -279,6 +328,51 @@ export default function TestImage() {
           </CardContent>
         </Card>
       )}
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Update Image Position</CardTitle>
+          <CardDescription>Test updating image position via API</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="image-id">Image ID</Label>
+              <Input
+                id="image-id"
+                value={imageId}
+                onChange={(e) => setImageId(e.target.value)}
+                placeholder="Enter image ID or upload an image first"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="position">New Position</Label>
+              <Input
+                id="position"
+                type="number"
+                min="0"
+                value={newPosition}
+                onChange={(e) => setNewPosition(parseInt(e.target.value))}
+                placeholder="Enter new position (number)"
+              />
+            </div>
+            
+            <Button 
+              onClick={updateImagePosition} 
+              disabled={!imageId || !noteId || !userId}
+            >
+              Update Image Position
+            </Button>
+          </div>
+          
+          {updateResponse && (
+            <div className="mt-4 p-4 bg-slate-800 text-white rounded-md overflow-auto max-h-64">
+              <pre>{JSON.stringify(updateResponse, null, 2)}</pre>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

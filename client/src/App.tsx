@@ -22,7 +22,14 @@ function Router() {
         </div>
       </nav>
       <Switch>
-        <Route path="/" component={NotesEditor} />
+        <Route 
+          path="/" 
+          component={() => (
+            <NotesProvider>
+              <NotesEditor />
+            </NotesProvider>
+          )} 
+        />
         <Route path="/test-image" component={TestImage} />
         <Route component={NotFound} />
       </Switch>
@@ -34,10 +41,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <NotesProvider>
-          <Router />
-          <Toaster />
-        </NotesProvider>
+        <Router />
+        <Toaster />
       </AuthProvider>
     </QueryClientProvider>
   );
