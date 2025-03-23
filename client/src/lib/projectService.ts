@@ -34,7 +34,7 @@ interface DbNote {
 }
 
 // Function to build hierarchical notes from flat DB records
-export function buildNoteHierarchy(flatNotes: DbNote[]): Note[] {
+export function buildNoteHierarchy(flatNotes: DbNote[], imagesData?: any[] | null): Note[] {
   console.log('Building note hierarchy from flat notes:', flatNotes);
   
   if (!flatNotes || flatNotes.length === 0) {
@@ -49,6 +49,24 @@ export function buildNoteHierarchy(flatNotes: DbNote[]): Note[] {
     const posB = b.note_position !== undefined ? b.note_position : (b.position ?? 0);
     return posA - posB;
   });
+  
+  // Create a map of noteId -> images[] if we have image data
+  const imageMap = new Map<string, NoteImage[]>();
+  if (imagesData && imagesData.length > 0) {
+    imagesData.forEach(image => {
+      if (!imageMap.has(image.note_id)) {
+        imageMap.set(image.note_id, []);
+      }
+      imageMap.get(image.note_id)?.push({
+        id: image.id,
+        note_id: image.note_id,
+        storage_path: image.storage_path,
+        url: image.url,
+        position: image.position,
+        created_at: image.created_at
+      });
+    });
+  }
   
   // Create a map to store the hierarchy
   const noteMap = new Map<string, Note>();
@@ -81,6 +99,9 @@ export function buildNoteHierarchy(flatNotes: DbNote[]): Note[] {
     // Use the correct position field and ensure it's always a number
     const position = dbNote.note_position !== undefined ? dbNote.note_position : (dbNote.position ?? 0);
     
+    // Get images for this note if any
+    const noteImages = imageMap.get(dbNote.id) || [];
+    
     // Create Note object with all properties
     noteMap.set(dbNote.id, {
       id: dbNote.id,
@@ -92,7 +113,8 @@ export function buildNoteHierarchy(flatNotes: DbNote[]): Note[] {
       youtube_url: metaData.youtube_url || dbNote.youtube_url || null,
       url: metaData.url || dbNote.url || null,
       url_display_text: metaData.url_display_text || dbNote.url_display_text || null,
-      children: []
+      children: [],
+      images: noteImages
     });
   });
   
@@ -318,8 +340,8 @@ export async function getProject(id: string): Promise<Project | null> {
       console.log('No notes found for this project');
     }
     
-    // Convert flat notes to hierarchical structure
-    const hierarchicalNotes = notesData ? buildNoteHierarchy(notesData) : [];
+    // Convert flat notes to hierarchical structure with images
+    const hierarchicalNotes = notesData ? buildNoteHierarchy(notesData, imagesData || undefined) : [];
     console.log('Hierarchical notes count:', hierarchicalNotes.length);
     
     // Format data for Project interface with notes
@@ -533,7 +555,29 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
     console.log('Project settings successfully updated, now updating notes');
     
     // Now handle notes update - convert hierarchical structure to flat DB records
-    // First, delete all existing notes for this project
+    // First, delete all existing images for this project's notes
+    console.log('Deleting existing images for project notes:', id);
+    // First get all note IDs in this project
+    const { data: noteIds } = await supabase
+      .from('notes')
+      .select('id')
+      .eq('project_id', id)
+      .eq('user_id', userData.user.id);
+      
+    if (noteIds && noteIds.length > 0) {
+      // Delete all images associated with these notes
+      const { error: imagesDeleteError } = await supabase
+        .from('note_images')
+        .delete()
+        .in('note_id', noteIds.map(note => note.id));
+        
+      if (imagesDeleteError) {
+        console.error('Error deleting note images:', imagesDeleteError);
+        // Continue with note deletion anyway
+      }
+    }
+    
+    // Now delete all existing notes for this project
     console.log('Deleting existing notes for project:', id);
     const { error: deleteError } = await supabase
       .from('notes')
@@ -594,6 +638,165 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
   }
 }
 
+// Image handling functions
+export async function addImageToNote(noteId: string, file: File): Promise<NoteImage | null> {
+  try {
+    // Get current user
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !userData.user) {
+      console.error('User not authenticated:', userError);
+      return null;
+    }
+    
+    // Generate a unique filename with original extension
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${uuidv4()}.${fileExt}`;
+    const filePath = `note-images/${fileName}`;
+    
+    // Upload file to storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('note-images')
+      .upload(filePath, file);
+      
+    if (uploadError) {
+      console.error('Error uploading image:', uploadError);
+      return null;
+    }
+    
+    // Get the public URL for the uploaded file
+    const { data: { publicUrl } } = supabase.storage
+      .from('note-images')
+      .getPublicUrl(filePath);
+    
+    // Get the highest position of existing images for this note
+    const { data: existingImages } = await supabase
+      .from('note_images')
+      .select('position')
+      .eq('note_id', noteId)
+      .order('position', { ascending: false })
+      .limit(1);
+      
+    const position = existingImages && existingImages.length > 0 
+      ? existingImages[0].position + 1 
+      : 0;
+    
+    // Create a record in the note_images table
+    const imageRecord = {
+      note_id: noteId,
+      storage_path: filePath,
+      url: publicUrl,
+      position: position
+    };
+    
+    const { data: imageData, error: imageError } = await supabase
+      .from('note_images')
+      .insert(imageRecord)
+      .select()
+      .single();
+      
+    if (imageError) {
+      console.error('Error creating image record:', imageError);
+      // Try to delete the uploaded file to avoid orphaned files
+      await supabase.storage
+        .from('note-images')
+        .remove([filePath]);
+      return null;
+    }
+    
+    return {
+      id: imageData.id,
+      note_id: imageData.note_id,
+      storage_path: imageData.storage_path,
+      url: imageData.url,
+      position: imageData.position,
+      created_at: imageData.created_at
+    };
+  } catch (error) {
+    console.error('Error in addImageToNote:', error);
+    return null;
+  }
+}
+
+export async function removeImageFromNote(imageId: string): Promise<boolean> {
+  try {
+    // Get current user
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !userData.user) {
+      console.error('User not authenticated:', userError);
+      return false;
+    }
+    
+    // Get the image record to find its storage path
+    const { data: imageData, error: getError } = await supabase
+      .from('note_images')
+      .select('storage_path')
+      .eq('id', imageId)
+      .single();
+      
+    if (getError || !imageData) {
+      console.error('Error getting image data:', getError);
+      return false;
+    }
+    
+    // Delete the image from storage
+    const { error: deleteStorageError } = await supabase.storage
+      .from('note-images')
+      .remove([imageData.storage_path]);
+      
+    if (deleteStorageError) {
+      console.error('Error deleting image from storage:', deleteStorageError);
+      // Continue to delete the database entry anyway
+    }
+    
+    // Delete the image record from the database
+    const { error: deleteRecordError } = await supabase
+      .from('note_images')
+      .delete()
+      .eq('id', imageId);
+      
+    if (deleteRecordError) {
+      console.error('Error deleting image record:', deleteRecordError);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in removeImageFromNote:', error);
+    return false;
+  }
+}
+
+export async function updateImagePosition(noteId: string, imageId: string, newPosition: number): Promise<boolean> {
+  try {
+    // Get current user
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !userData.user) {
+      console.error('User not authenticated:', userError);
+      return false;
+    }
+    
+    // Update the image position
+    const { error } = await supabase
+      .from('note_images')
+      .update({ position: newPosition })
+      .eq('id', imageId)
+      .eq('note_id', noteId);
+      
+    if (error) {
+      console.error('Error updating image position:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in updateImagePosition:', error);
+    return false;
+  }
+}
+
 export async function deleteProject(id: string): Promise<boolean> {
   try {
     // Get current user
@@ -604,7 +807,27 @@ export async function deleteProject(id: string): Promise<boolean> {
       return false;
     }
     
-    // Delete all notes for this project first
+    // First get all note IDs in this project
+    const { data: noteIds } = await supabase
+      .from('notes')
+      .select('id')
+      .eq('project_id', id)
+      .eq('user_id', userData.user.id);
+      
+    if (noteIds && noteIds.length > 0) {
+      // Delete all images associated with these notes
+      const { error: imagesDeleteError } = await supabase
+        .from('note_images')
+        .delete()
+        .in('note_id', noteIds.map(note => note.id));
+        
+      if (imagesDeleteError) {
+        console.error('Error deleting note images:', imagesDeleteError);
+        // Continue with note deletion anyway
+      }
+    }
+    
+    // Delete all notes for this project 
     const { error: notesDeleteError } = await supabase
       .from('notes')
       .delete()
