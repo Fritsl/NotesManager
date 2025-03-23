@@ -64,9 +64,10 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Import notes from JSON
-  const importNotes = useCallback((data: NotesData, projectName?: string) => {
+  const importNotes = useCallback((data: NotesData, projectName?: string, projectId?: string) => {
     console.log('ImportNotes received data:', data);
     console.log('Project name:', projectName);
+    console.log('Project ID:', projectId);
     
     if (!data) {
       console.error('ImportNotes failed: data is null or undefined');
@@ -111,6 +112,10 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     if (projectName) {
       setCurrentProjectName(projectName);
     }
+    
+    // Set current project ID if provided, otherwise set to null
+    // This ensures local imports don't have a projectId but database loads do
+    setCurrentProjectId(projectId || null);
     
     // Always set hasActiveProject to true when importing notes
     setHasActiveProject(true);
@@ -652,7 +657,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       const result = await createProject(baseName, emptyProject);
       
       if (result) {
-        console.log("Project saved to database:", result);
+        console.log("New project created with ID:", result.id);
         // Store the project ID for later use
         setCurrentProjectId(result.id);
         
@@ -665,7 +670,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         // Note: result.name might contain a unique suffix added by the backend
         // but we want to show the clean name to the user
       } else {
-        console.error("Failed to save project to database");
+        console.error("Failed to create project in database");
         toast({
           title: "Warning",
           description: "Project created but not saved to database",

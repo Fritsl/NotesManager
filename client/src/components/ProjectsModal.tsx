@@ -41,7 +41,9 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
   const { 
     notes, 
     importNotes,
-    exportNotes 
+    exportNotes,
+    setCurrentProjectId,
+    setHasActiveProject
   } = useNotes();
 
   useEffect(() => {
@@ -80,6 +82,12 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
       console.log('Result from createProject:', newProject);
       
       if (newProject) {
+        // Set the current project ID and mark as having an active project
+        setCurrentProjectId(newProject.id);
+        setHasActiveProject(true);
+        
+        console.log('Set current project ID for new project:', newProject.id);
+        
         toast({
           title: 'Success',
           description: 'Project created successfully',
@@ -204,6 +212,12 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
       
       // Pass both the data and the project name
       importNotes(fullProject.data, fullProject.name);
+      
+      // Set the current project ID and mark as having an active project
+      setCurrentProjectId(fullProject.id);
+      setHasActiveProject(true);
+      
+      console.log('Set current project ID:', fullProject.id);
       
       toast({
         title: 'Success',
