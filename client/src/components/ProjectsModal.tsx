@@ -220,19 +220,20 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">Your Projects</DialogTitle>
+          <DialogHeader className="border-b border-gray-800 pb-4">
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">Your Projects</DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="flex items-end gap-2">
               <div className="flex-1 space-y-2">
-                <Label htmlFor="new-project">Create New Project</Label>
+                <Label htmlFor="new-project" className="text-gray-300">Create New Project</Label>
                 <Input 
                   id="new-project" 
                   placeholder="Project name"
                   value={newProjectName}
                   onChange={(e) => setNewProjectName(e.target.value)}
+                  className="bg-gray-850 border-gray-700"
                 />
               </div>
               <Button 
@@ -245,15 +246,15 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
               </Button>
             </div>
             
-            <div className="border rounded-md p-4">
-              <h3 className="font-medium mb-4">Your Projects</h3>
+            <div className="border border-gray-800 rounded-md p-4 bg-gray-900">
+              <h3 className="font-medium mb-4 text-gray-300">Your Projects</h3>
               
               {loading ? (
                 <div className="flex justify-center py-8">
-                  <LoaderCircle className="h-8 w-8 animate-spin" />
+                  <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : projects.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-8 text-gray-500">
                   No projects found. Create your first project!
                 </div>
               ) : (
@@ -261,12 +262,12 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                   {projects.map((project) => (
                     <div 
                       key={project.id} 
-                      className="p-3 border rounded-md hover:bg-accent transition-colors"
+                      className="p-3 border border-gray-800 rounded-md bg-gray-850 hover:bg-gray-800 transition-colors"
                     >
                       <div className="flex justify-between items-center">
                         <div>
-                          <h4 className="font-medium">{project.name}</h4>
-                          <p className="text-sm text-muted-foreground">
+                          <h4 className="font-medium text-gray-200">{project.name}</h4>
+                          <p className="text-sm text-gray-400">
                             Updated: {formatDate(project.updated_at)}
                           </p>
                         </div>
@@ -274,6 +275,7 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                           <Button
                             variant="outline"
                             size="sm"
+                            className="border-gray-700 hover:bg-gray-700 hover:text-gray-200"
                             onClick={() => handleLoadProject(project)}
                           >
                             <FileDown className="h-4 w-4 mr-1" />
@@ -282,6 +284,7 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                           <Button
                             variant="outline"
                             size="sm"
+                            className="border-gray-700 hover:bg-gray-700 hover:text-gray-200"
                             onClick={() => handleUpdateProject(project)}
                           >
                             <Save className="h-4 w-4 mr-1" />
@@ -290,6 +293,7 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                           <Button
                             variant="outline"
                             size="sm"
+                            className="border-gray-700 hover:bg-red-900 hover:text-red-200" 
                             onClick={() => confirmDeleteProject(project)}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -306,17 +310,20 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
       </Dialog>
 
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-gray-900 border border-gray-800">
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-gray-200">Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
               This will permanently delete the project "{projectToDelete?.name}". 
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteProject}>
+            <AlertDialogCancel className="bg-gray-800 text-gray-300 hover:bg-gray-700 border-gray-700">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteProject}
+              className="bg-red-900 hover:bg-red-800 text-gray-200 border-none"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
