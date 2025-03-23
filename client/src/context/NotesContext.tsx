@@ -107,6 +107,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       setCurrentProjectName(projectName);
     }
     
+    // Always set hasActiveProject to true when importing notes
+    setHasActiveProject(true);
+    
     toast({
       title: "Import Successful",
       description: `Imported ${data.notes.length} notes${projectName ? ` from "${projectName}"` : ''}`,
