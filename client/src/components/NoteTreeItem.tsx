@@ -270,12 +270,12 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         <div 
           ref={ref}
           className={cn(
-            "note-item note-card border rounded-md p-2 sm:p-2 transition flex items-start group shadow-sm hover:shadow relative",
+            "note-item note-card border rounded-md p-2 sm:p-2 transition flex items-start group shadow-sm hover:shadow-md relative",
             // Use the level color themes for consistent styling with the header buttons - directly using level index
             level >= 0 && level < levelColors.length ? levelColors[level].bg : levelColors[0].bg,
-            `border-l-[4px] ${level >= 0 && level < levelColors.length ? levelColors[level].border : levelColors[0].border}`,
+            `border-l-[5px] ${level >= 0 && level < levelColors.length ? levelColors[level].border : levelColors[0].border}`,
             // Don't highlight the entire note, we'll use a bottom border instead
-            selectedNote?.id === note.id ? "selected-note border-primary ring-2 ring-primary ring-opacity-70" : "border-gray-700 hover:bg-opacity-80",
+            selectedNote?.id === note.id ? "selected-note border-primary ring-2 ring-primary ring-opacity-70" : "border-gray-700 hover:bg-opacity-90",
             isDragging && "opacity-50"
           )}
           onClick={() => selectNote(note)}
@@ -353,14 +353,14 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             {(note.youtube_url || note.url) && (
               <div className="flex flex-wrap gap-2 mt-1">
                 {note.youtube_url && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-950 text-red-300 border border-red-700">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-950 text-white border border-red-700 shadow-sm">
                     <Youtube size={12} className="mr-1" />
                     YouTube
                   </span>
                 )}
                 
                 {note.url && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-950 text-blue-300 border border-blue-700">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-950 text-white border border-blue-700 shadow-sm">
                     <Link size={12} className="mr-1" />
                     {note.url_display_text || "Link"}
                   </span>

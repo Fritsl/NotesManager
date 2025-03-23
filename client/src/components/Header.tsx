@@ -219,12 +219,12 @@ export default function Header() {
                       expandToLevel(level);
                     }}
                     className={cn(
-                      "h-7 w-7 p-0",
+                      "h-7 w-7 p-0 font-bold",
                       level > 0 ? "ml-1" : "", // Spacing between buttons
                       // Apply the level color - checking if currentLevel matches exactly
                       currentLevel === level 
-                        ? `${colorTheme.highlight} border-l-[3px] ${colorTheme.border} ${colorTheme.text}`
-                        : `border border-gray-700 hover:${colorTheme.highlight} hover:${colorTheme.text} hover:border-l-[3px] hover:${colorTheme.border}`
+                        ? `${colorTheme.highlight} border-2 ${colorTheme.border} ${colorTheme.text} shadow-md`
+                        : `border border-gray-700 hover:${colorTheme.highlight} hover:${colorTheme.text} hover:border-2 hover:${colorTheme.border}`
                     )}
                   >
                     {colorTheme.label} {/* Use the label from the color theme */}
@@ -293,10 +293,10 @@ export default function Header() {
                             document.body.click();
                           }}
                           className={cn(
-                            "h-8 w-8 p-0",
+                            "h-8 w-8 p-0 font-bold",
                             currentLevel === level 
-                              ? `${colorTheme.highlight} border-l-[3px] ${colorTheme.border} ${colorTheme.text}`
-                              : `border border-gray-700 hover:${colorTheme.highlight} hover:${colorTheme.text} hover:border-l-[3px] hover:${colorTheme.border}`
+                              ? `${colorTheme.highlight} border-2 ${colorTheme.border} ${colorTheme.text} shadow-md`
+                              : `border border-gray-700 hover:${colorTheme.highlight} hover:${colorTheme.text} hover:border-2 hover:${colorTheme.border}`
                           )}
                         >
                           {colorTheme.label}
