@@ -222,6 +222,9 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
         <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
           <DialogHeader className="border-b border-gray-800 pb-4">
             <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">Your Projects</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Manage your saved projects - create new ones, load existing ones, or update current work.
+            </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
