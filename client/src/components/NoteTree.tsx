@@ -87,9 +87,9 @@ export default function NoteTree() {
         expandMoreLevel();
       }
       
-      // Number keys 1-3 with Ctrl to expand to specific levels
+      // Number keys 0-5 with Ctrl to expand to specific levels
       // Keep these as they can be convenient for quick jumps
-      if (e.ctrlKey && ['1', '2', '3', '4', '5'].includes(e.key)) {
+      if (e.ctrlKey && ['0', '1', '2', '3', '4', '5'].includes(e.key)) {
         e.preventDefault();
         const level = parseInt(e.key);
         expandToLevel(level);
