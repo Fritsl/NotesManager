@@ -55,8 +55,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Import notes from JSON
-  const importNotes = useCallback((data: NotesData) => {
+  const importNotes = useCallback((data: NotesData, projectName?: string) => {
     console.log('ImportNotes received data:', data);
+    console.log('Project name:', projectName);
     
     if (!data) {
       console.error('ImportNotes failed: data is null or undefined');
@@ -97,9 +98,14 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     setSelectedNote(null);
     setBreadcrumbs([]);
     
+    // Update project name if provided
+    if (projectName) {
+      setCurrentProjectName(projectName);
+    }
+    
     toast({
       title: "Import Successful",
-      description: `Imported ${data.notes.length} notes with cleaned positions`,
+      description: `Imported ${data.notes.length} notes${projectName ? ` from "${projectName}"` : ''}`,
     });
   }, [toast, cleanNotePositions]);
 
@@ -601,6 +607,8 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         expandToLevel,
         currentLevel,
         maxDepth,
+        currentProjectName,
+        setCurrentProjectName,
       }}
     >
       {children}

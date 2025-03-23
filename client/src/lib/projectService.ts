@@ -77,7 +77,27 @@ export async function getProject(id: string): Promise<Project | null> {
     // Map settings table fields to Project interface
     if (data) {
       console.log('Raw data from settings table:', data);
-      console.log('Notes data from metadata:', data.metadata?.notes_data);
+      console.log('Raw metadata:', data.metadata);
+      
+      let notesData;
+      
+      // Try to extract notes_data from metadata
+      if (data.metadata && typeof data.metadata === 'object') {
+        notesData = data.metadata.notes_data;
+        console.log('Notes data from metadata:', notesData);
+        
+        // Validate structure
+        if (!notesData || !notesData.notes) {
+          console.warn('Invalid notes_data structure, creating empty structure');
+          notesData = { notes: [] };
+        } else if (!Array.isArray(notesData.notes)) {
+          console.warn('notes is not an array, creating empty array');
+          notesData = { notes: [] };
+        }
+      } else {
+        console.warn('No metadata or invalid metadata format, creating empty notes structure');
+        notesData = { notes: [] };
+      }
       
       // Format data for Project interface
       const formattedProject = {
@@ -86,10 +106,11 @@ export async function getProject(id: string): Promise<Project | null> {
         created_at: data.created_at,
         updated_at: data.updated_at,
         user_id: data.user_id,
-        data: data.metadata?.notes_data || { notes: [] }
+        data: notesData
       };
       
       console.log('Formatted project for return:', formattedProject);
+      console.log('Notes array length:', formattedProject.data.notes.length);
       return formattedProject;
     }
 

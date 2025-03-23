@@ -162,6 +162,7 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
   const handleLoadProject = (project: Project) => {
     try {
       console.log('Loading project data:', project.data);
+      console.log('Project details:', project.name, project.id);
       
       if (!project.data || !project.data.notes) {
         console.error('Project data is missing or malformed:', project.data);
@@ -173,10 +174,12 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
         return;
       }
       
-      importNotes(project.data);
+      // Pass both the data and the project name
+      importNotes(project.data, project.name);
+      
       toast({
         title: 'Success',
-        description: 'Project loaded successfully',
+        description: `Project "${project.name}" loaded successfully`,
       });
       onClose();
     } catch (error) {

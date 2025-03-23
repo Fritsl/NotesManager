@@ -14,7 +14,8 @@ export default function NoteTree() {
     expandAll, 
     collapseAll, 
     expandToLevel, 
-    currentLevel 
+    currentLevel,
+    currentProjectName
   } = useNotes();
 
   // Check if a node is expanded
@@ -93,6 +94,11 @@ export default function NoteTree() {
 
   return (
     <div className="p-2">
+      {/* Project name header */}
+      <div className="mb-4 pb-2 border-b">
+        <h2 className="text-lg font-semibold text-center">{currentProjectName}</h2>
+      </div>
+      
       <div className="relative">
         {/* First drop zone for moving items to beginning */}
         {notes.length > 0 && <DropZone index={0} />}
@@ -114,7 +120,7 @@ export default function NoteTree() {
         
         {notes.length === 0 && (
           <div className="text-center py-8 text-gray-500">
-            <p className="mb-4">No notes yet</p>
+            <p className="mb-4">No notes yet in "{currentProjectName}"</p>
             <Button
               variant="outline"
               onClick={() => addNote(null)}
