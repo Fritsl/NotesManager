@@ -28,7 +28,7 @@ interface DbNote {
 }
 
 // Function to build hierarchical notes from flat DB records
-function buildNoteHierarchy(flatNotes: DbNote[]): Note[] {
+export function buildNoteHierarchy(flatNotes: DbNote[]): Note[] {
   console.log('Building note hierarchy from flat notes:', flatNotes);
   
   // First, sort by position
@@ -85,7 +85,7 @@ function buildNoteHierarchy(flatNotes: DbNote[]): Note[] {
 }
 
 // Function to flatten hierarchical notes to DB records
-function flattenNoteHierarchy(notes: Note[], projectId: string, userId: string): any[] {
+export function flattenNoteHierarchy(notes: Note[], projectId: string, userId: string): any[] {
   const flatNotes: any[] = [];
   
   // Recursive function to process each note
@@ -149,16 +149,19 @@ export async function getProjects(): Promise<Project[]> {
       return [];
     }
 
-    // Map settings table fields to Project interface
-    const projects = data?.map(item => ({
+    // Create projects array with empty notes
+    const projects: Project[] = data?.map(item => ({
       id: item.id,
       name: item.title || 'Untitled Project',
       created_at: item.created_at,
       updated_at: item.updated_at,
       user_id: item.user_id,
-      data: item.metadata?.notes_data || { notes: [] }
+      data: { notes: [] } // Will be populated below
     })) || [];
-
+    
+    // For project list display, we don't need to load all notes data,
+    // but we could fetch the first few notes for each project if needed
+    
     return projects;
   } catch (error) {
     console.error('Error in getProjects:', error);
@@ -206,7 +209,7 @@ export async function getProject(id: string): Promise<Project | null> {
     console.log('Raw notes data from DB:', notesData);
     
     // Convert flat notes to hierarchical structure
-    const hierarchicalNotes = buildNoteHierarchy(notesData || []);
+    const hierarchicalNotes = notesData ? buildNoteHierarchy(notesData) : [];
     console.log('Hierarchical notes:', hierarchicalNotes);
     
     // Format data for Project interface with notes
@@ -379,7 +382,7 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
       name: data.title,
       created_at: data.created_at,
       updated_at: data.updated_at,
-      user_id: data.user.id,
+      user_id: data.user_id,
       data: validNotesData
     };
   } catch (error) {
@@ -398,7 +401,19 @@ export async function deleteProject(id: string): Promise<boolean> {
       return false;
     }
     
-    // Use soft delete (set deleted_at) instead of actual deletion
+    // Delete all notes for this project first
+    const { error: notesDeleteError } = await supabase
+      .from('notes')
+      .delete()
+      .eq('project_id', id)
+      .eq('user_id', userData.user.id);
+      
+    if (notesDeleteError) {
+      console.error('Error deleting project notes:', notesDeleteError);
+      // Continue with project deletion anyway
+    }
+    
+    // Use soft delete (set deleted_at) instead of actual deletion for the project
     const now = new Date().toISOString();
     
     const { error } = await supabase
