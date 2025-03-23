@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { 
   MoreVertical, 
   Menu, 
@@ -9,7 +9,10 @@ import {
   ChevronUp, 
   ChevronDown,
   ChevronsUpDown,
-  Info
+  Info,
+  Check,
+  X,
+  Edit2
 } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import ImportModal from "@/components/ImportModal";
@@ -28,6 +31,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { levelColors } from "@/lib/level-colors";
 
@@ -39,21 +43,110 @@ export default function Header() {
     expandToLevel, 
     currentLevel,
     maxDepth,
-    currentProjectName
+    currentProjectName,
+    setCurrentProjectName
   } = useNotes();
   
   // Debug
   console.log("Header - Current Project Name:", currentProjectName);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [isEditingProjectName, setIsEditingProjectName] = useState(false);
+  const [editedProjectName, setEditedProjectName] = useState(currentProjectName);
+  const projectNameInputRef = useRef<HTMLInputElement>(null);
+
+  // Update local state when context project name changes
+  useEffect(() => {
+    setEditedProjectName(currentProjectName);
+  }, [currentProjectName]);
+
+  // Focus input when edit mode is enabled
+  useEffect(() => {
+    if (isEditingProjectName && projectNameInputRef.current) {
+      projectNameInputRef.current.focus();
+      projectNameInputRef.current.select();
+    }
+  }, [isEditingProjectName]);
+
+  const startEditing = () => {
+    setIsEditingProjectName(true);
+  };
+
+  const saveProjectName = () => {
+    // Don't allow empty project names
+    if (editedProjectName.trim() === '') {
+      setEditedProjectName(currentProjectName);
+      setIsEditingProjectName(false);
+      return;
+    }
+    
+    setCurrentProjectName(editedProjectName);
+    setIsEditingProjectName(false);
+  };
+
+  const cancelEditing = () => {
+    setEditedProjectName(currentProjectName);
+    setIsEditingProjectName(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      saveProjectName();
+    } else if (e.key === 'Escape') {
+      cancelEditing();
+    }
+  };
 
   return (
     <header className="bg-gray-950 border-b border-gray-800 py-2 px-4 flex justify-between items-center">
       <div className="flex items-center space-x-2">
         <div className="flex items-center space-x-2">
-          <h1 className="text-base font-semibold text-gray-100">
-            <span className="text-gray-400">Project:</span> {currentProjectName}
-          </h1>
+          {!isEditingProjectName ? (
+            <div 
+              className="flex items-center cursor-pointer group"
+              onClick={startEditing}
+            >
+              <h1 className="text-base font-semibold text-gray-100 flex items-center">
+                <span className="text-gray-400">Project:</span>
+                <span className="ml-1 max-w-[250px] truncate group-hover:text-primary transition-colors">
+                  {currentProjectName}
+                </span>
+                <Edit2 className="h-3.5 w-3.5 ml-1.5 opacity-0 group-hover:opacity-100 text-gray-400 transition-opacity" />
+              </h1>
+            </div>
+          ) : (
+            <div className="flex items-center">
+              <span className="text-gray-400 text-base mr-1">Project:</span>
+              <div className="flex items-center">
+                <Input
+                  ref={projectNameInputRef}
+                  value={editedProjectName}
+                  onChange={(e) => setEditedProjectName(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="h-7 py-0 text-base font-semibold bg-gray-800 border-gray-700 focus-visible:ring-primary text-gray-100"
+                  maxLength={50}
+                />
+                <div className="flex ml-1">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6 p-0 text-green-500 hover:text-green-400 hover:bg-gray-800"
+                    onClick={saveProjectName}
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6 p-0 text-red-500 hover:text-red-400 hover:bg-gray-800"
+                    onClick={cancelEditing}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         <TooltipProvider>
           <Tooltip>
