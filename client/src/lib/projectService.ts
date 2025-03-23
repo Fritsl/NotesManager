@@ -449,17 +449,23 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
     
     // Then create new notes from the hierarchical structure
     const flatNotes = flattenNoteHierarchy(validNotesData.notes, id, userData.user.id);
-    console.log('Flattened notes for DB insertion:', flatNotes);
+    console.log('Flattened notes for DB insertion:', flatNotes.length, 'notes');
     
     if (flatNotes.length > 0) {
-      // Insert the flattened notes
-      const { error: insertError } = await supabase
-        .from('notes')
-        .insert(flatNotes);
+      // Insert notes in batches to avoid payload size limits
+      const BATCH_SIZE = 50;
+      for (let i = 0; i < flatNotes.length; i += BATCH_SIZE) {
+        const batch = flatNotes.slice(i, i + BATCH_SIZE);
+        console.log(`Inserting batch ${i/BATCH_SIZE + 1}/${Math.ceil(flatNotes.length/BATCH_SIZE)}, size: ${batch.length}`);
         
-      if (insertError) {
-        console.error('Error inserting notes:', insertError);
-        // Continue anyway to return the project
+        const { error: insertError } = await supabase
+          .from('notes')
+          .insert(batch);
+          
+        if (insertError) {
+          console.error(`Error inserting notes batch ${i/BATCH_SIZE + 1}:`, insertError);
+          // Continue with next batch
+        }
       }
     }
     
