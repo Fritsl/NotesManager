@@ -661,19 +661,22 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         // Store the project ID for later use
         setCurrentProjectId(result.id);
         
+        // Use the actual project name that was saved in the database
+        // This might contain a suffix if the original name was already taken
+        if (result.name !== baseName) {
+          console.log(`Project saved with modified name: "${result.name}" (original: "${baseName}")`);
+          setCurrentProjectName(result.name);
+        }
+        
         toast({
           title: "Project Created",
-          description: `New project "${baseName}" has been created and saved`,
+          description: `New project "${result.name}" has been created and saved`,
         });
-        
-        // Keep using the clean name for display purposes
-        // Note: result.name might contain a unique suffix added by the backend
-        // but we want to show the clean name to the user
       } else {
         console.error("Failed to create project in database");
         toast({
           title: "Warning",
-          description: "Project created but not saved to database",
+          description: "Project created locally but not saved to database. Try a different name.",
           variant: "destructive",
         });
       }
@@ -681,11 +684,11 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       console.error("Error saving project to database:", error);
       toast({
         title: "Error",
-        description: "Failed to save project to database",
+        description: "Failed to save project to database. Please try again with a different name.",
         variant: "destructive",
       });
     }
-  }, [toast, setCurrentProjectId]);
+  }, [toast, setCurrentProjectId, setCurrentProjectName]);
   
   return (
     <NotesContext.Provider

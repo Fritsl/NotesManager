@@ -341,7 +341,10 @@ export async function createProject(name: string, notesData: NotesData): Promise
     let baseName = name;
     let currentName = baseName;
     let attempt = 0;
-    const MAX_ATTEMPTS = 5;
+    const MAX_ATTEMPTS = 10;
+    
+    // Generate a timestamp suffix to ensure uniqueness if needed
+    const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
     
     // Try creating with original name first, then add numeric suffixes if needed
     while (!projectInsertResponse?.data && attempt < MAX_ATTEMPTS) {
@@ -367,8 +370,16 @@ export async function createProject(name: string, notesData: NotesData): Promise
       if (projectInsertResponse.error) {
         if (projectInsertResponse.error.code === '23505') { // Unique constraint violation
           attempt++;
-          // Try with a new name, adding a numeric suffix
-          currentName = `${baseName} (${attempt})`;
+          
+          // After trying numbered suffixes, add timestamp to guarantee uniqueness
+          if (attempt <= 5) {
+            // Try with a new name, adding a numeric suffix
+            currentName = `${baseName} (${attempt})`;
+          } else {
+            // Add timestamp to ensure uniqueness 
+            currentName = `${baseName} (${timestamp}-${attempt - 5})`;
+          }
+          
           console.log(`Name already exists, trying again with: "${currentName}"`);
         } else {
           // Different error, break the loop
@@ -385,6 +396,10 @@ export async function createProject(name: string, notesData: NotesData): Promise
     // Check final result
     if (!projectInsertResponse?.data) {
       console.error('Failed to create project after multiple attempts:', projectInsertResponse?.error);
+      
+      // Return a more specific error to help debugging
+      const errorMessage = projectInsertResponse?.error?.message || 'Unknown error';
+      console.error(`Last error: ${errorMessage} (code: ${projectInsertResponse?.error?.code})`);
       return null;
     }
     
