@@ -12,9 +12,19 @@ export interface Project {
 
 export async function getProjects(): Promise<Project[]> {
   try {
+    // Get current user
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !userData.user) {
+      console.error('User not authenticated:', userError);
+      return [];
+    }
+    
+    // Query settings table for projects belonging to the current user
     const { data, error } = await supabase
       .from('settings')
       .select('*')
+      .eq('user_id', userData.user.id)
       .is('deleted_at', null) // Only get non-deleted projects
       .order('updated_at', { ascending: false });
 
@@ -42,10 +52,20 @@ export async function getProjects(): Promise<Project[]> {
 
 export async function getProject(id: string): Promise<Project | null> {
   try {
+    // Get current user
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !userData.user) {
+      console.error('User not authenticated:', userError);
+      return null;
+    }
+    
+    // Query settings table for project belonging to current user
     const { data, error } = await supabase
       .from('settings')
       .select('*')
       .eq('id', id)
+      .eq('user_id', userData.user.id)
       .is('deleted_at', null)
       .single();
 
@@ -120,8 +140,17 @@ export async function createProject(name: string, notesData: NotesData): Promise
 
 export async function updateProject(id: string, name: string, notesData: NotesData): Promise<Project | null> {
   try {
+    // Get current user
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !userData.user) {
+      console.error('User not authenticated:', userError);
+      return null;
+    }
+    
     const now = new Date().toISOString();
     
+    // Update project in settings table
     const { data, error } = await supabase
       .from('settings')
       .update({
@@ -131,6 +160,7 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
         metadata: { notes_data: notesData }
       })
       .eq('id', id)
+      .eq('user_id', userData.user.id) // Ensure user can only update their own projects
       .is('deleted_at', null)
       .select()
       .single();
@@ -157,6 +187,14 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
 
 export async function deleteProject(id: string): Promise<boolean> {
   try {
+    // Get current user
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !userData.user) {
+      console.error('User not authenticated:', userError);
+      return false;
+    }
+    
     // Use soft delete (set deleted_at) instead of actual deletion
     const now = new Date().toISOString();
     
@@ -166,7 +204,8 @@ export async function deleteProject(id: string): Promise<boolean> {
         deleted_at: now,
         updated_at: now
       })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', userData.user.id); // Ensure user can only delete their own projects
 
     if (error) {
       console.error('Error deleting project:', error);
