@@ -13,7 +13,7 @@ interface NotesContextType {
   updateNote: (updatedNote: Note) => void;
   deleteNote: (noteId: string) => void;
   moveNote: (noteId: string, targetParentId: string | null, position: number) => void;
-  importNotes: (data: NotesData) => void;
+  importNotes: (data: NotesData, projectName?: string) => void;
   exportNotes: () => NotesData;
   expandedNodes: Set<string>;
   setExpandedNodes: React.Dispatch<React.SetStateAction<Set<string>>>;
@@ -23,6 +23,8 @@ interface NotesContextType {
   expandToLevel: (level: number) => void;
   currentLevel: number;
   maxDepth: number;
+  currentProjectName: string;
+  setCurrentProjectName: (name: string) => void;
 }
 
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
@@ -33,6 +35,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const [breadcrumbs, setBreadcrumbs] = useState<Note[]>([]);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [currentLevel, setCurrentLevel] = useState<number>(1);
+  const [currentProjectName, setCurrentProjectName] = useState<string>('Untitled Project');
   const { toast } = useToast();
 
   // Clean note positions to ensure sequential ordering without gaps
