@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
-import { Note, NotesData } from '../types/notes';
+import { Note, NotesData, NoteImage } from '../types/notes';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface Project {
   id: string;
@@ -270,6 +271,20 @@ export async function getProject(id: string): Promise<Project | null> {
       .select('*')
       .eq('project_id', id)
       .eq('user_id', userData.user.id);
+      
+    // Fetch images for notes in this project
+    console.log('Fetching images for notes in project:', id);
+    const { data: imagesData, error: imagesError } = await supabase
+      .from('note_images')
+      .select('*')
+      .in('note_id', notesData?.map(note => note.id) || [])
+      .order('position', { ascending: true });
+      
+    if (imagesError) {
+      console.error('Error fetching note images:', imagesError);
+    } else {
+      console.log('Fetched images count:', imagesData?.length || 0);
+    }
     
     if (notesError) {
       console.error('Error fetching notes:', notesError);

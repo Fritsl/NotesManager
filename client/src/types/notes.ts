@@ -1,3 +1,12 @@
+export interface NoteImage {
+  id: string;
+  note_id: string;
+  storage_path: string;
+  url: string;
+  position: number;
+  created_at: string;
+}
+
 export interface Note {
   id: string;
   content: string;
@@ -8,6 +17,7 @@ export interface Note {
   url: string | null;
   url_display_text: string | null;
   children: Note[];
+  images?: NoteImage[];
 }
 
 export interface NotesData {

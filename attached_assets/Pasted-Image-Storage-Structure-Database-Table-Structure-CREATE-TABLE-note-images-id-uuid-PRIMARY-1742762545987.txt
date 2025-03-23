@@ -1,0 +1,127 @@
+Image Storage Structure
+Database Table Structure
+
+CREATE TABLE note_images (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    note_id uuid REFERENCES notes(id) ON DELETE CASCADE,
+    url text,
+    storage_path text,
+    created_at timestamptz DEFAULT now(),
+    updated_at timestamptz DEFAULT now(),
+    position integer DEFAULT 0
+)
+Storage Flow
+Image Upload Process:
+Images are first optimized using an Edge Function (optimize-image)
+Images are stored in Supabase Storage in the note-images bucket
+A database record is created in the note_images table
+The public URL and storage path are saved
+Image Optimization:
+
+// Edge Function processes images to:
+- Resize to max 720x720px
+- Convert to WebP format
+- Compress with quality=80
+- Maintain aspect ratio
+Database Relationships
+Note to Images: One-to-Many relationship
+
+notes {
+  id: uuid
+  ...other fields
+  images: note_images[] // Virtual relation
+}
+Image Ordering:
+Images maintain position order within each note
+position column handles ordering
+Automatic position maintenance via triggers
+Loading Images
+Query Structure:
+
+const { data: notes } = await supabase
+  .from('notes')
+  .select(`
+    *,
+    images:note_images(*)
+  `)
+  .eq('project_id', projectId);
+Image URLs:
+Direct URLs from Storage bucket
+Format: https://<project>.supabase.co/storage/v1/object/public/note-images/<path>
+Working with Images
+Adding Images:
+
+const addImage = async (noteId: string, url: string) => {
+  // 1. Optimize image
+  const optimizedUrl = await optimizeImage(url);
+  
+  // 2. Upload to storage
+  const filePath = `images/${uuid()}.jpg`;
+  await supabase.storage
+    .from('note-images')
+    .upload(filePath, imageBlob);
+    
+  // 3. Create database record
+  await supabase
+    .from('note_images')
+    .insert({
+      note_id: noteId,
+      url: publicUrl,
+      storage_path: filePath
+    });
+}
+Removing Images:
+
+const removeImage = async (imageId: string) => {
+  // 1. Get image record
+  const { data: image } = await supabase
+    .from('note_images')
+    .select('storage_path')
+    .eq('id', imageId)
+    .single();
+    
+  // 2. Remove from storage
+  await supabase.storage
+    .from('note-images')
+    .remove([image.storage_path]);
+    
+  // 3. Delete database record
+  await supabase
+    .from('note_images')
+    .delete()
+    .eq('id', imageId);
+}
+Reordering Images:
+
+const moveImage = async (noteId: string, imageId: string, newPosition: number) => {
+  await supabase.rpc('move_image', {
+    p_note_id: noteId,
+    p_image_id: imageId,
+    p_new_position: newPosition
+  });
+}
+Security Considerations
+RLS Policies:
+
+-- Users can only access their own images
+CREATE POLICY "Users can manage their own note images"
+ON note_images FOR ALL TO authenticated
+USING (EXISTS (
+  SELECT 1 FROM notes
+  WHERE notes.id = note_images.note_id
+  AND notes.user_id = auth.uid()
+));
+Storage Security:
+Public bucket with restricted upload access
+Only authenticated users can upload
+Images are publicly accessible once uploaded
+Cleanup Handling
+Cascade Deletion:
+When a note is deleted, associated images are automatically removed
+Trigger handles storage cleanup:
+
+CREATE TRIGGER delete_storage_object_trigger
+BEFORE DELETE ON note_images
+FOR EACH ROW
+EXECUTE FUNCTION delete_storage_object();
+This system provides a robust way to handle image attachments while maintaining proper ordering, security, and cleanup procedures.
