@@ -1,0 +1,74 @@
+I'll describe the database structure and project loading flow based on the schema and code:
+
+Database Structure
+Core Tables:
+
+settings (Projects table)
+- id: uuid (primary key)
+- user_id: uuid (references auth.users)
+- title: text (with length constraints 1-50 chars)
+- description: text
+- created_at: timestamptz
+- updated_at: timestamptz 
+- last_modified_at: timestamptz
+- note_count: integer
+- deleted_at: timestamptz (for soft deletes)
+
+notes
+- id: uuid (primary key)
+- content: text
+- user_id: uuid (references auth.users)
+- project_id: uuid (references settings)
+- parent_id: uuid (self-reference for hierarchy)
+- is_discussion: boolean
+- created_at: timestamptz
+- updated_at: timestamptz
+- note_position: integer
+Security:
+Row Level Security (RLS) is enabled on both tables
+Users can only access their own data through RLS policies
+All operations require authentication
+Project Loading Flow
+Initial Load (loadProjects in projectSlice.ts):
+
+// 1. Get current user
+const user = await database.auth.getCurrentUser();
+
+// 2. Load active (non-deleted) projects
+const { data: projects } = await supabase
+  .from('settings')
+  .select('*')
+  .is('deleted_at', null)  // Only non-deleted projects
+  .eq('user_id', user.id)
+  .order('last_modified_at', { ascending: false });
+Project Switching (switchProject):
+
+// 1. Load project details
+const { data: project } = await supabase
+  .from('settings')
+  .select('*')
+  .eq('id', projectId)
+  .single();
+
+// 2. Load all notes for project
+const { data: notes } = await supabase
+  .from('notes')
+  .select(`
+    *,
+    images:note_images(*)
+  `)
+  .eq('project_id', projectId);
+
+// 3. Build note tree hierarchy
+// Notes are stored flat in DB but displayed as a tree
+State Management:
+Projects and notes are cached in Zustand store
+UI updates immediately while database operations happen in background
+Optimistic updates for better UX
+Key Features:
+
+Soft deletion (projects aren't permanently deleted initially)
+Hierarchical notes with parent-child relationships
+Position tracking for note ordering
+Image attachments support
+Real-time collaboration ready through Supabase
