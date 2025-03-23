@@ -13,11 +13,16 @@ import {
   Check,
   X,
   Edit2,
-  FilePlus
+  FilePlus,
+  Plus,
+  Save,
+  FileText,
+  FolderOpen
 } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import ImportModal from "@/components/ImportModal";
 import ExportModal from "@/components/ExportModal";
+import ProjectsModal from "@/components/ProjectsModal";
 import UserMenu from "@/components/UserMenu";
 import {
   DropdownMenu,
@@ -55,6 +60,7 @@ export default function Header() {
   console.log("Header - Current Project Name:", currentProjectName);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showProjectsModal, setShowProjectsModal] = useState(false);
   const [isEditingProjectName, setIsEditingProjectName] = useState(false);
   const [editedProjectName, setEditedProjectName] = useState(currentProjectName || '');
   const [newProjectName, setNewProjectName] = useState('');
@@ -254,7 +260,7 @@ export default function Header() {
               Add Note
             </Button>
             
-            {/* Menu */}
+            {/* Main Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -262,16 +268,40 @@ export default function Header() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => {
+                  // Create a new project
+                  setNewProjectName('New Project');
+                  createNewProject('New Project');
+                }}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  <span>New</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowProjectsModal(true)}>
+                  <FolderOpen className="h-4 w-4 mr-2" />
+                  <span>Load</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  // Save project (currently auto-saved)
+                }}>
+                  <Save className="h-4 w-4 mr-2" />
+                  <span>Save</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setShowImportModal(true)}>
                   <FileUp className="h-4 w-4 mr-2" />
-                  <span>Import</span>
+                  <span>Import from JSON</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setShowExportModal(true)}>
                   <FileDown className="h-4 w-4 mr-2" />
-                  <span>Export</span>
+                  <span>Export to JSON</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            
+            {/* User Menu */}
+            <div className="ml-2">
+              <UserMenu />
+            </div>
           </div>
         </>
       ) : (
@@ -279,11 +309,42 @@ export default function Header() {
           {/* No Project UI */}
           <div className="flex items-center space-x-2">
             <h1 className="text-base font-semibold text-gray-100">
-              No Active Project
+              Notes Editor
             </h1>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="flex items-center">
+            {/* Main menu for new project and load */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8">
+                  <FileText className="h-3.5 w-3.5 mr-1" />
+                  <span>File</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={() => {
+                  // Give focus to the input for a new project
+                  if (newProjectNameInputRef.current) {
+                    newProjectNameInputRef.current.focus();
+                  }
+                }}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  <span>New</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowProjectsModal(true)}>
+                  <FolderOpen className="h-4 w-4 mr-2" />
+                  <span>Load</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowImportModal(true)}>
+                  <FileUp className="h-4 w-4 mr-2" />
+                  <span>Import from JSON</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            {/* New project input */}
+            <div className="flex items-center ml-2">
               <Input
                 ref={newProjectNameInputRef}
                 value={newProjectName}
@@ -300,21 +361,10 @@ export default function Header() {
                 className="h-8"
                 disabled={newProjectName.trim() === ''}
               >
-                <FilePlus className="h-3.5 w-3.5 mr-1" />
-                Create Project
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                Create
               </Button>
             </div>
-            
-            {/* Import Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowImportModal(true)}
-              className="h-8 ml-2"
-            >
-              <FileUp className="h-3.5 w-3.5 mr-1" />
-              Import
-            </Button>
             
             {/* User Menu */}
             <div className="ml-2">
@@ -330,6 +380,10 @@ export default function Header() {
 
       {showExportModal && (
         <ExportModal onClose={() => setShowExportModal(false)} />
+      )}
+      
+      {showProjectsModal && (
+        <ProjectsModal isOpen={showProjectsModal} onClose={() => setShowProjectsModal(false)} />
       )}
     </header>
   );
