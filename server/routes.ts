@@ -35,6 +35,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
   // prefix all routes with /api
 
+  // Simple health check endpoint
+  app.get("/api/health", (_req: Request, res: Response) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+  
+  // Supabase diagnostics endpoint to check storage access
+  app.get("/api/supabase-diagnostics", async (_req: Request, res: Response) => {
+    try {
+      // Check environment variables
+      const diagnostics = {
+        supabaseUrl: !!supabaseUrl,
+        supabaseKeyExists: !!supabaseKey,
+        storageTests: {},
+      };
+      
+      // Check if the note-images bucket exists
+      try {
+        const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+        
+        if (bucketsError) {
+          diagnostics.storageTests = {
+            bucketsListError: bucketsError.message,
+            status: "failed",
+          };
+        } else {
+          const noteImagesBucket = buckets.find(b => b.name === 'note-images');
+          diagnostics.storageTests = {
+            bucketsListed: true,
+            bucketsCount: buckets.length,
+            bucketsNames: buckets.map(b => b.name),
+            noteImagesBucketExists: !!noteImagesBucket,
+            status: !!noteImagesBucket ? "success" : "bucket_missing",
+          };
+          
+          // If bucket exists, try to list files
+          if (noteImagesBucket) {
+            try {
+              const { data: files, error: filesError } = await supabase.storage
+                .from('note-images')
+                .list('images', { limit: 5 });
+                
+              if (filesError) {
+                diagnostics.storageTests = {
+                  ...diagnostics.storageTests,
+                  filesListError: filesError.message,
+                  filesStatus: "failed",
+                };
+              } else {
+                diagnostics.storageTests = {
+                  ...diagnostics.storageTests,
+                  filesListed: true,
+                  filesCount: files.length,
+                  filesStatus: "success",
+                };
+              }
+            } catch (error: any) {
+              diagnostics.storageTests = {
+                ...diagnostics.storageTests,
+                filesError: error.message,
+                filesStatus: "exception",
+              };
+            }
+          }
+        }
+      } catch (error: any) {
+        diagnostics.storageTests = {
+          error: error.message,
+          status: "exception",
+        };
+      }
+      
+      return res.json(diagnostics);
+    } catch (error: any) {
+      log(`Diagnostics error: ${error.message}`);
+      return res.status(500).json({ error: "Server error", message: error.message });
+    }
+  });
+
   // use storage to perform CRUD operations on the storage interface
   // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
 
@@ -74,8 +152,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Not authorized to upload to this note" });
       }
 
-      // Unique file path in storage
-      const filePath = `${userId}/${noteId}/${uuidv4()}-${path.basename(file.filename)}`;
+      // Unique file path in storage - matching the structure from the working app
+      const fileName = `${uuidv4()}.jpg`;
+      const filePath = `images/${fileName}`;
+      
+      log(`Uploading to storage path: ${filePath}`);
       
       // Read the file from disk
       const fileBuffer = fs.readFileSync(file.path);
@@ -192,6 +273,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(200).json({ success: true });
     } catch (error: any) {
       return res.status(500).json({ error: "Server error", message: error.message });
+    }
+  });
+
+  // Endpoint to test RLS policies on note_images table
+  app.get("/api/test-rls", async (req, res) => {
+    try {
+      // Test insertion into note_images table
+      const testRecord = {
+        note_id: req.query.noteId?.toString() || '00000000-0000-0000-0000-000000000000',
+        storage_path: 'test-path',
+        url: 'test-url',
+        position: 0
+      };
+      
+      log(`Testing RLS with record: ${JSON.stringify(testRecord)}`);
+      
+      const { data, error } = await supabase
+        .from('note_images')
+        .insert(testRecord)
+        .select();
+        
+      if (error) {
+        log(`RLS test error: ${error.message}`);
+        return res.status(400).json({ 
+          status: 'error', 
+          error: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
+      }
+      
+      log(`RLS test succeeded, record created: ${JSON.stringify(data)}`);
+      
+      // Delete the test record if it was created
+      if (data && data.length > 0) {
+        await supabase
+          .from('note_images')
+          .delete()
+          .eq('id', data[0].id);
+        
+        log(`Test record deleted`);
+      }
+      
+      return res.json({ status: 'success', data });
+    } catch (error: any) {
+      log(`Exception in RLS test: ${error.message}`);
+      return res.status(500).json({ status: 'error', message: error.message });
     }
   });
 
