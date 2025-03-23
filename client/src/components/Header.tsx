@@ -1,26 +1,20 @@
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
 import { 
-  MoreVertical, 
   Menu, 
   FileUp, 
   FileDown, 
   PlusCircle, 
   ChevronUp, 
   ChevronDown,
-  ChevronsUpDown,
   Info,
   Check,
   X,
   Edit2,
-  FilePlus,
-  Plus,
   Save,
   FileText,
   FolderOpen,
-  LogOut,
-  Settings,
-  User
+  LogOut
 } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { useAuth } from "@/context/AuthContext";
@@ -86,9 +80,7 @@ export default function Header() {
   const [showProjectsModal, setShowProjectsModal] = useState(false);
   const [isEditingProjectName, setIsEditingProjectName] = useState(false);
   const [editedProjectName, setEditedProjectName] = useState(currentProjectName || '');
-  const [newProjectName, setNewProjectName] = useState('');
   const projectNameInputRef = useRef<HTMLInputElement>(null);
-  const newProjectNameInputRef = useRef<HTMLInputElement>(null);
 
   // Update local state when context project name changes
   useEffect(() => {
@@ -129,21 +121,6 @@ export default function Header() {
       saveProjectName();
     } else if (e.key === 'Escape') {
       cancelEditing();
-    }
-  };
-  
-  const handleCreateNewProject = () => {
-    if (newProjectName.trim() === '') {
-      return;
-    }
-    
-    createNewProject(newProjectName);
-    setNewProjectName('');
-  };
-  
-  const handleNewProjectKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleCreateNewProject();
     }
   };
 
@@ -294,7 +271,6 @@ export default function Header() {
                 {/* File Operations */}
                 <DropdownMenuItem onClick={() => {
                   // Create a new project
-                  setNewProjectName('New Project');
                   createNewProject('New Project');
                 }}>
                   <FileText className="h-4 w-4 mr-2" />
@@ -342,28 +318,6 @@ export default function Header() {
             </h1>
           </div>
           <div className="flex items-center space-x-2">
-            {/* New project input */}
-            <div className="flex items-center">
-              <Input
-                ref={newProjectNameInputRef}
-                value={newProjectName}
-                onChange={(e) => setNewProjectName(e.target.value)}
-                onKeyDown={handleNewProjectKeyDown}
-                placeholder="Enter new project name"
-                className="h-8 py-0 text-sm bg-gray-800 border-gray-700 focus-visible:ring-primary text-gray-100 mr-2"
-                maxLength={50}
-              />
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleCreateNewProject}
-                className="h-8"
-                disabled={newProjectName.trim() === ''}
-              >
-                <Plus className="h-3.5 w-3.5 mr-1" />
-                Create
-              </Button>
-            </div>
             
             {/* Consolidated Hamburger Menu */}
             <DropdownMenu>
@@ -375,10 +329,8 @@ export default function Header() {
               <DropdownMenuContent align="end" className="w-56">
                 {/* File Operations */}
                 <DropdownMenuItem onClick={() => {
-                  // Give focus to the input for a new project
-                  if (newProjectNameInputRef.current) {
-                    newProjectNameInputRef.current.focus();
-                  }
+                  // Create a new project with default name
+                  createNewProject('New Project');
                 }}>
                   <FileText className="h-4 w-4 mr-2" />
                   <span>New</span>
