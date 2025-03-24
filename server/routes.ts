@@ -497,6 +497,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Upload to Supabase Storage
+        let publicUrl = '';
+        
+        // Try to upload the file
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('note-images')
           .upload(filePath, fileBuffer, {
@@ -511,10 +514,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // Get the public URL
-        const { data: { publicUrl } } = supabase.storage
+        const { data: { publicUrl: supabaseUrl } } = supabase.storage
           .from('note-images')
           .getPublicUrl(filePath);
           
+        publicUrl = supabaseUrl;
         log(`Image uploaded to Supabase, public URL: ${publicUrl}`);
 
         // Get highest position of existing images
