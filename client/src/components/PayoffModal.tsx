@@ -5,18 +5,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useToast } from '../hooks/use-toast';
 import { useAuth } from '../context/AuthContext';
-import { apiRequest } from '../lib/queryClient';
-
-// Profile response type
-interface ProfileResponse {
-  id?: string;
-  user_id?: string;
-  payoff?: string;
-  created_at?: string;
-  updated_at?: string;
-  error?: string;
-  code?: string;
-}
+import { supabase } from '../lib/supabase';
 
 interface PayoffModalProps {
   isOpen: boolean;
@@ -40,30 +29,23 @@ export default function PayoffModal({ isOpen, onClose }: PayoffModalProps) {
     
     setIsLoading(true);
     try {
-      // Get user profile from our API
-      const response = await apiRequest<ProfileResponse>(`/api/profile/${user.id}`);
+      // Fetch user metadata from Supabase Auth
+      const { data: { user: userData }, error } = await supabase.auth.getUser();
       
-      if (response.error) {
-        // If the error code is PROFILE_NOT_FOUND it means the profile doesn't exist yet
-        if (response.code === 'PROFILE_NOT_FOUND') {
-          // This is ok - it just means we need to create the profile
-          console.log('No profile found, will create on save');
-          setPayoff('');
-          toast({
-            title: 'Notice',
-            description: 'Creating new profile, you can now add your payoff.',
-          });
-        } else {
-          console.error('Error fetching payoff:', response.error);
-          toast({
-            title: 'Notice',
-            description: 'Failed to load profile, please try again.',
-          });
-        }
-      } else {
-        // Profile exists, set the payoff
-        setPayoff(response.payoff || '');
+      if (error) {
+        console.error('Error fetching user data:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load user data, please try again.',
+          variant: 'destructive',
+        });
+        return;
       }
+      
+      // Get payoff from user metadata
+      const userPayoff = userData?.user_metadata?.payoff || '';
+      setPayoff(userPayoff);
+      
     } catch (error) {
       console.error('Error:', error);
       toast({
@@ -81,20 +63,13 @@ export default function PayoffModal({ isOpen, onClose }: PayoffModalProps) {
     
     setIsLoading(true);
     try {
-      // Create or update profile using our API
-      const response = await apiRequest<{success?: boolean; error?: string}>('/api/profile', {
-        method: 'POST',
-        body: JSON.stringify({
-          userId: user.id,
-          payoff
-        }),
-        headers: {
-          'Content-Type': 'application/json'
-        }
+      // Update user metadata in Supabase Auth
+      const { error } = await supabase.auth.updateUser({
+        data: { payoff }
       });
       
-      if (response.error) {
-        console.error('Error saving payoff:', response.error);
+      if (error) {
+        console.error('Error saving payoff:', error);
         toast({
           title: 'Error',
           description: 'Failed to save payoff',
