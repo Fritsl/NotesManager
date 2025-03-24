@@ -323,7 +323,7 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                     setShowTrashModal(true);
                   }}
                 >
-                  <Trash2 className="h-4 w-4 text-red-500" />
+                  <Trash2 className="h-4 w-4 text-gray-400" />
                   <span>Trash</span>
                 </Button>
               </div>
@@ -442,7 +442,7 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
         <AlertDialogContent className="bg-gray-900 border border-gray-800">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-gray-200 flex items-center">
-              <Trash2 className="mr-2 h-5 w-5 text-red-500" />
+              <Trash2 className="mr-2 h-5 w-5 text-gray-400" />
               Move to Trash
             </AlertDialogTitle>
             <AlertDialogDescription className="text-gray-400">
@@ -454,7 +454,7 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
             <AlertDialogCancel className="bg-gray-800 text-gray-300 hover:bg-gray-700 border-gray-700">Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDeleteProject}
-              className="bg-red-900 hover:bg-red-800 text-gray-200 border-none"
+              className="bg-gray-700 hover:bg-gray-600 text-gray-200 border-none"
             >
               Move to Trash
             </AlertDialogAction>

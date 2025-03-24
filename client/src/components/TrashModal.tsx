@@ -132,7 +132,7 @@ export default function TrashModal({ isOpen, onClose, onProjectRestored }: Trash
         <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
           <DialogHeader className="border-b border-gray-800 pb-4">
             <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-              <Trash2 className="h-6 w-6 text-red-500" />
+              <Trash2 className="h-6 w-6 text-gray-400" />
               <span className="bg-gradient-to-r from-red-500 to-amber-500 bg-clip-text text-transparent">Trash</span>
             </DialogTitle>
             <DialogDescription className="text-gray-400">
