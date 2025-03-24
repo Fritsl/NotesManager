@@ -571,9 +571,34 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
     console.log('--- updateProject: Starting to update project ---');
     console.log('Project ID:', id);
     console.log('Project name:', name);
+    
+    // Check if notesData has image information to preserve
+    let hasImages = false;
+    let totalImages = 0;
+    
+    if (notesData && notesData.notes) {
+      // Traverse notes to count images
+      const countImagesInNotes = (notes: Note[]) => {
+        for (const note of notes) {
+          if (note.images && Array.isArray(note.images) && note.images.length > 0) {
+            hasImages = true;
+            totalImages += note.images.length;
+          }
+          
+          if (note.children && note.children.length > 0) {
+            countImagesInNotes(note.children);
+          }
+        }
+      };
+      
+      countImagesInNotes(notesData.notes);
+    }
+    
+    console.log(`Notes data contains images: ${hasImages ? 'YES' : 'NO'}, total: ${totalImages}`);
     console.log('Notes data structure:', JSON.stringify({
       noteCount: notesData?.notes?.length || 0,
       hasNotes: !!notesData?.notes?.length,
+      imageCount: totalImages,
       sample: notesData?.notes?.length ? notesData.notes[0]?.id : 'no notes'
     }));
     
@@ -597,6 +622,30 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
       : { notes: [] };
     
     console.log('Validated notes data for update, count:', validNotesData.notes.length);
+    
+    // Store the entire project data including images in the projects table
+    // This approach stores images as part of the notes structure directly
+    console.log('Storing full project data with embedded images in projects table');
+    
+    const { data: projectStoreData, error: projectStoreError } = await supabase
+      .from('projects')
+      .upsert({
+        id: id,
+        name: name,
+        user_id: userData.user.id,
+        data: validNotesData, // Store the complete notes data with images
+        updated_at: now,
+        created_at: now
+      })
+      .select()
+      .single();
+      
+    if (projectStoreError) {
+      console.error('Error storing project data with images:', projectStoreError);
+      // Continue with regular update anyway
+    } else {
+      console.log('Successfully stored project data with embedded images');
+    }
     
     // First update the project name
     console.log('Updating project in settings table...');
