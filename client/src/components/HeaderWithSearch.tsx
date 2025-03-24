@@ -119,8 +119,7 @@ export default function Header() {
     }
   };
   
-  // Debug
-  console.log("Header - Current Project Name:", currentProjectName);
+  // Remove debug log
   const [showImportModal, setShowImportModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showProjectsModal, setShowProjectsModal] = useState(false);
@@ -266,14 +265,12 @@ export default function Header() {
                 {Array.from({ length: Math.min(maxDepth + 1, 9) }, (_, i) => i).map(level => {
                   // Get the color theme for this level - directly using the level as index
                   const colorTheme = levelColors[Math.min(level, levelColors.length - 1)];
-                  console.log(`Rendering level button ${level}, current level: ${currentLevel}`);
                   return (
                     <Button 
                       key={level}
                       variant="outline" 
                       size="sm"
                       onClick={() => {
-                        console.log(`Level button ${level} clicked, setting level to ${level}`);
                         expandToLevel(level);
                       }}
                       className={cn(
@@ -315,7 +312,6 @@ export default function Header() {
                             variant="outline" 
                             size="sm"
                             onClick={() => {
-                              console.log(`Mobile level button ${level} clicked, setting level to ${level}`);
                               expandToLevel(level);
                               // Close dropdown on mobile after selecting
                               document.body.click();
@@ -376,17 +372,27 @@ export default function Header() {
                     <span>Projects</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={async () => {
-                    // Manual save button for testing
+                    // Manual save button
                     if (currentProjectId) {
-                      console.log("Manual save for project ID:", currentProjectId);
                       try {
                         await saveProject();
-                        console.log("Manual save completed");
+                        toast({
+                          title: "Saved",
+                          description: "Project saved successfully",
+                        });
                       } catch (err) {
-                        console.error("Manual save failed:", err);
+                        toast({
+                          title: "Error",
+                          description: "Failed to save project",
+                          variant: "destructive",
+                        });
                       }
                     } else {
-                      console.warn("Cannot save - no project ID");
+                      toast({
+                        title: "No Project",
+                        description: "Cannot save - no active project",
+                        variant: "destructive",
+                      });
                     }
                   }}>
                     <Save className="h-4 w-4 mr-2" />
