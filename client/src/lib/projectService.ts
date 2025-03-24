@@ -777,56 +777,13 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
         return null;
       }
       
-      // Insert images if any
-      if (flatImages.length > 0) {
-        console.log('Inserting', flatImages.length, 'image records');
-        
-        try {
-          // Process images - reuse the existing note IDs to avoid ID mapping issues
-          const processedImages = flatImages.map(img => {
-            // Keep existing image ID if it has one, otherwise generate a new one
-            const imageId = img.id || crypto.randomUUID();
-            
-            return {
-              ...img,
-              id: imageId
-              // Keep the original note_id to avoid mapping complications
-            };
-          });
-          
-          console.log('Processed images with updated note ID references:', processedImages);
-          
-          // Insert images in batches
-          for (let i = 0; i < processedImages.length; i += BATCH_SIZE) {
-            const batch = processedImages.slice(i, i + BATCH_SIZE);
-            console.log(`Inserting images batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(processedImages.length/BATCH_SIZE)}, size: ${batch.length}`);
-            
-            if (batch.length > 0) {
-              try {
-                const { data, error: imagesError } = await supabase
-                  .from('note_images')
-                  .upsert(batch, { 
-                    onConflict: 'id',  // Use upsert with ID as conflict resolution
-                    ignoreDuplicates: false // Update if a record with the same ID exists
-                  });
-                
-                if (imagesError) {
-                  console.error(`Error upserting images batch ${Math.floor(i/BATCH_SIZE) + 1}:`, imagesError);
-                  // Log more details about the failing batch
-                  console.error('Problem batch data:', JSON.stringify(batch, null, 2));
-                } else {
-                  console.log(`Successfully upserted images batch ${Math.floor(i/BATCH_SIZE) + 1}`);
-                }
-              } catch (batchError) {
-                console.error(`Exception in image batch ${Math.floor(i/BATCH_SIZE) + 1}:`, batchError);
-              }
-            }
-          }
-        } catch (imageError) {
-          console.error('Error during image insertion:', imageError);
-          // Don't return null here, we'll continue even if image insertion fails
-        }
-      }
+      // For now, we'll skip inserting images into Supabase due to RLS issues
+      // Instead, we're storing image data directly in the project's data JSON
+      // This is already happening because the images are part of the note's data
+      console.log('Skipping separate image insertion due to RLS restrictions');
+      
+      // The images are already included in the notes' data that was stored
+      // The server-side API handles the image upload and provides URLs that work locally
     } else {
       console.log('No notes to insert');
     }

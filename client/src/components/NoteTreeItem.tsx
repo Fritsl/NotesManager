@@ -480,7 +480,26 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                     <div className="flex gap-2 overflow-x-auto pb-2">
                       {note.images.map((image, idx) => (
                         <div key={image.id} className="relative group border border-gray-700 rounded overflow-hidden flex-shrink-0" style={{width: '80px', height: '60px'}}>
-                          <img src={image.url} alt="Note attachment" className="w-full h-full object-cover" />
+                          {/* Image with error handling fallback */}
+                          <img 
+                            src={image.url} 
+                            alt="Note attachment" 
+                            className="w-full h-full object-cover" 
+                            onError={(e) => {
+                              // Replace with a fallback UI on error
+                              const target = e.target as HTMLImageElement;
+                              target.onerror = null; // Prevent infinite error loops
+                              target.src = ''; // Clear src
+                              target.alt = 'Image unavailable';
+                              target.style.backgroundColor = '#444';
+                              target.style.display = 'flex';
+                              target.style.alignItems = 'center';
+                              target.style.justifyContent = 'center';
+                              target.style.fontSize = '9px';
+                              target.style.padding = '2px';
+                              target.style.textAlign = 'center';
+                            }}
+                          />
                           <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <Button 
                               variant="destructive" 
