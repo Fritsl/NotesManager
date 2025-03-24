@@ -26,6 +26,8 @@ interface NotesContextType {
   maxDepth: number;
   currentProjectName: string;
   setCurrentProjectName: (name: string) => void;
+  currentProjectDescription: string;
+  setCurrentProjectDescription: (description: string) => void;
   hasActiveProject: boolean;
   setHasActiveProject: (hasProject: boolean) => void;
   createNewProject: (name: string) => void;
