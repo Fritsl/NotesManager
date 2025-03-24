@@ -111,18 +111,25 @@ export default function FilterMenu({ onFilterChange }: FilterMenuProps) {
     }
   };
   
-  const handleFilterButtonClick = () => {
+  // This function directly handles the filter button click outside of the dropdown
+  const handleFilterButtonClick = (e: React.MouseEvent) => {
     if (activeFilter) {
-      // If filter is on, just turn it off
+      // If filter is active, just turn it off directly
+      e.preventDefault(); // Prevent dropdown from opening
       handleFilterSelect(null);
-    } else {
-      // If filter is off, open the menu
-      setMenuOpen(true);
+      return;
     }
+    // If no active filter, let the dropdown open normally
   };
   
   return (
-    <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+    <DropdownMenu open={menuOpen} onOpenChange={(open) => {
+      // Only allow opening the menu if there's no active filter
+      if (activeFilter && open) {
+        return; // Don't open if there's an active filter
+      }
+      setMenuOpen(open);
+    }}>
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
