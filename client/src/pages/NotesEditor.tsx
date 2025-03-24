@@ -4,13 +4,18 @@ import NoteTree from "@/components/NoteTree";
 import NoteEditor from "@/components/NoteEditor";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { FilePlus, Menu, Edit } from "lucide-react";
+import { FilePlus, Menu, Edit, FilterX } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { useIsMobile } from "@/hooks/useMediaQuery";
+import FilterMenu, { FilterType } from "@/components/FilterMenu";
+import FilteredNotesView from "@/components/FilteredNotesView";
+import { Note } from "@/types/notes";
 
 export default function NotesEditor() {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
+  const [activeFilter, setActiveFilter] = useState<FilterType>(null);
   const { selectedNote, hasActiveProject, currentProjectName, addNote } = useNotes();
 
   // Close sidebar when a note is selected on mobile
@@ -26,6 +31,19 @@ export default function NotesEditor() {
       setSidebarOpen(true);
     }
   }, [selectedNote, isMobile]);
+  
+  // Handle filter change
+  const handleFilterChange = (filtered: Note[], type: FilterType) => {
+    setFilteredNotes(filtered);
+    setActiveFilter(type);
+    
+    // Clear selected note when applying a filter
+    if (type) {
+      document.title = `Filtered Notes - ${currentProjectName || "Notes"}`;
+    } else {
+      document.title = currentProjectName || "Notes";
+    }
+  };
 
   return (
     <div className="flex flex-col h-screen bg-gray-950 text-gray-100">
@@ -38,7 +56,30 @@ export default function NotesEditor() {
             <>
               {/* Tree View - Now much larger */}
               <div className="w-2/3 xl:w-3/4 border-r border-gray-800 bg-gray-950 overflow-auto custom-scrollbar mobile-touch-scrolling">
-                <NoteTree />
+                {/* Filter Menu */}
+                <div className="sticky top-0 z-10 bg-gray-900 border-b border-gray-800 p-2">
+                  <FilterMenu onFilterChange={handleFilterChange} />
+                </div>
+                
+                {activeFilter ? (
+                  <FilteredNotesView filteredNotes={filteredNotes} filterType={activeFilter} />
+                ) : (
+                  <NoteTree />
+                )}
+                
+                {activeFilter && filteredNotes.length > 0 && (
+                  <div className="fixed bottom-4 left-4 z-10">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="flex items-center gap-1"
+                      onClick={() => handleFilterChange([], null)}
+                    >
+                      <FilterX className="h-4 w-4" />
+                      Clear Filter
+                    </Button>
+                  </div>
+                )}
               </div>
               
               {/* Editor Panel - Now smaller, collapsible */}
@@ -53,7 +94,16 @@ export default function NotesEditor() {
             <>
               {/* Main tree view for mobile */}
               <main className="flex-1 flex flex-col bg-gray-950 overflow-auto custom-scrollbar mobile-touch-scrolling">
-                <NoteTree />
+                {/* Filter Menu */}
+                <div className="sticky top-0 z-10 bg-gray-900 border-b border-gray-800 p-2">
+                  <FilterMenu onFilterChange={handleFilterChange} />
+                </div>
+                
+                {activeFilter ? (
+                  <FilteredNotesView filteredNotes={filteredNotes} filterType={activeFilter} />
+                ) : (
+                  <NoteTree />
+                )}
               </main>
               
               {/* Mobile floating action buttons */}
@@ -67,6 +117,18 @@ export default function NotesEditor() {
                 >
                   <FilePlus className="h-5 w-5" />
                 </Button>
+                
+                {/* Clear filter button - only show if filter is active */}
+                {activeFilter && filteredNotes.length > 0 && (
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => handleFilterChange([], null)}
+                    className="rounded-full h-12 w-12 shadow-lg bg-secondary/90 border-secondary-foreground text-secondary-foreground hover:bg-secondary"
+                  >
+                    <FilterX className="h-5 w-5" />
+                  </Button>
+                )}
                 
                 {/* Editor button - only show if a note is selected or editor is already open */}
                 {(selectedNote || sidebarOpen) && (
