@@ -790,29 +790,42 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
               newNoteId = idMapping[img.note_id];
             }
             
+            // Keep existing image ID if it has one, otherwise generate a new one
+            const imageId = img.id || crypto.randomUUID();
+            
             return {
               ...img,
-              id: crypto.randomUUID(), // New ID for the image
+              id: imageId,
               note_id: newNoteId // Updated note_id reference
             };
           });
           
-          console.log('Processed images with updated note ID references');
+          console.log('Processed images with updated note ID references:', processedImages);
           
           // Insert images in batches
           for (let i = 0; i < processedImages.length; i += BATCH_SIZE) {
             const batch = processedImages.slice(i, i + BATCH_SIZE);
             console.log(`Inserting images batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(processedImages.length/BATCH_SIZE)}, size: ${batch.length}`);
             
-            const { error: imagesError } = await supabase
-              .from('note_images')
-              .insert(batch);
-              
-            if (imagesError) {
-              console.error(`Error inserting images batch ${Math.floor(i/BATCH_SIZE) + 1}:`, imagesError);
-              // Continue with next batch
-            } else {
-              console.log(`Successfully inserted images batch ${Math.floor(i/BATCH_SIZE) + 1}`);
+            if (batch.length > 0) {
+              try {
+                const { data, error: imagesError } = await supabase
+                  .from('note_images')
+                  .upsert(batch, { 
+                    onConflict: 'id',  // Use upsert with ID as conflict resolution
+                    ignoreDuplicates: false // Update if a record with the same ID exists
+                  });
+                
+                if (imagesError) {
+                  console.error(`Error upserting images batch ${Math.floor(i/BATCH_SIZE) + 1}:`, imagesError);
+                  // Log more details about the failing batch
+                  console.error('Problem batch data:', JSON.stringify(batch, null, 2));
+                } else {
+                  console.log(`Successfully upserted images batch ${Math.floor(i/BATCH_SIZE) + 1}`);
+                }
+              } catch (batchError) {
+                console.error(`Exception in image batch ${Math.floor(i/BATCH_SIZE) + 1}:`, batchError);
+              }
             }
           }
         } catch (imageError) {
