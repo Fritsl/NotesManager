@@ -151,7 +151,7 @@ export function buildNoteHierarchy(flatNotes: DbNote[], imagesData?: any[] | nul
 }
 
 // Function to flatten hierarchical notes to DB records
-export function flattenNoteHierarchy(notes: Note[], projectId: string, userId: string): any[] {
+export function flattenNoteHierarchy(notes: Note[], projectId: string, userId: string): { notes: any[], images: any[] } {
   const flatNotes: any[] = [];
   const noteImages: any[] = []; // To collect all images that need to be preserved
   
@@ -480,8 +480,8 @@ export async function createProject(name: string, notesData: NotesData): Promise
     // If there are notes, create them in the notes table
     if (validNotesData.notes.length > 0) {
       // Convert hierarchical notes to flat DB records
-      const flatNotes = flattenNoteHierarchy(validNotesData.notes, projectId, userData.user.id);
-      console.log('Flattened notes for DB insertion:', flatNotes.length, 'notes');
+      const { notes: flatNotes, images: flatImages } = flattenNoteHierarchy(validNotesData.notes, projectId, userData.user.id);
+      console.log('Flattened notes for DB insertion:', flatNotes.length, 'notes', 'and', flatImages.length, 'images');
       
       // Insert notes in batches to avoid payload size limits
       const BATCH_SIZE = 50;
@@ -496,6 +496,26 @@ export async function createProject(name: string, notesData: NotesData): Promise
         if (notesError) {
           console.error(`Error inserting notes batch ${i/BATCH_SIZE + 1}:`, notesError);
           // Continue with next batch
+        }
+      }
+      
+      // Insert images if any
+      if (flatImages.length > 0) {
+        console.log('Inserting', flatImages.length, 'image records');
+        
+        // Insert images in batches too
+        for (let i = 0; i < flatImages.length; i += BATCH_SIZE) {
+          const batch = flatImages.slice(i, i + BATCH_SIZE);
+          console.log(`Inserting images batch ${i/BATCH_SIZE + 1}/${Math.ceil(flatImages.length/BATCH_SIZE)}, size: ${batch.length}`);
+          
+          const { error: imagesError } = await supabase
+            .from('note_images')
+            .insert(batch);
+            
+          if (imagesError) {
+            console.error(`Error inserting images batch ${i/BATCH_SIZE + 1}:`, imagesError);
+            // Continue with next batch
+          }
         }
       }
     }
@@ -610,8 +630,8 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
     console.log('Successfully deleted existing notes, now inserting new notes');
     
     // Then create new notes from the hierarchical structure
-    const flatNotes = flattenNoteHierarchy(validNotesData.notes, id, userData.user.id);
-    console.log('Flattened notes for DB insertion:', flatNotes.length, 'notes');
+    const { notes: flatNotes, images: flatImages } = flattenNoteHierarchy(validNotesData.notes, id, userData.user.id);
+    console.log('Flattened notes for DB insertion:', flatNotes.length, 'notes', 'and', flatImages.length, 'images');
     
     if (flatNotes.length > 0) {
       console.log('First flattened note sample:', JSON.stringify(flatNotes[0]));
@@ -632,6 +652,28 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
           // Continue with next batch
         } else {
           console.log(`Successfully inserted batch ${i/BATCH_SIZE + 1}, received:`, insertedData?.length || 0, 'records');
+        }
+      }
+      
+      // Insert images if any
+      if (flatImages.length > 0) {
+        console.log('Inserting', flatImages.length, 'image records');
+        
+        // Insert images in batches too
+        for (let i = 0; i < flatImages.length; i += BATCH_SIZE) {
+          const batch = flatImages.slice(i, i + BATCH_SIZE);
+          console.log(`Inserting images batch ${i/BATCH_SIZE + 1}/${Math.ceil(flatImages.length/BATCH_SIZE)}, size: ${batch.length}`);
+          
+          const { error: imagesError } = await supabase
+            .from('note_images')
+            .insert(batch);
+            
+          if (imagesError) {
+            console.error(`Error inserting images batch ${i/BATCH_SIZE + 1}:`, imagesError);
+            // Continue with next batch
+          } else {
+            console.log(`Successfully inserted images batch ${i/BATCH_SIZE + 1}`);
+          }
         }
       }
     } else {
