@@ -23,6 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import ImportModal from "@/components/ImportModal";
 import ExportModal from "@/components/ExportModal";
 import ProjectsModal from "@/components/ProjectsModal";
+import { migrateLocalImages } from "@/lib/projectService";
 import SearchBar from "@/components/SearchBar";
 import {
   DropdownMenu,
@@ -383,6 +384,51 @@ export default function Header() {
                 <DropdownMenuItem onClick={() => setShowExportModal(true)}>
                   <FileDown className="h-4 w-4 mr-2" />
                   <span>Export JSON</span>
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                
+                {/* Tools & Utilities */}
+                <DropdownMenuItem onClick={async () => {
+                  // Image Migration
+                  if (currentProjectId) {
+                    try {
+                      toast({
+                        title: "Processing",
+                        description: "Migrating images to cloud storage...",
+                      });
+                      
+                      const result = await migrateLocalImages(currentProjectId);
+                      
+                      if (result && result.migrated > 0) {
+                        toast({
+                          title: "Migration Complete",
+                          description: `${result.migrated} images migrated to cloud storage`,
+                        });
+                      } else {
+                        toast({
+                          title: "No Changes",
+                          description: "No images needed migration",
+                        });
+                      }
+                    } catch (err) {
+                      console.error("Migration error:", err);
+                      toast({
+                        title: "Error",
+                        description: "Failed to migrate images",
+                        variant: "destructive",
+                      });
+                    }
+                  } else {
+                    toast({
+                      title: "No Project",
+                      description: "Cannot migrate images - no active project",
+                      variant: "destructive",
+                    });
+                  }
+                }}>
+                  <UploadCloud className="h-4 w-4 mr-2" />
+                  <span>Migrate Images to Cloud</span>
                 </DropdownMenuItem>
                 
                 <DropdownMenuSeparator />
