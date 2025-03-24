@@ -482,7 +482,42 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                         <div key={image.id} className="relative group border border-gray-700 rounded overflow-hidden flex-shrink-0" style={{width: '80px', height: '60px'}}>
                           <img src={image.url} alt="Note attachment" className="w-full h-full object-cover" />
                           <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Button variant="destructive" size="icon" className="h-6 w-6" onClick={() => removeImage(image.id)}>
+                            <Button 
+                              variant="destructive" 
+                              size="icon" 
+                              className="h-6 w-6"
+                              onClick={async () => {
+                                try {
+                                  setIsSaving(true);
+                                  const success = await removeImage(image.id);
+                                  if (success) {
+                                    toast({
+                                      title: "Image Removed",
+                                      description: "Image has been removed from the note",
+                                    });
+                                    
+                                    // Save the project to ensure changes are synced
+                                    await saveProject();
+                                    
+                                    // Update the note in local state
+                                    const updatedNote = {
+                                      ...note,
+                                      images: (note.images || []).filter(img => img.id !== image.id)
+                                    };
+                                    updateNote(updatedNote);
+                                  }
+                                } catch (err) {
+                                  console.error("Failed to remove image:", err);
+                                  toast({
+                                    title: "Remove Failed",
+                                    description: "Could not remove image. Please try again.",
+                                    variant: "destructive",
+                                  });
+                                } finally {
+                                  setIsSaving(false);
+                                }
+                              }}
+                            >
                               <Trash2 size={12} />
                             </Button>
                           </div>
@@ -503,11 +538,35 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                       const file = e.target.files?.[0];
                       if (file) {
                         try {
-                          await uploadImage(note.id, file);
+                          setIsSaving(true); // Show loading state
+                          const result = await uploadImage(note.id, file);
+                          if (result) {
+                            toast({
+                              title: "Image Uploaded",
+                              description: "Image has been added to the note",
+                            });
+                            
+                            // Save the project to ensure images are synced
+                            await saveProject();
+                            
+                            // Force refresh the note with current server data
+                            const updatedNote = {
+                              ...note,
+                              images: [...(note.images || []), result]
+                            };
+                            updateNote(updatedNote);
+                          }
                           // Clear the input after upload
                           e.target.value = '';
                         } catch (err) {
                           console.error("Failed to upload image:", err);
+                          toast({
+                            title: "Upload Failed",
+                            description: "Could not upload image. Please try again.",
+                            variant: "destructive",
+                          });
+                        } finally {
+                          setIsSaving(false);
                         }
                       }
                     }}
