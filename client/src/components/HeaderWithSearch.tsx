@@ -14,7 +14,8 @@ import {
   FileText,
   FolderOpen,
   LogOut,
-  Edit
+  Edit,
+  FileEdit
 } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { useAuth } from "@/context/AuthContext";
@@ -23,6 +24,7 @@ import ImportModal from "@/components/ImportModal";
 import ExportModal from "@/components/ExportModal";
 import ProjectsModal from "@/components/ProjectsModal";
 import PayoffModal from "@/components/PayoffModal";
+import ProjectDescriptionModal from "@/components/ProjectDescriptionModal";
 import SearchBar from "@/components/SearchBar";
 import {
   DropdownMenu,
@@ -83,6 +85,7 @@ export default function Header() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [showProjectsModal, setShowProjectsModal] = useState(false);
   const [showPayoffModal, setShowPayoffModal] = useState(false);
+  const [showDescriptionModal, setShowDescriptionModal] = useState(false);
   const [isEditingProjectName, setIsEditingProjectName] = useState(false);
   const [editedProjectName, setEditedProjectName] = useState(currentProjectName || '');
   const projectNameInputRef = useRef<HTMLInputElement>(null);
