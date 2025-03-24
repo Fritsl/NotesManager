@@ -1020,35 +1020,82 @@ export async function addImageToNote(noteId: string, file: File): Promise<NoteIm
     const userId = userData.user.id;
     console.log(`User ID: ${userId}`);
     
-    // Create a FormData object for the file upload
-    const formData = new FormData();
-    formData.append('image', file);
-    formData.append('noteId', noteId);
-    formData.append('userId', userId);
+    // Generate a unique filename with original extension
+    const fileExt = file.name.split('.').pop() || 'jpg';
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
+    const filePath = `images/${userId}/${fileName}`;
     
-    console.log('Uploading image via API endpoint');
+    console.log('Uploading image directly to Supabase storage');
     
-    // Use the server-side API to handle the upload
-    const response = await fetch('/api/upload-image', {
-      method: 'POST',
-      body: formData,
-    });
-    
-    if (!response.ok) {
-      // Try to parse the error response
-      let errorData;
-      try {
-        errorData = await response.json();
-      } catch (e) {
-        errorData = { error: 'Unknown error', status: response.status };
+    // Ensure the note-images bucket exists (this is a best-effort, may fail due to permissions)
+    try {
+      const { data: buckets } = await supabase.storage.listBuckets();
+      if (buckets && !buckets.some(b => b.name === 'note-images')) {
+        console.log('Attempting to create note-images bucket');
+        await supabase.storage.createBucket('note-images', {
+          public: true,
+          fileSizeLimit: 1024 * 1024 * 5 // 5MB limit
+        });
       }
-      
-      console.error('Error uploading image via API:', errorData);
+    } catch (bucketError) {
+      console.warn('Bucket check/create error:', bucketError);
+      // Continue anyway, as the bucket might already exist or be created by admin
+    }
+    
+    // Upload to Supabase Storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('note-images')
+      .upload(filePath, file, {
+        contentType: file.type,
+        cacheControl: '3600',
+        upsert: true
+      });
+    
+    if (uploadError) {
+      console.error('Error uploading to Supabase storage:', uploadError);
       return null;
     }
     
-    // Parse the successful response
-    const imageData = await response.json();
+    // Get the public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('note-images')
+      .getPublicUrl(filePath);
+    
+    console.log('Image uploaded to Supabase, public URL:', publicUrl);
+    
+    // Get highest position of existing images
+    const { data: existingImages } = await supabase
+      .from('note_images')
+      .select('position')
+      .eq('note_id', noteId)
+      .order('position', { ascending: false })
+      .limit(1);
+    
+    const position = existingImages && existingImages.length > 0 
+      ? existingImages[0].position + 1 
+      : 0;
+    
+    // Create record in the database
+    const imageRecord = {
+      note_id: noteId,
+      storage_path: filePath,
+      url: publicUrl,
+      position: position
+    };
+    
+    const { data: imageData, error: imageError } = await supabase
+      .from('note_images')
+      .insert(imageRecord)
+      .select()
+      .single();
+    
+    if (imageError) {
+      console.error('Database record creation error:', imageError);
+      // Try to clean up the uploaded file if database insert fails
+      await supabase.storage.from('note-images').remove([filePath]);
+      return null;
+    }
+    
     console.log('Image uploaded successfully:', imageData);
     
     // Return the image data
@@ -1081,21 +1128,57 @@ export async function removeImageFromNote(imageId: string): Promise<boolean> {
     const userId = userData.user.id;
     console.log(`User ID: ${userId}`);
     
-    // Use the API endpoint to delete the image
-    const response = await fetch(`/api/remove-image/${imageId}?userId=${userId}`, {
-      method: 'DELETE'
-    });
+    // Get the image record first to get the storage path
+    const { data: imageData, error: getError } = await supabase
+      .from('note_images')
+      .select('storage_path, note_id')
+      .eq('id', imageId)
+      .single();
     
-    if (!response.ok) {
-      // Try to parse the error response
-      let errorData;
-      try {
-        errorData = await response.json();
-      } catch (e) {
-        errorData = { error: 'Unknown error', status: response.status };
-      }
+    if (getError || !imageData) {
+      console.error('Error getting image record:', getError?.message || 'Image not found');
+      return false;
+    }
+    
+    // Verify the note belongs to the user (optional, RLS should handle this)
+    try {
+      const { data: noteData, error: noteError } = await supabase
+        .from('notes')
+        .select('user_id')
+        .eq('id', imageData.note_id)
+        .single();
       
-      console.error('Error removing image via API:', errorData);
+      if (!noteError && noteData && noteData.user_id !== userId) {
+        console.error(`User ${userId} attempted to delete an image from note owned by ${noteData.user_id}`);
+        return false;
+      }
+    } catch (verifyError) {
+      console.warn('Note verification skipped:', verifyError);
+      // Continue with delete - RLS will reject if not authorized
+    }
+    
+    // Delete the file from storage
+    if (imageData.storage_path) {
+      const { error: deleteStorageError } = await supabase.storage
+        .from('note-images')
+        .remove([imageData.storage_path]);
+      
+      if (deleteStorageError) {
+        console.warn('Warning: Could not delete storage file:', deleteStorageError.message);
+        // Continue anyway - might be already deleted or missing
+      } else {
+        console.log('Deleted file from Supabase storage:', imageData.storage_path);
+      }
+    }
+    
+    // Delete the database record
+    const { error: deleteRecordError } = await supabase
+      .from('note_images')
+      .delete()
+      .eq('id', imageId);
+    
+    if (deleteRecordError) {
+      console.error('Error deleting image record:', deleteRecordError);
       return false;
     }
     
@@ -1122,30 +1205,32 @@ export async function updateImagePosition(noteId: string, imageId: string, newPo
     const userId = userData.user.id;
     console.log(`User ID: ${userId}`);
     
-    // Use the API endpoint to update the image position
-    const response = await fetch('/api/update-image-position', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        imageId,
-        noteId,
-        userId,
-        newPosition
-      })
-    });
-    
-    if (!response.ok) {
-      // Try to parse the error response
-      let errorData;
-      try {
-        errorData = await response.json();
-      } catch (e) {
-        errorData = { error: 'Unknown error', status: response.status };
-      }
+    // Verify the note belongs to the user (optional, RLS should handle this)
+    try {
+      const { data: noteData, error: noteError } = await supabase
+        .from('notes')
+        .select('user_id')
+        .eq('id', noteId)
+        .single();
       
-      console.error('Error updating image position via API:', errorData);
+      if (!noteError && noteData && noteData.user_id !== userId) {
+        console.error(`User ${userId} attempted to update an image for note owned by ${noteData.user_id}`);
+        return false;
+      }
+    } catch (verifyError) {
+      console.warn('Note verification skipped:', verifyError);
+      // Continue - RLS will reject if not authorized
+    }
+    
+    // Update the image position directly in the database
+    const { error: updateError } = await supabase
+      .from('note_images')
+      .update({ position: newPosition })
+      .eq('id', imageId)
+      .eq('note_id', noteId);
+    
+    if (updateError) {
+      console.error('Error updating image position:', updateError);
       return false;
     }
     
