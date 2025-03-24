@@ -101,12 +101,11 @@ export default function FilterMenu({ onFilterChange }: FilterMenuProps) {
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
-          size="sm"
-          className={`flex items-center ${activeFilter ? 'text-primary' : 'text-gray-400'}`}
+          size="icon"
+          className={`h-8 w-8 rounded-full ${activeFilter ? 'text-primary bg-primary/10' : 'text-gray-400 hover:text-gray-300'}`}
           title={activeFilter ? getFilterLabel(activeFilter) : "Filter notes"}
         >
-          <Filter className="h-4 w-4" />
-          <span className="hidden sm:inline-block ml-1.5">{activeFilter ? getFilterLabel(activeFilter) : "Filter"}</span>
+          <Filter className="h-3.5 w-3.5" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56 bg-gray-900 border-gray-800 text-gray-100">

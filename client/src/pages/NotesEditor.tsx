@@ -27,6 +27,21 @@ export default function NotesEditor() {
       document.title = currentProjectName || "Notes";
     }
   };
+  
+  // Listen for filter change events from HeaderWithSearch
+  useEffect(() => {
+    const handleFilterEvent = (event: CustomEvent) => {
+      const { filteredNotes, filterType } = event.detail;
+      setFilteredNotes(filteredNotes);
+      setActiveFilter(filterType);
+    };
+    
+    window.addEventListener('filter-change', handleFilterEvent as EventListener);
+    
+    return () => {
+      window.removeEventListener('filter-change', handleFilterEvent as EventListener);
+    };
+  }, []);
 
   return (
     <div className="flex flex-col h-screen bg-gray-950 text-gray-100">

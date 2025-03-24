@@ -71,6 +71,12 @@ export default function Header() {
     setFilteredNotes(filtered);
     setActiveFilter(type);
     
+    // Dispatch a custom event for NotesEditor to listen for
+    const filterEvent = new CustomEvent('filter-change', { 
+      detail: { filteredNotes: filtered, filterType: type } 
+    });
+    window.dispatchEvent(filterEvent);
+    
     // Update document title when applying a filter
     if (type) {
       document.title = `Filtered Notes - ${currentProjectName || "Notes"}`;
@@ -466,12 +472,12 @@ export default function Header() {
           </div>
           
           {/* Search and filter row */}
-          <div className="w-full flex items-center space-x-2">
+          <div className="w-full flex items-center gap-1">
+            <div className="flex-grow relative">
+              <SearchBar />
+            </div>
             <div className="flex-shrink-0">
               <FilterMenu onFilterChange={handleFilterChange} />
-            </div>
-            <div className="flex-grow">
-              <SearchBar />
             </div>
           </div>
         </div>
