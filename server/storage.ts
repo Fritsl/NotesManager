@@ -3,13 +3,13 @@ import { users, type User, type InsertUser } from "@shared/schema";
 // modify the interface with any CRUD methods
 // you might need
 
-interface IStorage {
+export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 }
 
-class MemStorage implements IStorage {
+export class MemStorage implements IStorage {
   private users: Map<number, User>;
   currentId: number;
 

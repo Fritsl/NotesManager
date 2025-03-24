@@ -8,7 +8,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
 });
 
-const insertUserSchema = createInsertSchema(users).pick({
+export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
 });
