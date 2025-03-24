@@ -209,26 +209,7 @@ export default function Header() {
                   </div>
                 )}
               </div>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 p-0 ml-1 hidden sm:flex">
-                      <Info className="h-4 w-4 text-gray-400 hover:text-primary" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="max-w-xs text-xs bg-gray-900 border-gray-700">
-                    <p className="font-medium mb-1">Keyboard Shortcuts:</p>
-                    <ul className="list-disc ml-3 space-y-0.5">
-                      <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Z</kbd> Collapse one level</li>
-                      <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">X</kbd> Expand one more level</li>
-                      <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Ctrl+0</kbd> Collapse all (L0)</li>
-                      <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Ctrl+1-5</kbd> Jump to levels L1-L5</li>
-                      <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Ctrl+E</kbd> Expand all</li>
-                      <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Ctrl+C</kbd> Collapse all</li>
-                    </ul>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+
             </div>
             <div className="flex items-center">
               {/* Level Controls */}
@@ -386,29 +367,7 @@ export default function Header() {
                   <span className="ml-auto text-xs text-muted-foreground">{currentProjectId ? "(Manual)" : "(No Project)"}</span>
                 </DropdownMenuItem>
                 
-                {/* Debug button */}
-                <DropdownMenuItem onClick={() => {
-                  // Use the debugInfo function already passed to this component from context
-                  // Instead of trying to call useNotes() inside the event handler
-                  const noteCount = Array.isArray(notes) ? notes.length : 0;
-                  const debugData = {
-                    currentProjectName,
-                    currentProjectId, 
-                    noteCount,
-                    hasActiveProject
-                  };
-                  console.log("DEBUG INFO:", debugData);
-                  
-                  // Show debug info in toast
-                  toast({
-                    title: "Debug Info",
-                    description: `Project: ${currentProjectName || 'None'}, ID: ${currentProjectId || 'None'}, Notes: ${noteCount}`,
-                  });
-                }}>
-                  <Info className="h-4 w-4 mr-2" />
-                  <span>Debug Info</span>
-                </DropdownMenuItem>
-                
+
                 <DropdownMenuSeparator />
                 
                 {/* Import/Export */}
