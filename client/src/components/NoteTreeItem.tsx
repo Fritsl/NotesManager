@@ -2,11 +2,12 @@ import { useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { Note } from "@/types/notes";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, Link, Youtube, ArrowDownRightFromCircle, MessageCircle, Clock } from "lucide-react";
+import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, Link, Youtube, ArrowDownRightFromCircle, MessageCircle, Clock, MoveHorizontal } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { cn } from "@/lib/utils";
 import DropZone from "./DropZone";
 import { levelColors } from "@/lib/level-colors";
+import MoveNoteModal from "./MoveNoteModal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +41,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   const { selectedNote, selectNote, addNote, deleteNote, moveNote, expandedNodes, notes } = useNotes();
   const ref = useRef<HTMLDivElement>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
 
   // Set up drag
   const [{ isDragging }, drag, preview] = useDrag(() => ({
@@ -419,6 +421,20 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               <ArrowDownRightFromCircle size={16} />
             </Button>
             
+            {/* Move Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-gray-400 hover:text-amber-500 p-1 touch-target"
+              title="Move Note"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMoveDialogOpen(true);
+              }}
+            >
+              <MoveHorizontal size={16} />
+            </Button>
+            
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
               <AlertDialogTrigger asChild>
                 <Button
@@ -506,6 +522,13 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           )}
         </div>
       )}
+      
+      {/* Move Note Modal */}
+      <MoveNoteModal 
+        isOpen={moveDialogOpen}
+        onClose={() => setMoveDialogOpen(false)}
+        noteToMove={note}
+      />
     </div>
   );
 }
