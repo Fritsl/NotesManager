@@ -187,6 +187,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
   
+  // Endpoint to create an image record in the database using server auth
+  app.post("/api/create-image-record", upload.none(), async (req: Request, res: Response) => {
+    try {
+      const { noteId, userId, filePath, publicUrl } = req.body;
+
+      if (!noteId || !userId || !filePath || !publicUrl) {
+        return res.status(400).json({ 
+          error: "Missing required fields", 
+          details: { 
+            noteId: !!noteId, 
+            userId: !!userId,
+            filePath: !!filePath,
+            publicUrl: !!publicUrl
+          } 
+        });
+      }
+
+      log(`Creating image record for note ${noteId} by user ${userId}`);
+
+      // Optional: Verify the note belongs to the user
+      try {
+        const { data: noteData, error: noteError } = await supabase
+          .from('notes')
+          .select('user_id')
+          .eq('id', noteId)
+          .single();
+
+        if (!noteError && noteData && noteData.user_id !== userId) {
+          log(`User ${userId} attempted to create an image for note ${noteId} owned by ${noteData.user_id}`);
+          return res.status(403).json({ error: "Not authorized to add images to this note" });
+        }
+      } catch (verifyError: any) {
+        log(`Note verification skipped: ${verifyError.message}`);
+        // Continue with insert - we will trust the provided userId
+      }
+
+      // Get highest position of existing images
+      const { data: existingImages } = await supabase
+        .from('note_images')
+        .select('position')
+        .eq('note_id', noteId)
+        .order('position', { ascending: false })
+        .limit(1);
+
+      const position = existingImages && existingImages.length > 0 
+        ? existingImages[0].position + 1 
+        : 0;
+
+      // Create record in the database
+      const imageRecord = {
+        note_id: noteId,
+        storage_path: filePath,
+        url: publicUrl,
+        position: position
+      };
+
+      const { data: imageData, error: imageError } = await supabase
+        .from('note_images')
+        .insert(imageRecord)
+        .select()
+        .single();
+
+      if (imageError) {
+        log(`Database record creation error: ${imageError.message}`);
+        return res.status(500).json({ error: "Failed to create image record", details: imageError });
+      }
+      
+      log(`Image record created successfully: ${imageData.id}`);
+      return res.status(200).json(imageData);
+    } catch (error: any) {
+      log(`Server error in create-image-record: ${error.message}`);
+      return res.status(500).json({ error: "Server error", message: error.message });
+    }
+  });
+  
   // Supabase diagnostics endpoint to check storage access
   app.get("/api/supabase-diagnostics", async (_req: Request, res: Response) => {
     try {
