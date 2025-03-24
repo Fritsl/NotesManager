@@ -433,6 +433,10 @@ export default function Header() {
                     <Edit className="h-4 w-4 mr-2" />
                     <span>Edit Profile Payoff</span>
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowDescriptionModal(true)}>
+                    <FileEdit className="h-4 w-4 mr-2" />
+                    <span>Edit Project Description</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="h-4 w-4 mr-2" />
                     <span>Sign Out</span>
@@ -492,6 +496,13 @@ export default function Header() {
                   <DropdownMenuItem onClick={() => setShowPayoffModal(true)}>
                     <Edit className="h-4 w-4 mr-2" />
                     <span>Edit Profile Payoff</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setShowDescriptionModal(true)}
+                    disabled={!hasActiveProject}
+                  >
+                    <FileEdit className="h-4 w-4 mr-2" />
+                    <span>Edit Project Description</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="h-4 w-4 mr-2" />
