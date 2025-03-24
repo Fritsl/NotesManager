@@ -17,7 +17,8 @@ import {
   Edit,
   FileEdit,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  HelpCircle
 } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { useAuth } from "@/context/AuthContext";
@@ -27,6 +28,7 @@ import ExportModal from "@/components/ExportModal";
 import ProjectsModal from "@/components/ProjectsModal";
 import PayoffModal from "@/components/PayoffModal";
 import ProjectDescriptionModal from "@/components/ProjectDescriptionModal";
+import HelpModal from "@/components/HelpModal";
 import SearchBar from "@/components/SearchBar";
 import FilterMenu, { FilterType } from "@/components/FilterMenu";
 import { Note } from "@/types/notes";
@@ -127,6 +129,7 @@ export default function Header() {
   const [isEditingProjectName, setIsEditingProjectName] = useState(false);
   const [editedProjectName, setEditedProjectName] = useState(currentProjectName || '');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const projectNameInputRef = useRef<HTMLInputElement>(null);
 
   // Update local state when context project name changes
@@ -425,6 +428,11 @@ export default function Header() {
                     <Trash2 className="h-4 w-4 mr-2" />
                     <span>Delete Project</span>
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowHelpModal(true)}>
+                    <HelpCircle className="h-4 w-4 mr-2" />
+                    <span>Help</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="h-4 w-4 mr-2" />
                     <span>Sign Out</span>
@@ -497,6 +505,11 @@ export default function Header() {
                     <FileEdit className="h-4 w-4 mr-2" />
                     <span>Edit Project Description</span>
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowHelpModal(true)}>
+                    <HelpCircle className="h-4 w-4 mr-2" />
+                    <span>Help</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="h-4 w-4 mr-2" />
                     <span>Sign Out</span>
@@ -514,6 +527,7 @@ export default function Header() {
       {showProjectsModal && <ProjectsModal isOpen={showProjectsModal} onClose={() => setShowProjectsModal(false)} />}
       {showPayoffModal && <PayoffModal isOpen={showPayoffModal} onClose={() => setShowPayoffModal(false)} />}
       {showDescriptionModal && <ProjectDescriptionModal isOpen={showDescriptionModal} onClose={() => setShowDescriptionModal(false)} />}
+      <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
       
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
