@@ -351,10 +351,22 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     }
 
     selectNote(newNote);
+    // First show a toast notification  
     toast({
       title: "Note Added",
       description: "A new note has been added",
     });
+    
+    // Then trigger a save - this is a simpler way to ensure saving happens
+    // after any action that triggers a toast notification
+    if (currentProjectId) {
+      try {
+        saveProject();
+        console.log("Project auto-saved after showing toast notification");
+      } catch (error) {
+        console.error("Failed to auto-save after toast notification:", error);
+      }
+    }
   }, [findNoteAndPath, selectNote, cleanNotePositions, currentProjectId, saveProject, toast]);
 
   // Update a note
@@ -396,6 +408,16 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       title: "Note Updated",
       description: "Your changes have been saved",
     });
+    
+    // Trigger a save when the toast appears
+    if (currentProjectId) {
+      try {
+        saveProject();
+        console.log("Project auto-saved after note update");
+      } catch (error) {
+        console.error("Failed to auto-save after note update:", error);
+      }
+    }
   }, [toast]);
 
   // Delete a note
@@ -605,6 +627,16 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       title: "Note Moved",
       description: "The note has been moved to a new position",
     });
+    
+    // Make sure to save manually again after the move - this is a critical operation
+    if (currentProjectId) {
+      try {
+        saveProject();
+        console.log("Project manually saved again after note movement");
+      } catch (error) {
+        console.error("Failed to manually save after note movement:", error);
+      }
+    }
   }, [findNoteAndParent, cleanNotePositions, currentProjectId, saveProject, toast]);
 
   // Toggle expansion for a single node
