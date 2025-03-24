@@ -69,7 +69,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       ...note,
       position: index,
       // Recursively clean child positions
-      children: note.children.length > 0 ? cleanNotePositions(note.children) : []
+      children: note.children.length > 0 ? cleanNotePositions(note.children) : [],
+      // Preserve images array
+      images: note.images || []
     }));
     
     return cleanedNotes;

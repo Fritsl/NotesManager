@@ -143,7 +143,9 @@ export function buildNoteHierarchy(flatNotes: DbNote[], imagesData?: any[] | nul
     return notes.map((note, index) => ({
       ...note,
       position: index,
-      children: cleanPositions(note.children)
+      children: cleanPositions(note.children),
+      // Preserve the images array
+      images: note.images || []
     }));
   };
   
