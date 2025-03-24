@@ -608,14 +608,14 @@ export function NotesProvider({ children }: { children: ReactNode }) {
 
   // Expand nodes up to a certain level
   const expandToLevel = useCallback((level: number) => {
-    // Convert from 1-indexed (UI friendly) to 0-indexed (code friendly)
-    const targetLevel = level - 1;
+    // Use the level as is - the UI buttons are already 0-indexed (L0, L1, L2, etc.)
+    const targetLevel = level;
     
     // Always reset expanded nodes first
     setExpandedNodes(new Set());
     
-    if (targetLevel < 0) {
-      // Negative levels or level 0 means collapse all
+    if (targetLevel <= 0) {
+      // Level 0 means collapse all
       return;
     }
     
@@ -623,19 +623,18 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     
     // Helper function to traverse the tree and expand nodes up to the specified level
     const expandLevels = (nodes: Note[], currentLevel = 0) => {
-      if (currentLevel > targetLevel) {
+      if (currentLevel >= targetLevel) {
         return;
       }
       
       for (const note of nodes) {
-        // If we're not yet at the maximum level, expand this node
-        if (currentLevel < targetLevel) {
-          newExpandedNodes.add(note.id);
-          
-          // Recursively process children if they exist
-          if (note.children && note.children.length > 0) {
-            expandLevels(note.children, currentLevel + 1);
-          }
+        // Add all nodes that are at levels LESS than the target level
+        // This ensures that L1 shows level 0 nodes, L2 shows levels 0 and 1, etc.
+        newExpandedNodes.add(note.id);
+        
+        // Recursively process children if they exist
+        if (note.children && note.children.length > 0) {
+          expandLevels(note.children, currentLevel + 1);
         }
       }
     };
