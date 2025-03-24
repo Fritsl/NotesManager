@@ -63,6 +63,55 @@ export default function NoteEditor() {
     }
   }, [selectedNote]);
   
+  // Direct save function - saves immediately without checks
+  const saveDirectly = useCallback(async () => {
+    if (!selectedNote || !currentProjectId) {
+      console.log("Cannot save directly: No note selected or no project ID");
+      return;
+    }
+    
+    try {
+      // First update the note in memory
+      const updatedNote = {
+        ...selectedNote,
+        content,
+        youtube_url: youtubeUrl || null,
+        url: externalUrl || null,
+        url_display_text: externalUrl ? (urlDisplayText || null) : null,
+        is_discussion: isDiscussion,
+      };
+      
+      // Update the note in local state first
+      updateNote(updatedNote);
+      
+      // Now perform the same actions as the manual save
+      console.log("Direct save starting for note:", selectedNote.id);
+      console.log("Direct save - Project ID:", currentProjectId);
+      
+      // Ensure current note is saved to database by calling manual save function
+      console.log("Manual save for project ID:", currentProjectId);
+      await saveProject();
+      console.log("Project saved directly from editor");
+      
+      // Show a toast notification for the save
+      toast({
+        title: "Changes Saved",
+        description: "Your changes have been saved to the database",
+        variant: "default",
+      });
+      
+      // Reset changes flag after successful save
+      setHasChanges(false);
+    } catch (error) {
+      console.error("Failed to save project directly:", error);
+      toast({
+        title: "Save Failed",
+        description: "Could not save your changes. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [selectedNote, currentProjectId, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, updateNote, saveProject, toast]);
+  
   // Auto-save when any field loses focus if there are changes (similar to Google Docs)
   const handleBlur = useCallback(async (e: React.FocusEvent) => {
     // Save the note whenever a field loses focus, even if moving to another field in the form
@@ -74,48 +123,19 @@ export default function NoteEditor() {
       
       autoSaveTimerRef.current = setTimeout(async () => {
         try {
-          console.log("Auto-save starting for note:", selectedNote.id);
-          
-          // First update the note in memory
-          const updatedNote = {
-            ...selectedNote,
-            content,
-            youtube_url: youtubeUrl || null,
-            url: externalUrl || null,
-            url_display_text: externalUrl ? (urlDisplayText || null) : null,
-            is_discussion: isDiscussion,
-          };
-          
-          // Update the note in local state first
-          updateNote(updatedNote);
-          
-          // Then ensure it's saved to the database
-          if (currentProjectId) {
-            console.log("Calling saveProject() for auto-save...");
-            await saveProject();
-            console.log("Project auto-saved after note update");
-            
-            // Show a subtle toast notification for auto-save
-            toast({
-              title: "Auto-saved",
-              description: "Your changes have been saved to the database",
-              variant: "default",
-            });
-            
-            // Reset the changes flag after successful save
-            setHasChanges(false);
-          }
+          // Use our direct save function to ensure project is saved properly
+          await saveDirectly();
         } catch (error) {
-          console.error("Failed to auto-save project:", error);
+          console.error("Failed during blur auto-save:", error);
           toast({
             title: "Auto-save Failed",
-            description: "Could not save your changes automatically. Try using manual save.",
+            description: "Changes were not saved automatically. Please use manual save.",
             variant: "destructive",
           });
         }
       }, 500);
     }
-  }, [selectedNote, hasChanges, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, updateNote, toast, saveProject, currentProjectId]);
+  }, [selectedNote, hasChanges, saveDirectly, toast]);
   
   // Set up change tracking with proper state updates
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -154,26 +174,10 @@ export default function NoteEditor() {
     setSaveStatus("saving");
     
     try {
-      const updatedNote = {
-        ...selectedNote,
-        content,
-        youtube_url: youtubeUrl || null,
-        url: externalUrl || null,
-        url_display_text: externalUrl ? (urlDisplayText || null) : null,
-        is_discussion: isDiscussion,
-      };
-      
-      // Update the note in local state
-      updateNote(updatedNote);
-      
-      // Save the entire project if we have a project ID
-      if (currentProjectId) {
-        await saveProject();
-        console.log("Project saved manually after note update");
-      }
+      // Use our direct save function to ensure consistent behavior
+      await saveDirectly();
       
       setSaveStatus("saved");
-      setHasChanges(false); // Reset changes flag after saving
       
       // Reset status after a delay
       setTimeout(() => {
