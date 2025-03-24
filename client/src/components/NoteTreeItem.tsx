@@ -11,6 +11,7 @@ import MoveNoteModal from "./MoveNoteModal";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import ImageWithFallback from "@/components/ui/image-with-fallback";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -481,29 +482,13 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                     <div className="flex gap-2 overflow-x-auto pb-2">
                       {note.images.map((image, idx) => (
                         <div key={image.id} className="relative group border border-gray-700 rounded overflow-hidden flex-shrink-0" style={{width: '80px', height: '60px'}}>
-                          {/* Image with error handling fallback */}
+                          {/* Image with improved error handling fallback */}
                           {image.url ? (
                             <div className="w-full h-full relative">
-                              <img 
-                                src={image.url} 
+                              <ImageWithFallback 
+                                url={image.url} 
                                 alt="Note attachment" 
-                                className="w-full h-full object-cover" 
-                                onError={(e) => {
-                                  // Replace with a fallback UI on error
-                                  const target = e.target as HTMLImageElement;
-                                  target.onerror = null; // Prevent infinite error loops
-                                  target.style.display = 'none';
-                                  
-                                  // Show fallback indicator
-                                  const parent = target.parentElement;
-                                  if (parent) {
-                                    // Create fallback element with image icon
-                                    const fallback = document.createElement('div');
-                                    fallback.className = 'w-full h-full flex items-center justify-center bg-gray-800';
-                                    fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>';
-                                    parent.appendChild(fallback);
-                                  }
-                                }} 
+                                className="w-full h-full object-cover"
                               />
                             </div>
                           ) : (
