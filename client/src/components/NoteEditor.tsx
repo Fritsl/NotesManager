@@ -64,7 +64,7 @@ export default function NoteEditor() {
   }, [selectedNote]);
   
   // Auto-save when any field loses focus if there are changes (similar to Google Docs)
-  const handleBlur = useCallback((e: React.FocusEvent) => {
+  const handleBlur = useCallback(async (e: React.FocusEvent) => {
     // Save the note whenever a field loses focus, even if moving to another field in the form
     if (selectedNote && hasChanges) {
       // Use a small delay to prevent saving while user is still interacting with the form
@@ -73,35 +73,46 @@ export default function NoteEditor() {
       }
       
       autoSaveTimerRef.current = setTimeout(async () => {
-        const updatedNote = {
-          ...selectedNote,
-          content,
-          youtube_url: youtubeUrl || null,
-          url: externalUrl || null,
-          url_display_text: externalUrl ? (urlDisplayText || null) : null,
-          is_discussion: isDiscussion,
-        };
-        
-        // Create a clone of the note to avoid focus issues
-        updateNote(updatedNote);
-        setHasChanges(false);
-        
-        // Save the entire project if we have a project ID
-        if (currentProjectId) {
-          try {
+        try {
+          console.log("Auto-save starting for note:", selectedNote.id);
+          
+          // First update the note in memory
+          const updatedNote = {
+            ...selectedNote,
+            content,
+            youtube_url: youtubeUrl || null,
+            url: externalUrl || null,
+            url_display_text: externalUrl ? (urlDisplayText || null) : null,
+            is_discussion: isDiscussion,
+          };
+          
+          // Update the note in local state first
+          updateNote(updatedNote);
+          
+          // Then ensure it's saved to the database
+          if (currentProjectId) {
+            console.log("Calling saveProject() for auto-save...");
             await saveProject();
             console.log("Project auto-saved after note update");
-          } catch (error) {
-            console.error("Failed to auto-save project:", error);
+            
+            // Show a subtle toast notification for auto-save
+            toast({
+              title: "Auto-saved",
+              description: "Your changes have been saved to the database",
+              variant: "default",
+            });
+            
+            // Reset the changes flag after successful save
+            setHasChanges(false);
           }
+        } catch (error) {
+          console.error("Failed to auto-save project:", error);
+          toast({
+            title: "Auto-save Failed",
+            description: "Could not save your changes automatically. Try using manual save.",
+            variant: "destructive",
+          });
         }
-        
-        // Show a subtle toast notification for auto-save
-        toast({
-          title: "Auto-saved",
-          description: "Your changes have been automatically saved",
-          variant: "default",
-        });
       }, 500);
     }
   }, [selectedNote, hasChanges, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, updateNote, toast, saveProject, currentProjectId]);
