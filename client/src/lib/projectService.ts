@@ -221,8 +221,8 @@ export function flattenNoteHierarchy(notes: Note[], projectId: string, userId: s
       // Add each image to the noteImages array for insertion/preservation
       note.images.forEach(image => {
         noteImages.push({
-          // Generate a new UUID for the image to avoid conflicts
-          id: crypto.randomUUID(),
+          // Preserve the original image ID to maintain references
+          id: image.id || crypto.randomUUID(),
           note_id: note.id,
           storage_path: image.storage_path,
           url: image.url,
