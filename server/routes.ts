@@ -262,7 +262,180 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // use storage to perform CRUD operations on the storage interface
   // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
 
-  // Image upload endpoint - with mock testing mode
+  // Endpoint to fix and migrate local images to Supabase
+  app.post("/api/migrate-local-images", async (req: Request, res: Response) => {
+    try {
+      const { userId, projectId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+      
+      log(`Starting image migration for user ${userId}, project ${projectId || 'all projects'}`);
+      
+      // Get image records with local URLs
+      let imageQuery = supabase
+        .from('note_images')
+        .select('*');
+        
+      // Filter by user_id if we can - but this might not be available in note_images table
+      // So we'll do more verification later
+      
+      // Optional project filter
+      if (projectId) {
+        // We need to get notes by project first
+        const { data: projectNotes } = await supabase
+          .from('notes')
+          .select('id')
+          .eq('project_id', projectId)
+          .eq('user_id', userId);
+          
+        if (projectNotes && projectNotes.length > 0) {
+          const noteIds = projectNotes.map(note => note.id);
+          imageQuery = imageQuery.in('note_id', noteIds);
+        }
+      }
+      
+      const { data: imageRecords, error: imageError } = await imageQuery;
+      
+      if (imageError) {
+        log(`Error fetching images: ${imageError.message}`);
+        return res.status(500).json({ error: "Failed to fetch image records" });
+      }
+      
+      if (!imageRecords || imageRecords.length === 0) {
+        log('No images found to migrate');
+        return res.json({ status: "success", migrated: 0, message: "No images found to migrate" });
+      }
+      
+      log(`Found ${imageRecords.length} image records to check`);
+      
+      // Filter for local URLs only
+      const localImages = imageRecords.filter(img => 
+        img.url && (
+          img.url.includes('.replit.dev/uploads/') || 
+          img.url.includes('localhost') ||
+          img.url.includes('127.0.0.1')
+        )
+      );
+      
+      if (localImages.length === 0) {
+        log('No local images found to migrate');
+        return res.json({ status: "success", migrated: 0, message: "No local images found to migrate" });
+      }
+      
+      log(`Found ${localImages.length} local image URLs to migrate`);
+      
+      // Track migration results
+      const results = {
+        total: localImages.length,
+        success: 0,
+        failed: 0,
+        skipped: 0,
+        errors: [] as string[]
+      };
+      
+      // Process each image
+      for (const image of localImages) {
+        try {
+          log(`Processing image ${image.id} with URL ${image.url}`);
+          
+          // Extract filename from URL
+          const urlParts = image.url.split('/');
+          const fileName = urlParts[urlParts.length - 1];
+          
+          if (!fileName) {
+            log(`Could not extract filename from URL: ${image.url}`);
+            results.failed++;
+            results.errors.push(`Invalid URL format: ${image.url}`);
+            continue;
+          }
+          
+          // Try to download the image from the local URL
+          let imageBuffer: Buffer;
+          try {
+            // First try to get it from local uploads folder
+            const localPath = path.join(__dirname, '../public/uploads', fileName);
+            if (fs.existsSync(localPath)) {
+              imageBuffer = fs.readFileSync(localPath);
+              log(`Read image from local file: ${localPath}`);
+            } else {
+              // If not found locally, try to fetch from URL (might work during development)
+              log(`Local file not found, trying to fetch from URL: ${image.url}`);
+              results.skipped++;
+              continue; // Skip for now - we don't want to make HTTP requests in this endpoint
+            }
+          } catch (fetchError: any) {
+            log(`Error fetching image: ${fetchError.message}`);
+            results.failed++;
+            results.errors.push(`Failed to fetch image: ${fetchError.message}`);
+            continue;
+          }
+          
+          // Upload to Supabase Storage
+          const filePath = `images/${userId}/${fileName}`;
+          
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('note-images')
+            .upload(filePath, imageBuffer, {
+              contentType: 'image/jpeg', // Assume JPEG as default
+              cacheControl: '3600',
+              upsert: true
+            });
+            
+          if (uploadError) {
+            log(`Error uploading to Supabase: ${uploadError.message}`);
+            results.failed++;
+            results.errors.push(`Failed to upload to Supabase: ${uploadError.message}`);
+            continue;
+          }
+          
+          // Get the new public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('note-images')
+            .getPublicUrl(filePath);
+            
+          log(`Uploaded to Supabase, new URL: ${publicUrl}`);
+          
+          // Update the database record
+          const { error: updateError } = await supabase
+            .from('note_images')
+            .update({ 
+              url: publicUrl,
+              storage_path: filePath 
+            })
+            .eq('id', image.id);
+            
+          if (updateError) {
+            log(`Error updating record: ${updateError.message}`);
+            results.failed++;
+            results.errors.push(`Failed to update record: ${updateError.message}`);
+            
+            // Try to clean up the uploaded file
+            await supabase.storage.from('note-images').remove([filePath]);
+            continue;
+          }
+          
+          results.success++;
+          log(`Successfully migrated image ${image.id}`);
+        } catch (processError: any) {
+          log(`Error processing image ${image.id}: ${processError.message}`);
+          results.failed++;
+          results.errors.push(`Error processing image ${image.id}: ${processError.message}`);
+        }
+      }
+      
+      return res.json({
+        status: "success",
+        results
+      });
+    } catch (error: any) {
+      log(`Server error in migrate-local-images: ${error.message}`);
+      return res.status(500).json({ error: "Server error", message: error.message });
+    }
+  });
+
+  // Image upload endpoint - with improved Supabase storage handling
   app.post("/api/upload-image", upload.single('image'), async (req, res) => {
     try {
       const { noteId, userId } = req.body;

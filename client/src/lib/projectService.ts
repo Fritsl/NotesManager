@@ -1294,3 +1294,51 @@ export async function permanentlyDeleteProject(id: string): Promise<boolean> {
 export async function deleteProject(id: string): Promise<boolean> {
   return moveProjectToTrash(id);
 }
+
+/**
+ * Migrates local Replit image URLs to Supabase storage
+ * This helps fix any images that were uploaded during development
+ * @param projectId Optional project ID to limit migration to a specific project
+ * @returns Object with migration results
+ */
+export async function migrateLocalImages(projectId?: string): Promise<any> {
+  try {
+    console.log(`Starting migration of local images${projectId ? ` for project ${projectId}` : ''}`);
+    
+    // Get current user
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !userData.user) {
+      console.error('User not authenticated:', userError);
+      throw new Error('User not authenticated');
+    }
+    
+    const userId = userData.user.id;
+    
+    // Call the migration API endpoint
+    const response = await fetch('/api/migrate-local-images', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId,
+        projectId
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Migration API error:', errorText);
+      throw new Error(`Migration failed: ${response.status} ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    console.log('Migration result:', result);
+    
+    return result;
+  } catch (error) {
+    console.error('Error migrating local images:', error);
+    throw error;
+  }
+}
