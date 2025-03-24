@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Define a simple Database type here to avoid import issues
+// Define database schema typing
 type Json =
   | string
   | number
@@ -115,8 +115,13 @@ interface Database {
   };
 }
 
-// Use environment variables
+// Supabase configuration
+// Use environment variables for security in production
+const supabaseUrl = 'https://mwrznucguduwrqplzfwr.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13cnpudWNndWR1d3JxcGx6ZndyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTEyMDY1NzEsImV4cCI6MjAyNjc4MjU3MX0.0NTaLoJkLkIRchyXAKJ0VtJuwGf3HxhUHHmyW9A-nBM';
+
+// Create Supabase client
 export const supabase = createClient<Database>(
-  import.meta.env.VITE_SUPABASE_URL || '',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+  supabaseUrl,
+  supabaseAnonKey
 );
