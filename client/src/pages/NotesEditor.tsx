@@ -14,6 +14,19 @@ export default function NotesEditor() {
   const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
   const { hasActiveProject, currentProjectName, addNote } = useNotes();
+  
+  // Handle filter change
+  const handleFilterChange = (filtered: Note[], type: FilterType) => {
+    setFilteredNotes(filtered);
+    setActiveFilter(type);
+    
+    // Update document title when applying a filter
+    if (type) {
+      document.title = `Filtered Notes - ${currentProjectName || "Notes"}`;
+    } else {
+      document.title = currentProjectName || "Notes";
+    }
+  };
 
   return (
     <div className="flex flex-col h-screen bg-gray-950 text-gray-100">
