@@ -295,28 +295,7 @@ export default function Header() {
                 })}
               </div>
               
-              {/* Expand/Collapse Controls */}
-              <div className="hidden sm:flex items-center mr-2 border-r pr-3 border-gray-700">
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={collapseAll}
-                  className="h-7 w-7 touch-target"
-                  title="Collapse All"
-                >
-                  <ChevronUp className="h-4 w-4" />
-                </Button>
-                
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={expandAll}
-                  className="h-7 w-7 touch-target"
-                  title="Expand All"
-                >
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </div>
+
               
               {/* Consolidated Hamburger Menu */}
               <DropdownMenu>
