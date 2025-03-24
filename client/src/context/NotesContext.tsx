@@ -614,8 +614,11 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     // Always reset expanded nodes first
     setExpandedNodes(new Set());
     
+    // Update the current level value regardless of level
+    setCurrentLevel(level);
+    
     if (targetLevel <= 0) {
-      // Level 0 means collapse all
+      // Level 0 means collapse all, just return with empty set of expanded nodes
       return;
     }
     
@@ -641,7 +644,6 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     
     expandLevels(notes);
     setExpandedNodes(newExpandedNodes);
-    setCurrentLevel(level);
   }, [notes]);
 
   // Create a new project
