@@ -312,7 +312,21 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
             </div>
             
             <div className="border border-gray-800 rounded-md p-4 bg-gray-900">
-              <h3 className="font-medium mb-4 text-gray-300">Your Projects</h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-medium text-gray-300">Your Projects</h3>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="bg-gray-850 border-gray-700 text-gray-300 hover:bg-gray-700 flex items-center gap-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowTrashModal(true);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                  <span>Trash</span>
+                </Button>
+              </div>
               
               {loading ? (
                 <div className="flex justify-center py-8">
@@ -447,6 +461,13 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Trash Modal */}
+      <TrashModal 
+        isOpen={showTrashModal} 
+        onClose={() => setShowTrashModal(false)} 
+        onProjectRestored={fetchProjects}
+      />
     </>
   );
 }
