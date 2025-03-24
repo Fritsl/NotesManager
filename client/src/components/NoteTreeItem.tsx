@@ -2,13 +2,14 @@ import { useRef, useState, useEffect } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { Note } from "@/types/notes";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, Link, Youtube, ArrowDownRightFromCircle, MessageCircle, Clock, MoveHorizontal, Save, Check, Edit, X } from "lucide-react";
+import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, Link, Youtube, ArrowDownRightFromCircle, MessageCircle, Clock, MoveHorizontal, Save, Check, Edit, X, Upload } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { cn } from "@/lib/utils";
 import DropZone from "./DropZone";
 import { levelColors } from "@/lib/level-colors";
 import MoveNoteModal from "./MoveNoteModal";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -40,7 +41,20 @@ interface DragItem {
 }
 
 export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, index = 0, isRoot = false, parentId = null }: NoteTreeItemProps) {
-  const { selectedNote, selectNote, addNote, deleteNote, moveNote, expandedNodes, notes, updateNote, saveProject } = useNotes();
+  const { 
+    selectedNote, 
+    selectNote, 
+    addNote, 
+    deleteNote, 
+    moveNote, 
+    expandedNodes, 
+    notes, 
+    updateNote, 
+    saveProject,
+    uploadImage,
+    removeImage,
+    reorderImage
+  } = useNotes();
   const { toast } = useToast();
   
   // References
@@ -54,6 +68,12 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   // Inline editing state
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(note.content);
+  const [editTimeSet, setEditTimeSet] = useState<string | null>(note.time_set);
+  const [editIsDiscussion, setEditIsDiscussion] = useState(note.is_discussion);
+  const [editYoutubeUrl, setEditYoutubeUrl] = useState<string | null>(note.youtube_url);
+  const [editUrl, setEditUrl] = useState<string | null>(note.url);
+  const [editUrlDisplayText, setEditUrlDisplayText] = useState<string | null>(note.url_display_text);
+  const [activeTab, setActiveTab] = useState<'content' | 'metadata' | 'images'>('content');
   const [isSaving, setIsSaving] = useState(false);
 
   // Set up drag
@@ -289,14 +309,26 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   // Update the local state whenever the note changes (from other components)
   useEffect(() => {
     setEditContent(note.content);
-  }, [note.content]);
+    setEditTimeSet(note.time_set);
+    setEditIsDiscussion(note.is_discussion);
+    setEditYoutubeUrl(note.youtube_url);
+    setEditUrl(note.url);
+    setEditUrlDisplayText(note.url_display_text);
+  }, [
+    note.content, 
+    note.time_set,
+    note.is_discussion,
+    note.youtube_url, 
+    note.url, 
+    note.url_display_text
+  ]);
   
   // Focus the textarea when entering edit mode
   useEffect(() => {
-    if (isEditing && contentEditRef.current) {
+    if (isEditing && contentEditRef.current && activeTab === 'content') {
       contentEditRef.current.focus();
     }
-  }, [isEditing]);
+  }, [isEditing, activeTab]);
 
   return (
     <div className="note-tree-item">
@@ -369,16 +401,169 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             {isEditing ? (
               /* Inline Edit Mode */
               <div className="w-full" onClick={(e) => e.stopPropagation()}>
-                <Textarea 
-                  ref={contentEditRef}
-                  rows={Math.min(6, note.content.split('\n').length + 1)}
-                  className="w-full p-2 text-sm bg-gray-850 border-gray-700 focus:border-primary resize-none mb-2"
-                  placeholder="Enter note content..."
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  autoFocus
-                />
-                <div className="flex space-x-2 justify-end">
+                {/* Tab navigation */}
+                <div className="flex border-b border-gray-700 mb-2">
+                  <button
+                    className={`px-3 py-1 text-sm font-medium ${activeTab === 'content' ? 'border-b-2 border-primary text-primary' : 'text-gray-400 hover:text-gray-300'}`}
+                    onClick={() => setActiveTab('content')}
+                  >
+                    Content
+                  </button>
+                  <button
+                    className={`px-3 py-1 text-sm font-medium ${activeTab === 'metadata' ? 'border-b-2 border-primary text-primary' : 'text-gray-400 hover:text-gray-300'}`}
+                    onClick={() => setActiveTab('metadata')}
+                  >
+                    Properties
+                  </button>
+                  <button
+                    className={`px-3 py-1 text-sm font-medium ${activeTab === 'images' ? 'border-b-2 border-primary text-primary' : 'text-gray-400 hover:text-gray-300'}`}
+                    onClick={() => setActiveTab('images')}
+                  >
+                    Images {(note.images && note.images.length > 0) ? `(${note.images.length})` : ''}
+                  </button>
+                </div>
+                
+                {/* Content Tab */}
+                {activeTab === 'content' && (
+                  <Textarea 
+                    ref={contentEditRef}
+                    rows={Math.min(6, note.content.split('\n').length + 1)}
+                    className="w-full p-2 text-sm bg-gray-850 border-gray-700 focus:border-primary resize-none mb-2"
+                    placeholder="Enter note content..."
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    autoFocus
+                  />
+                )}
+                
+                {/* Metadata Tab */}
+                {activeTab === 'metadata' && (
+                  <div className="space-y-3 py-1">
+                    {/* Time settings */}
+                    <div className="flex items-center">
+                      <label className="w-1/3 text-sm text-gray-400">Time:</label>
+                      <div className="w-2/3">
+                        <input 
+                          type="time" 
+                          className="p-1.5 rounded text-sm bg-gray-850 border border-gray-700 focus:border-primary w-full"
+                          value={editTimeSet || ''}
+                          onChange={(e) => setEditTimeSet(e.target.value ? e.target.value : null)}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Discussion toggle */}
+                    <div className="flex items-center">
+                      <label className="w-1/3 text-sm text-gray-400">Discussion:</label>
+                      <div className="w-2/3">
+                        <Switch 
+                          checked={editIsDiscussion} 
+                          onCheckedChange={setEditIsDiscussion}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* YouTube URL */}
+                    <div className="flex items-center">
+                      <label className="w-1/3 text-sm text-gray-400">YouTube URL:</label>
+                      <div className="w-2/3">
+                        <input 
+                          type="url" 
+                          className="p-1.5 rounded text-sm bg-gray-850 border border-gray-700 focus:border-primary w-full"
+                          placeholder="https://youtube.com/watch?v=..."
+                          value={editYoutubeUrl || ''}
+                          onChange={(e) => setEditYoutubeUrl(e.target.value || null)}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* External URL and display text */}
+                    <div className="flex items-center">
+                      <label className="w-1/3 text-sm text-gray-400">External URL:</label>
+                      <div className="w-2/3">
+                        <input 
+                          type="url" 
+                          className="p-1.5 rounded text-sm bg-gray-850 border border-gray-700 focus:border-primary w-full"
+                          placeholder="https://..."
+                          value={editUrl || ''}
+                          onChange={(e) => setEditUrl(e.target.value || null)}
+                        />
+                      </div>
+                    </div>
+                    
+                    {editUrl && (
+                      <div className="flex items-center">
+                        <label className="w-1/3 text-sm text-gray-400">Link text:</label>
+                        <div className="w-2/3">
+                          <input 
+                            type="text" 
+                            className="p-1.5 rounded text-sm bg-gray-850 border border-gray-700 focus:border-primary w-full"
+                            placeholder="Link display text"
+                            value={editUrlDisplayText || ''}
+                            onChange={(e) => setEditUrlDisplayText(e.target.value || null)}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Images Tab */}
+                {activeTab === 'images' && (
+                  <div className="space-y-3 py-1">
+                    {note.images && note.images.length > 0 ? (
+                      <div className="grid grid-cols-2 gap-2">
+                        {note.images.map((image, idx) => (
+                          <div key={image.id} className="relative group border border-gray-700 rounded overflow-hidden">
+                            <img src={image.url} alt="Note attachment" className="w-full h-auto" />
+                            <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Button variant="destructive" size="sm" className="mr-1" onClick={() => removeImage(image.id)}>
+                                <Trash2 size={14} />
+                              </Button>
+                            </div>
+                            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1">
+                              Image {idx + 1}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center text-gray-400 py-4">
+                        No images attached to this note
+                      </div>
+                    )}
+                    
+                    <div className="border border-dashed border-gray-600 rounded-md p-4 text-center cursor-pointer hover:bg-gray-800 transition-colors">
+                      <input 
+                        type="file" 
+                        id={`file-upload-${note.id}`} 
+                        className="hidden" 
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            try {
+                              await uploadImage(note.id, file);
+                              // Clear the input after upload
+                              e.target.value = '';
+                            } catch (err) {
+                              console.error("Failed to upload image:", err);
+                            }
+                          }
+                        }}
+                      />
+                      <label htmlFor={`file-upload-${note.id}`} className="cursor-pointer">
+                        <Upload className="mx-auto h-6 w-6 text-gray-400 mb-2" />
+                        <span className="block text-sm text-gray-400">
+                          Click to upload images
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Action buttons */}
+                <div className="flex space-x-2 justify-end mt-2">
                   <Button
                     size="sm"
                     variant="outline"
@@ -386,7 +571,13 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                     onClick={(e) => {
                       e.stopPropagation();
                       setIsEditing(false);
-                      setEditContent(note.content); // Reset content
+                      // Reset all edit states
+                      setEditContent(note.content);
+                      setEditTimeSet(note.time_set);
+                      setEditIsDiscussion(note.is_discussion);
+                      setEditYoutubeUrl(note.youtube_url);
+                      setEditUrl(note.url);
+                      setEditUrlDisplayText(note.url_display_text);
                     }}
                   >
                     <X size={14} className="mr-1" />
@@ -400,10 +591,15 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                       setIsSaving(true);
                       
                       try {
-                        // Update the note in memory
+                        // Update the note in memory with all properties
                         const updatedNote = {
                           ...note,
-                          content: editContent
+                          content: editContent,
+                          time_set: editTimeSet,
+                          is_discussion: editIsDiscussion,
+                          youtube_url: editYoutubeUrl,
+                          url: editUrl,
+                          url_display_text: editUrlDisplayText
                         };
                         
                         // First update in local state
@@ -414,7 +610,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                         
                         toast({
                           title: "Note Updated",
-                          description: "The note content has been saved",
+                          description: "Changes have been saved",
                         });
                         
                         setIsEditing(false);
