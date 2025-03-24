@@ -1,0 +1,124 @@
+Implement image handling in the application using the existing image processing flow, database tables, storage buckets, and edge functions.
+
+Image Upload Flow
+
+mathematica
+Copy
+Edit
+graph TD
+    A[User Adds Image] --> B[Convert to Base64]
+    B --> C[Edge Function: Optimize Image]
+    C --> D[Upload to Supabase Storage]
+    D --> E[Create Database Record]
+    E --> F[Update UI State]
+Database Structure
+Use the existing note_images table, which includes:
+
+id: UUID primary key
+
+note_id: Foreign key referencing the notes table
+
+url: Public URL of the image
+
+storage_path: Path in Supabase storage
+
+position: Optional field for ordering multiple images
+
+created_at / updated_at: Timestamp fields already in place
+
+Image Processing
+
+Images must be processed using the existing Edge Function, which:
+
+Resizes to a max of 720x720px
+
+Converts the image to WebP format
+
+Applies compression with quality=80
+
+Returns a data URL or optimized image blob for upload
+
+Storage
+
+Store images in the existing Supabase storage bucket named note-images
+
+Use the images/ prefix for organizing uploaded files
+
+Each image should be saved using a generated UUID as the filename (e.g. images/<uuid>.jpg)
+
+Use Supabase's built-in functionality to generate public URLs
+
+Key Code Paths
+The main logic is implemented in database/images.ts and should follow this structure:
+
+ts
+Copy
+Edit
+export const imageOperations = {
+  async add(noteId: string, url: string) {
+    // 1. Optimize via Edge Function
+    const optimizedDataUrl = await optimizeImage(url);
+    
+    // 2. Upload to storage
+    const filename = `${crypto.randomUUID()}.jpg`;
+    const filePath = `images/${filename}`;
+    await supabase.storage
+      .from('note-images')
+      .upload(filePath, blob);
+      
+    // 3. Get public URL
+    const { publicUrl } = supabase.storage
+      .from('note-images')
+      .getPublicUrl(filePath);
+      
+    // 4. Create database record
+    const { data } = await supabase
+      .from('note_images')
+      .insert({
+        note_id: noteId,
+        url: publicUrl,
+        storage_path: filePath
+      })
+      .select()
+      .single();
+      
+    return data;
+  },
+
+  async remove(imageId: string) {
+    // 1. Get image record
+    const { data: image } = await supabase
+      .from('note_images')
+      .select('storage_path')
+      .eq('id', imageId)
+      .single();
+      
+    // 2. Remove from storage
+    if (image?.storage_path) {
+      await supabase.storage
+        .from('note-images')
+        .remove([image.storage_path]);
+    }
+    
+    // 3. Delete database record
+    await supabase
+      .from('note_images')
+      .delete()
+      .eq('id', imageId);
+  }
+};
+Security
+
+Row Level Security (RLS) is already enforced to ensure users can only access their own image records
+
+The storage bucket has existing policies to restrict access to authenticated users
+
+The image optimization step also helps prevent malicious or malformed file uploads
+
+UI Integration
+
+Images should be displayed in a grid layout within each note
+
+Drag-and-drop functionality should be supported for reordering
+
+Triggers should handle automatic cleanup of associated images when a note is deleted
