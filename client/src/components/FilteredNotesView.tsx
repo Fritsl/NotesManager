@@ -36,6 +36,37 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
   const [isSaving, setIsSaving] = useState(false);
   
   const contentEditRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Listen for search result selection events
+  useEffect(() => {
+    const handleSearchResultSelected = (event: CustomEvent) => {
+      const { noteId } = event.detail;
+      
+      // Check if this note is in our filtered list
+      const foundNote = filteredNotes.find(note => note.id === noteId);
+      if (!foundNote) return;
+      
+      // Scroll to the note after a small delay to ensure rendering is complete
+      setTimeout(() => {
+        const noteElement = document.getElementById(`note-${noteId}`);
+        if (noteElement) {
+          noteElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          
+          // Add highlight effect
+          noteElement.classList.add('highlight-search-result');
+          setTimeout(() => {
+            noteElement.classList.remove('highlight-search-result');
+          }, 2000);
+        }
+      }, 100);
+    };
+    
+    window.addEventListener('search-result-selected', handleSearchResultSelected as EventListener);
+    
+    return () => {
+      window.removeEventListener('search-result-selected', handleSearchResultSelected as EventListener);
+    };
+  }, [filteredNotes]);
 
   if (!filterType || filteredNotes.length === 0) {
     return null;
@@ -252,6 +283,7 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
           
           return (
             <div 
+              id={`note-${note.id}`}
               key={note.id}
               className={cn(
                 "note-item border rounded-md p-2 shadow-sm hover:shadow-md relative",

@@ -160,6 +160,25 @@ export default function SearchBar() {
       // Select the note
       selectNote(note);
       setShowResults(false);
+      
+      // Scroll to the selected note after a short delay to ensure DOM updates
+      setTimeout(() => {
+        const noteElement = document.getElementById(`note-${result.id}`);
+        if (noteElement) {
+          noteElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          
+          // Add a brief highlight effect to make it even more obvious
+          noteElement.classList.add('highlight-search-result');
+          setTimeout(() => {
+            noteElement.classList.remove('highlight-search-result');
+          }, 2000);
+        }
+      }, 100);
+      
+      // Also dispatch an event so other components can be notified about this search result selection
+      window.dispatchEvent(new CustomEvent('search-result-selected', { 
+        detail: { noteId: result.id }
+      }));
     }
   };
 

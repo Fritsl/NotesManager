@@ -334,6 +334,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
       <div className="relative">
         {/* Main note card */}
         <div 
+          id={`note-${note.id}`}
           ref={ref}
           className={cn(
             "note-item note-card border rounded-md p-2 sm:p-2 transition flex items-start group shadow-sm hover:shadow-md relative",
