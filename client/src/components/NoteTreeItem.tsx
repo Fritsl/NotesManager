@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { Note } from "@/types/notes";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, Link, Youtube, ArrowDownRightFromCircle, MessageCircle } from "lucide-react";
+import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, Link, Youtube, ArrowDownRightFromCircle, MessageCircle, Clock } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { cn } from "@/lib/utils";
 import DropZone from "./DropZone";
@@ -356,7 +356,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             )}
             
             {/* Badges for special attributes */}
-            {(note.youtube_url || note.url) && (
+            {(note.youtube_url || note.url || note.time_set) && (
               <div className="flex flex-wrap gap-2 mt-1">
                 {note.youtube_url && (
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-950 text-white border border-red-700 shadow-sm">
@@ -369,6 +369,13 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-950 text-white border border-blue-700 shadow-sm">
                     <Link size={12} className="mr-1" />
                     {note.url_display_text || "Link"}
+                  </span>
+                )}
+                
+                {note.time_set && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-950 text-white border border-purple-700 shadow-sm">
+                    <Clock size={12} className="mr-1" />
+                    {note.time_set.includes(':') ? note.time_set.split(':').slice(0, 2).join(':') : note.time_set}
                   </span>
                 )}
               </div>
