@@ -67,41 +67,61 @@ export default function NoteEditor() {
   const handleBlur = useCallback(async (e: React.FocusEvent) => {
     // Always save on blur for any field
     if (selectedNote && hasChanges) {
+      // Set saving status immediately
+      setSaveStatus("saving");
+      
       // Use a small delay to prevent saving while user is still interacting with the form
       if (autoSaveTimerRef.current) {
         clearTimeout(autoSaveTimerRef.current);
       }
       
       autoSaveTimerRef.current = setTimeout(async () => {
-        const updatedNote = {
-          ...selectedNote,
-          content,
-          youtube_url: youtubeUrl || null,
-          url: externalUrl || null,
-          url_display_text: externalUrl ? (urlDisplayText || null) : null,
-          is_discussion: isDiscussion,
-        };
-        
-        // Create a clone of the note to avoid focus issues
-        updateNote(updatedNote);
-        setHasChanges(false);
-        
-        // Save the entire project if we have a project ID
-        if (currentProjectId) {
-          try {
+        try {
+          // Create updated note with current field values
+          const updatedNote = {
+            ...selectedNote,
+            content,
+            youtube_url: youtubeUrl || null,
+            url: externalUrl || null,
+            url_display_text: externalUrl ? (urlDisplayText || null) : null,
+            is_discussion: isDiscussion,
+          };
+          
+          console.log("Auto-saving note with content:", content);
+          
+          // Update the note in local state
+          updateNote(updatedNote);
+          setHasChanges(false);
+          
+          // Save the entire project if we have a project ID
+          if (currentProjectId) {
             await saveProject();
             console.log("Project auto-saved after note update");
-          } catch (error) {
-            console.error("Failed to auto-save project:", error);
           }
+          
+          // Update save status
+          setSaveStatus("saved");
+          
+          // Reset status after a delay
+          setTimeout(() => {
+            setSaveStatus("idle");
+          }, 1500);
+          
+          // Show a subtle toast notification for auto-save
+          toast({
+            title: "Auto-saved",
+            description: "Your changes have been automatically saved",
+            variant: "default",
+          });
+        } catch (error) {
+          console.error("Failed to auto-save:", error);
+          setSaveStatus("idle");
+          toast({
+            title: "Save Error",
+            description: "Failed to save changes. Please try again.",
+            variant: "destructive",
+          });
         }
-        
-        // Show a subtle toast notification for auto-save
-        toast({
-          title: "Auto-saved",
-          description: "Your changes have been automatically saved",
-          variant: "default",
-        });
       }, 100); // Reduced delay for faster saving
     }
   }, [selectedNote, hasChanges, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, updateNote, toast, saveProject, currentProjectId]);
