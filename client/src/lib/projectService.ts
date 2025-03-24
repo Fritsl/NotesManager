@@ -287,6 +287,7 @@ export async function getProjects(): Promise<Project[]> {
       created_at: item.created_at,
       updated_at: item.updated_at,
       user_id: item.user_id,
+      description: item.description || '',
       data: { notes: [] } // Will be populated below
     })) || [];
     
