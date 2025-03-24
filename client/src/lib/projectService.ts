@@ -669,27 +669,52 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
       console.log('First flattened note sample:', JSON.stringify(flatNotes[0]));
       
       try {
-        // Insert notes in batches to avoid payload size limits
-        for (let i = 0; i < flatNotes.length; i += BATCH_SIZE) {
-          const batch = flatNotes.slice(i, i + BATCH_SIZE);
-          console.log(`Inserting batch ${i/BATCH_SIZE + 1}/${Math.ceil(flatNotes.length/BATCH_SIZE)}, size: ${batch.length}`);
+        // First, let's create a mapping of old IDs to new IDs that we'll generate
+        const idMapping: Record<string, string> = {};
+        
+        // Pre-generate all new IDs and create the mapping
+        flatNotes.forEach(note => {
+          const newId = crypto.randomUUID();
+          idMapping[note.id] = newId;
+        });
+        
+        console.log('Created ID mapping for notes');
+        
+        // Process the notes to use the new IDs, updating parent_id references too
+        const processedNotes = flatNotes.map(note => {
+          // Get the new ID for this note
+          const newId = idMapping[note.id];
           
-          // Generate new unique IDs for each note to prevent PK conflicts
-          const batchWithNewIds = batch.map(note => ({
+          // If this note has a parent, get the new parent ID from our mapping
+          let newParentId = note.parent_id;
+          if (note.parent_id && idMapping[note.parent_id]) {
+            newParentId = idMapping[note.parent_id];
+          }
+          
+          return {
             ...note,
-            id: crypto.randomUUID() // Generate a new UUID to avoid conflicts
-          }));
+            id: newId,
+            parent_id: newParentId
+          };
+        });
+        
+        console.log('Processed notes with updated IDs and parent references');
+        
+        // Now insert the notes in batches
+        for (let i = 0; i < processedNotes.length; i += BATCH_SIZE) {
+          const batch = processedNotes.slice(i, i + BATCH_SIZE);
+          console.log(`Inserting batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(processedNotes.length/BATCH_SIZE)}, size: ${batch.length}`);
           
           const { data: insertedData, error: insertError } = await supabase
             .from('notes')
-            .insert(batchWithNewIds)
+            .insert(batch)
             .select();
             
           if (insertError) {
-            console.error(`Error inserting notes batch ${i/BATCH_SIZE + 1}:`, insertError);
+            console.error(`Error inserting notes batch ${Math.floor(i/BATCH_SIZE) + 1}:`, insertError);
             throw new Error(`Failed to insert notes: ${insertError.message}`);
           } else {
-            console.log(`Successfully inserted batch ${i/BATCH_SIZE + 1}, received:`, insertedData?.length || 0, 'records');
+            console.log(`Successfully inserted batch ${Math.floor(i/BATCH_SIZE) + 1}, received:`, insertedData?.length || 0, 'records');
           }
         }
       } catch (error) {
@@ -702,20 +727,31 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
         console.log('Inserting', flatImages.length, 'image records');
         
         try {
-          // Insert images in batches too
-          for (let i = 0; i < flatImages.length; i += BATCH_SIZE) {
-            const batch = flatImages.slice(i, i + BATCH_SIZE);
-            console.log(`Inserting images batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(flatImages.length/BATCH_SIZE)}, size: ${batch.length}`);
+          // Process images to update their note_id references to match the new note IDs
+          const processedImages = flatImages.map(img => {
+            // If this image's note_id has a new mapping, use that
+            let newNoteId = img.note_id;
+            if (img.note_id && idMapping[img.note_id]) {
+              newNoteId = idMapping[img.note_id];
+            }
             
-            // Generate new IDs for images too to avoid conflicts
-            const batchWithNewIds = batch.map(img => ({
+            return {
               ...img,
-              id: crypto.randomUUID()
-            }));
+              id: crypto.randomUUID(), // New ID for the image
+              note_id: newNoteId // Updated note_id reference
+            };
+          });
+          
+          console.log('Processed images with updated note ID references');
+          
+          // Insert images in batches
+          for (let i = 0; i < processedImages.length; i += BATCH_SIZE) {
+            const batch = processedImages.slice(i, i + BATCH_SIZE);
+            console.log(`Inserting images batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(processedImages.length/BATCH_SIZE)}, size: ${batch.length}`);
             
             const { error: imagesError } = await supabase
               .from('note_images')
-              .insert(batchWithNewIds);
+              .insert(batch);
               
             if (imagesError) {
               console.error(`Error inserting images batch ${Math.floor(i/BATCH_SIZE) + 1}:`, imagesError);
