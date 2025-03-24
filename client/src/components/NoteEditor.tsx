@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNotes } from "@/context/useNotes";
+import { useNotes } from "@/context/NotesContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -63,83 +63,55 @@ export default function NoteEditor() {
     }
   }, [selectedNote]);
   
-  // Auto-save when any field loses focus if there are changes
-  const handleBlur = useCallback(async (e: React.FocusEvent) => {
-    // Always save on blur for any field
+  // Auto-save when form loses focus if there are changes
+  const handleBlur = useCallback((e: React.FocusEvent) => {
+    // Check if we're still in the editor component (to another input in the same form)
+    // This prevents saves when just moving between fields in the same form
+    const relatedTarget = e.relatedTarget as HTMLElement;
+    const isStillInEditor = relatedTarget && 
+      (relatedTarget.closest('.note-editor-form') !== null);
+    
+    if (isStillInEditor) {
+      return; // Don't auto-save when just moving between fields in the same form
+    }
+    
     if (selectedNote && hasChanges) {
-      // Set saving status immediately
-      setSaveStatus("saving");
-      
       // Use a small delay to prevent saving while user is still interacting with the form
       if (autoSaveTimerRef.current) {
         clearTimeout(autoSaveTimerRef.current);
       }
       
       autoSaveTimerRef.current = setTimeout(async () => {
-        try {
-          // Create updated note with current field values
-          // Make sure we preserve any images that have been added
-          const updatedNote = {
-            ...selectedNote,
-            content,
-            youtube_url: youtubeUrl || null,
-            url: externalUrl || null,
-            url_display_text: externalUrl ? (urlDisplayText || null) : null,
-            is_discussion: isDiscussion,
-            // Explicitly keep the images from the selected note to ensure they're preserved
-            images: selectedNote.images || [],
-          };
-          
-          console.log("Auto-saving note with content:", content);
-          console.log("Auto-saving note with images:", updatedNote.images);
-          
-          // Update the note in local state
-          updateNote(updatedNote);
-          setHasChanges(false);
-          
-          // Always immediately save the entire project after a note update
-          if (currentProjectId) {
-            try {
-              await saveProject();
-              console.log("Project auto-saved after note update");
-              
-              // Update save status
-              setSaveStatus("saved");
-              
-              // Reset status after a delay
-              setTimeout(() => {
-                setSaveStatus("idle");
-              }, 1500);
-              
-              // Show a subtle toast notification for auto-save
-              toast({
-                title: "Auto-saved",
-                description: "Your changes have been automatically saved",
-                variant: "default",
-              });
-              
-            } catch (saveError) {
-              console.error("Failed to auto-save project:", saveError);
-              setSaveStatus("idle");
-              toast({
-                title: "Save Error",
-                description: "Failed to save project. Please try using the Save button in the menu.",
-                variant: "destructive",
-              });
-            }
-          } else {
-            setSaveStatus("idle");
+        const updatedNote = {
+          ...selectedNote,
+          content,
+          youtube_url: youtubeUrl || null,
+          url: externalUrl || null,
+          url_display_text: externalUrl ? (urlDisplayText || null) : null,
+          is_discussion: isDiscussion,
+        };
+        
+        // Create a clone of the note to avoid focus issues
+        updateNote(updatedNote);
+        setHasChanges(false);
+        
+        // Save the entire project if we have a project ID
+        if (currentProjectId) {
+          try {
+            await saveProject();
+            console.log("Project auto-saved after note update");
+          } catch (error) {
+            console.error("Failed to auto-save project:", error);
           }
-        } catch (error) {
-          console.error("Failed to update note:", error);
-          setSaveStatus("idle");
-          toast({
-            title: "Save Error",
-            description: "Failed to update note. Please try again or use the Save button in the menu.",
-            variant: "destructive",
-          });
         }
-      }, 300); // Increased delay slightly to ensure all field changes are captured
+        
+        // Show a subtle toast notification for auto-save
+        toast({
+          title: "Auto-saved",
+          description: "Your changes have been automatically saved",
+          variant: "default",
+        });
+      }, 500);
     }
   }, [selectedNote, hasChanges, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, updateNote, toast, saveProject, currentProjectId]);
   
@@ -276,17 +248,19 @@ export default function NoteEditor() {
           )}
         </div>
         
-        {/* Save status indicator */}
-        {saveStatus === "saving" && (
-          <div className="flex items-center space-x-1 text-gray-400 text-sm">
-            <span>Saving...</span>
-          </div>
-        )}
-        {saveStatus === "saved" && (
-          <div className="flex items-center space-x-1 text-green-500 text-sm">
-            <CheckCircle2 size={14} className="mr-1" />
-            <span>Saved</span>
-          </div>
+        {/* Only show save button when there are unsaved changes */}
+        {hasChanges && (
+          <Button
+            onClick={handleSave}
+            className={`
+              flex items-center space-x-1
+              ${saveStatus === "saved" ? "bg-green-500 hover:bg-green-600" : ""}
+            `}
+            disabled={saveStatus === "saving"}
+          >
+            <Save size={16} />
+            <span>{saveStatus === "saving" ? "Saving..." : "Save"}</span>
+          </Button>
         )}
       </div>
 

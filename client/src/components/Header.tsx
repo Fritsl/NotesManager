@@ -16,7 +16,7 @@ import {
   FolderOpen,
   LogOut
 } from "lucide-react";
-import { useNotes } from "@/context/useNotes";
+import { useNotes } from "@/context/NotesContext";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import ImportModal from "@/components/ImportModal";
@@ -102,7 +102,7 @@ export default function Header() {
     setIsEditingProjectName(true);
   };
 
-  const saveProjectName = async () => {
+  const saveProjectName = () => {
     // Don't allow empty project names
     if (editedProjectName.trim() === '') {
       setEditedProjectName(currentProjectName);
@@ -112,21 +112,6 @@ export default function Header() {
     
     setCurrentProjectName(editedProjectName);
     setIsEditingProjectName(false);
-    
-    // Auto-save project after name change
-    if (currentProjectId) {
-      try {
-        await saveProject();
-        console.log("Project auto-saved after name change");
-        toast({
-          title: "Name Saved",
-          description: "Project name has been updated",
-          variant: "default",
-        });
-      } catch (error) {
-        console.error("Failed to auto-save project after name change:", error);
-      }
-    }
   };
 
   const cancelEditing = () => {
@@ -140,18 +125,6 @@ export default function Header() {
     } else if (e.key === 'Escape') {
       cancelEditing();
     }
-  };
-  
-  const handleBlur = (e: React.FocusEvent) => {
-    // Only save on blur if it's not a click on the save or cancel buttons
-    const relatedTarget = e.relatedTarget as HTMLElement;
-    if (relatedTarget && 
-        (relatedTarget.closest('.save-project-button') !== null || 
-         relatedTarget.closest('.cancel-project-button') !== null)) {
-      return;
-    }
-    
-    saveProjectName();
   };
 
   return (
@@ -182,7 +155,6 @@ export default function Header() {
                       value={editedProjectName}
                       onChange={(e) => setEditedProjectName(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      onBlur={handleBlur}
                       className="h-7 py-0 w-28 sm:w-auto text-sm sm:text-base font-semibold bg-gray-800 border-gray-700 focus-visible:ring-primary text-gray-100"
                       maxLength={50}
                     />
@@ -190,7 +162,7 @@ export default function Header() {
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-6 w-6 p-0 text-green-500 hover:text-green-400 hover:bg-gray-800 touch-target save-project-button"
+                        className="h-6 w-6 p-0 text-green-500 hover:text-green-400 hover:bg-gray-800 touch-target"
                         onClick={saveProjectName}
                       >
                         <Check className="h-4 w-4" />
@@ -198,7 +170,7 @@ export default function Header() {
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-6 w-6 p-0 text-red-500 hover:text-red-400 hover:bg-gray-800 touch-target cancel-project-button"
+                        className="h-6 w-6 p-0 text-red-500 hover:text-red-400 hover:bg-gray-800 touch-target"
                         onClick={cancelEditing}
                       >
                         <X className="h-4 w-4" />
@@ -377,36 +349,23 @@ export default function Header() {
                   <FolderOpen className="h-4 w-4 mr-2" />
                   <span>Projects</span>
                 </DropdownMenuItem>
-                
-                {/* Manual save button (restore it for now) */}
                 <DropdownMenuItem onClick={async () => {
+                  // Manual save button for testing
                   if (currentProjectId) {
+                    console.log("Manual save for project ID:", currentProjectId);
                     try {
                       await saveProject();
-                      console.log("Project manually saved from header menu");
-                      toast({
-                        title: "Project Saved",
-                        description: "All changes have been saved",
-                        variant: "default",
-                      });
-                    } catch (error) {
-                      console.error("Failed to save project:", error);
-                      toast({
-                        title: "Save Error",
-                        description: "Failed to save project. Please try again.",
-                        variant: "destructive",
-                      });
+                      console.log("Manual save completed");
+                    } catch (err) {
+                      console.error("Manual save failed:", err);
                     }
                   } else {
-                    toast({
-                      title: "Cannot Save",
-                      description: "No active project to save",
-                      variant: "destructive",
-                    });
+                    console.warn("Cannot save - no project ID");
                   }
                 }}>
                   <Save className="h-4 w-4 mr-2" />
-                  <span>Save Project</span>
+                  <span>Save</span>
+                  <span className="ml-auto text-xs text-muted-foreground">{currentProjectId ? "(Manual)" : "(No Project)"}</span>
                 </DropdownMenuItem>
                 
                 {/* Debug button */}

@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { X, FileUp, AlertCircle } from "lucide-react";
-import { useNotes } from "@/context/useNotes";
+import { useNotes } from "@/context/NotesContext";
 import { NotesData } from "@/types/notes";
 import { useToast } from "@/components/ui/use-toast";
 

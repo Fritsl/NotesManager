@@ -14,7 +14,7 @@ import { useAuth } from '../context/AuthContext';
 import AuthModal from './AuthModal';
 import ProjectsModal from './ProjectsModal';
 import { useToast } from '../hooks/use-toast';
-import { useNotes } from '../context/useNotes';
+import { useNotes } from '../context/NotesContext';
 import { createProject, updateProject } from '../lib/projectService';
 
 export default function UserMenu() {

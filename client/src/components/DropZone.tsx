@@ -1,6 +1,6 @@
 import { useDrop } from "react-dnd";
 import { cn } from "@/lib/utils";
-import { useNotes } from "@/context/useNotes";
+import { useNotes } from "@/context/NotesContext";
 
 interface DropZoneProps {
   index: number;

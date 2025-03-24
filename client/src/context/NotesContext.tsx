@@ -46,7 +46,7 @@ interface NotesContextType {
   reorderImage: (noteId: string, imageId: string, newPosition: number) => Promise<boolean>;
 }
 
-export const NotesContext = createContext<NotesContextType | undefined>(undefined);
+const NotesContext = createContext<NotesContextType | undefined>(undefined);
 
 export function NotesProvider({ children }: { children: ReactNode }) {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -281,19 +281,6 @@ export function NotesProvider({ children }: { children: ReactNode }) {
 
   // Update a note
   const updateNote = useCallback((updatedNote: Note) => {
-    // Log the updated note to help with debugging
-    console.log('Updating note:', {
-      id: updatedNote.id,
-      content: updatedNote.content,
-      contentLength: updatedNote.content ? updatedNote.content.length : 0
-    });
-    
-    // Ensure content is a string
-    if (typeof updatedNote.content !== 'string') {
-      console.warn('Note content is not a string, converting to string:', updatedNote.id);
-      updatedNote.content = String(updatedNote.content || '');
-    }
-    
     setNotes((prevNotes) => {
       const updatedNotes = [...prevNotes];
       
@@ -310,18 +297,11 @@ export function NotesProvider({ children }: { children: ReactNode }) {
             if (!updatedNote.images || !Array.isArray(updatedNote.images)) {
               updatedNote.images = nodes[i].images || [];
             }
-            
-            // Create a copy of the updated note
-            const updatedNoteCopy = { ...updatedNote };
-            
-            // Assign to the nodes array
-            nodes[i] = updatedNoteCopy;
-            
-            console.log('Note updated in tree, new content:', nodes[i].content);
+            nodes[i] = { ...updatedNote };
             return true;
           }
           
-          if (nodes[i].children && nodes[i].children.length > 0) {
+          if (nodes[i].children.length > 0) {
             if (updateNoteInTree(nodes[i].children)) {
               return true;
             }
@@ -335,12 +315,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       return updatedNotes;
     });
     
-    // Make a copy of the note to avoid reference issues
-    const updatedNoteCopy = { ...updatedNote };
-    
-    // Update the selected note state
-    setSelectedNote(updatedNoteCopy);
-    
+    setSelectedNote(updatedNote);
     toast({
       title: "Note Updated",
       description: "Your changes have been saved",
@@ -697,8 +672,6 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      // Log saving details first
-      console.log('====== SAVE PROJECT START ======');
       console.log('Saving project:', { 
         id: currentProjectId, 
         name: currentProjectName,
@@ -706,51 +679,18 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         firstNote: notes.length > 0 ? notes[0].content : 'No notes'
       });
       
-      // Count images to track if they're being saved properly
-      let totalImageCount = 0;
-      const countImagesInNotes = (notesList: Note[]) => {
-        for (const note of notesList) {
-          if (note.images && Array.isArray(note.images)) {
-            totalImageCount += note.images.length;
-          }
-          if (note.children && Array.isArray(note.children)) {
-            countImagesInNotes(note.children);
-          }
-        }
-      };
-      countImagesInNotes(notes);
-      console.log(`Total images in notes before processing: ${totalImageCount}`);
-      
-      // Make a deep copy of the notes to avoid mutation issues
-      const notesCopy = JSON.parse(JSON.stringify(notes));
-      console.log(`Deep copy of notes created. Top-level notes count: ${notesCopy.length}`);
-      
       // Process notes to clean positions and deduplicate images
-      const processedNotes = cleanNotePositions(notesCopy).map((note: Note) => {
+      const processedNotes = cleanNotePositions([...notes]).map((note: Note) => {
         // Process this note and its children recursively to deduplicate images
         const processNote = (noteToProcess: Note): Note => {
-          // Ensure note content is a string
-          if (typeof noteToProcess.content !== 'string') {
-            console.warn(`Note ${noteToProcess.id} has non-string content, converting to string`);
-            noteToProcess.content = String(noteToProcess.content || '');
-          }
-          
           // Deduplicate images if they exist
           if (noteToProcess.images && Array.isArray(noteToProcess.images) && noteToProcess.images.length > 0) {
-            const originalCount = noteToProcess.images.length;
             // Use a Map with image ID as key to eliminate duplicates
             noteToProcess.images = Array.from(
               new Map(
                 noteToProcess.images.map((img) => [img.id, img])
               ).values()
             );
-            const newCount = noteToProcess.images.length;
-            
-            // Log if any duplicates were removed
-            if (originalCount !== newCount) {
-              console.log(`Removed ${originalCount - newCount} duplicate images from note ${noteToProcess.id}`);
-            }
-            
             // Sort by position after deduplication
             noteToProcess.images.sort((a, b) => a.position - b.position);
           }
@@ -766,42 +706,14 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         return processNote(note);
       });
       
-      // Count images after processing to see if any were lost
-      let processedImageCount = 0;
-      const countProcessedImages = (notesList: Note[]) => {
-        for (const note of notesList) {
-          if (note.images && Array.isArray(note.images)) {
-            processedImageCount += note.images.length;
-            
-            // Log individual note images for debugging
-            if (note.images.length > 0) {
-              console.log(`Note ${note.id} has ${note.images.length} images:`, 
-                note.images.map(img => ({id: img.id, position: img.position})));
-            }
-          }
-          if (note.children && Array.isArray(note.children)) {
-            countProcessedImages(note.children);
-          }
-        }
-      };
-      countProcessedImages(processedNotes);
-      console.log(`Total images after processing: ${processedImageCount}`);
-      
-      // Log all notes to verify content is being saved properly
-      if (processedNotes.length > 0) {
-        console.log(`First note being saved: id=${processedNotes[0].id}, content length=${processedNotes[0].content.length}`);
-        console.log(`Notes hierarchy has ${processedNotes.length} top-level notes and a total of ${processedImageCount} images`);
-      }
-      
       // Create a clean copy of the notes data to save
       const notesData: NotesData = { notes: processedNotes };
       
-      console.log('Calling updateProject API...');
       // Update the project in the database
       const updatedProject = await updateProject(currentProjectId, currentProjectName, notesData);
       
       if (!updatedProject) {
-        console.error('Failed to update project - API returned null');
+        console.error('Failed to update project');
         toast({
           title: "Error Saving Project",
           description: "Could not save the project. Please try again.",
@@ -810,8 +722,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      console.log('Project saved successfully to database');
-      console.log('====== SAVE PROJECT END ======');
+      console.log('Project saved successfully:', updatedProject);
       
       toast({
         title: "Project Saved",
@@ -1166,4 +1077,10 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// useNotes is now exported from './useNotes.ts'
+export function useNotes() {
+  const context = useContext(NotesContext);
+  if (context === undefined) {
+    throw new Error("useNotes must be used within a NotesProvider");
+  }
+  return context;
+}
