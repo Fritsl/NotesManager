@@ -110,8 +110,36 @@ export default function Header() {
       return;
     }
     
+    // If the project name hasn't actually changed, just exit edit mode
+    if (editedProjectName === currentProjectName) {
+      setIsEditingProjectName(false);
+      return;
+    }
+    
+    // Update the project name in the context
     setCurrentProjectName(editedProjectName);
     setIsEditingProjectName(false);
+    
+    // Trigger the auto-save functionality
+    if (currentProjectId) {
+      setTimeout(async () => {
+        try {
+          await saveProject();
+          console.log("Project auto-saved after name change");
+          toast({
+            title: "Project Renamed",
+            description: "The project name has been updated and saved",
+          });
+        } catch (error) {
+          console.error("Failed to auto-save after name change:", error);
+          toast({
+            title: "Error Saving Project Name",
+            description: "The name was changed but couldn't be saved to the database",
+            variant: "destructive",
+          });
+        }
+      }, 0);
+    }
   };
 
   const cancelEditing = () => {
