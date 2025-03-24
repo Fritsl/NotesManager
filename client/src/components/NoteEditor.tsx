@@ -386,32 +386,39 @@ export default function NoteEditor() {
               )}
               
               {/* Time Picker - more compact */}
-              <div className="flex items-center space-x-2">
-                <div className="flex-shrink-0">
-                  <Clock size={14} className="text-gray-400" />
+              <div className="flex flex-col space-y-1">
+                <div className="flex items-center space-x-2">
+                  <div className="flex-shrink-0">
+                    <Clock size={14} className="text-gray-400" />
+                  </div>
+                  <Label className="text-xs text-gray-400">
+                    Set time (optional)
+                  </Label>
                 </div>
-                <div className="timepicker-container">
-                  <TimePicker
-                    onChange={handleTimeChange}
-                    value={timeSet}
-                    format="HH:mm"
-                    disableClock={true}
-                    clearIcon={null}
-                    className="h-8 text-xs bg-gray-850 border border-gray-700 rounded-md p-1"
-                    hourPlaceholder="HH"
-                    minutePlaceholder="MM"
-                  />
+                <div className="flex items-center space-x-2">
+                  <div className="timepicker-container">
+                    <TimePicker
+                      onChange={handleTimeChange}
+                      value={timeSet}
+                      format="HH:mm"
+                      disableClock={true}
+                      clearIcon={null}
+                      className="time-picker-input bg-gray-850 border border-gray-700 rounded-md px-2 py-1"
+                      hourPlaceholder="HH"
+                      minutePlaceholder="MM"
+                    />
+                  </div>
+                  {timeSet && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-gray-400 hover:text-gray-200"
+                      onClick={() => handleTimeChange(null)}
+                    >
+                      <X size={14} />
+                    </Button>
+                  )}
                 </div>
-                {timeSet && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 text-gray-400 hover:text-gray-200"
-                    onClick={() => handleTimeChange(null)}
-                  >
-                    <X size={12} />
-                  </Button>
-                )}
               </div>
               
               {/* Discussion Flag - more compact */}
