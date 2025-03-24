@@ -668,72 +668,90 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
     if (flatNotes.length > 0) {
       console.log('First flattened note sample:', JSON.stringify(flatNotes[0]));
       
-      // Create a mapping of old IDs to new IDs
-      const idMapping: Record<string, string> = {};
-      
       try {
-        // Pre-generate all new IDs and create the mapping
+        // We need to make sure we don't have any duplicated IDs in the database
+        // The safest approach is to completely recreate the notes with new IDs
+        // First, create a mapping from old IDs to new IDs
+        const idMapping: Record<string, string> = {};
+        
+        // Generate new UUIDs for each note
         flatNotes.forEach(note => {
-          const newId = crypto.randomUUID();
-          idMapping[note.id] = newId;
+          idMapping[note.id] = crypto.randomUUID();
         });
         
         console.log('Created ID mapping for notes');
         
-        // Process the notes to use the new IDs, updating parent_id references too
-        const processedNotes = flatNotes.map(note => {
-          // Get the new ID for this note
-          const newId = idMapping[note.id];
-          
-          // If this note has a parent, get the new parent ID from our mapping
-          let newParentId = note.parent_id;
-          if (note.parent_id && idMapping[note.parent_id]) {
-            newParentId = idMapping[note.parent_id];
-          }
-          
-          return {
-            ...note,
-            id: newId,
-            parent_id: newParentId
-          };
+        // Sort notes by dependency - root notes first, then level by level
+        // This helps ensure we don't violate foreign key constraints
+        
+        // First, create a node map for quick lookups
+        const nodeMap: Record<string, any> = {};
+        flatNotes.forEach(note => {
+          nodeMap[note.id] = note;
         });
         
-        console.log('Processed notes with updated IDs and parent references');
+        // Create lists by level (0 = root, 1 = first level children, etc.)
+        const notesByLevel: any[][] = [];
         
-        // Now insert the notes in batches, but insert in two phases to ensure parent notes exist first
-        // First insert all root notes (notes with no parent)
-        const rootNotes = processedNotes.filter(note => !note.parent_id);
-        const childNotes = processedNotes.filter(note => note.parent_id);
+        // First pass: identify root nodes (level 0)
+        notesByLevel[0] = flatNotes.filter(note => note.parent_id === null);
         
-        console.log(`Split notes into ${rootNotes.length} root notes and ${childNotes.length} child notes`);
+        // Second pass: identify all other levels
+        let currentLevel = 0;
+        let hasMoreLevels = true;
         
-        // Insert root notes first
-        if (rootNotes.length > 0) {
-          console.log('Inserting root notes first');
-          for (let i = 0; i < rootNotes.length; i += BATCH_SIZE) {
-            const batch = rootNotes.slice(i, i + BATCH_SIZE);
-            console.log(`Inserting root batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(rootNotes.length/BATCH_SIZE)}, size: ${batch.length}`);
-            
-            const { data: insertedData, error: insertError } = await supabase
-              .from('notes')
-              .insert(batch)
-              .select();
-              
-            if (insertError) {
-              console.error(`Error inserting root notes batch ${Math.floor(i/BATCH_SIZE) + 1}:`, insertError);
-              throw new Error(`Failed to insert root notes: ${insertError.message}`);
-            } else {
-              console.log(`Successfully inserted root batch ${Math.floor(i/BATCH_SIZE) + 1}, received:`, insertedData?.length || 0, 'records');
+        while (hasMoreLevels) {
+          const nextLevelNotes = [];
+          const currentLevelIds = notesByLevel[currentLevel].map(note => note.id);
+          
+          // Find all notes whose parent is in the current level
+          for (const note of flatNotes) {
+            if (note.parent_id && currentLevelIds.includes(note.parent_id)) {
+              nextLevelNotes.push(note);
             }
+          }
+          
+          if (nextLevelNotes.length > 0) {
+            currentLevel++;
+            notesByLevel[currentLevel] = nextLevelNotes;
+          } else {
+            hasMoreLevels = false;
           }
         }
         
-        // Then insert child notes
-        if (childNotes.length > 0) {
-          console.log('Inserting child notes next');
-          for (let i = 0; i < childNotes.length; i += BATCH_SIZE) {
-            const batch = childNotes.slice(i, i + BATCH_SIZE);
-            console.log(`Inserting child batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(childNotes.length/BATCH_SIZE)}, size: ${batch.length}`);
+        console.log(`Organized notes into ${notesByLevel.length} levels`);
+        
+        // Now insert level by level
+        for (let level = 0; level < notesByLevel.length; level++) {
+          const levelNotes = notesByLevel[level];
+          
+          // Skip empty levels
+          if (!levelNotes || levelNotes.length === 0) continue;
+          
+          console.log(`Processing level ${level} with ${levelNotes.length} notes`);
+          
+          // Process this level's notes with the new IDs and updated parent references
+          const processedLevelNotes = levelNotes.map(note => {
+            // Get new ID for this note
+            const newId = idMapping[note.id];
+            
+            // If this note has a parent, get the new parent ID from our mapping
+            let newParentId = null;
+            if (note.parent_id && idMapping[note.parent_id]) {
+              newParentId = idMapping[note.parent_id];
+            }
+            
+            return {
+              ...note,
+              id: newId,
+              parent_id: newParentId
+            };
+          });
+          
+          // Insert notes for this level in batches
+          for (let i = 0; i < processedLevelNotes.length; i += BATCH_SIZE) {
+            const batch = processedLevelNotes.slice(i, i + BATCH_SIZE);
+            console.log(`Inserting level ${level} batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(processedLevelNotes.length/BATCH_SIZE)}, size: ${batch.length}`);
             
             const { data: insertedData, error: insertError } = await supabase
               .from('notes')
@@ -741,10 +759,10 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
               .select();
               
             if (insertError) {
-              console.error(`Error inserting child notes batch ${Math.floor(i/BATCH_SIZE) + 1}:`, insertError);
-              throw new Error(`Failed to insert child notes: ${insertError.message}`);
+              console.error(`Error inserting level ${level} batch ${Math.floor(i/BATCH_SIZE) + 1}:`, insertError);
+              throw new Error(`Failed to insert notes: ${insertError.message}`);
             } else {
-              console.log(`Successfully inserted child batch ${Math.floor(i/BATCH_SIZE) + 1}, received:`, insertedData?.length || 0, 'records');
+              console.log(`Successfully inserted level ${level} batch ${Math.floor(i/BATCH_SIZE) + 1}, received:`, insertedData?.length || 0, 'records');
             }
           }
         }
