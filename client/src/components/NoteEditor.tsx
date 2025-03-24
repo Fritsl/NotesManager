@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Save, Youtube, Link, CheckCircle2, FileEdit, ImagePlus, X, ArrowUp, ArrowDown, Trash2 } from "lucide-react";
+import { Save, Youtube, Link, CheckCircle2, FileEdit, ImagePlus, X, ArrowUp, ArrowDown, Trash2, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { NoteImage } from "@/types/notes";
+import TimePicker from 'react-time-picker';
 
 export default function NoteEditor() {
   const { 
@@ -29,6 +30,7 @@ export default function NoteEditor() {
   const [externalUrl, setExternalUrl] = useState<string>("");
   const [urlDisplayText, setUrlDisplayText] = useState<string>("");
   const [isDiscussion, setIsDiscussion] = useState<boolean>(false);
+  const [timeSet, setTimeSet] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   
   // Track if the form has unsaved changes
@@ -52,6 +54,7 @@ export default function NoteEditor() {
       setExternalUrl(selectedNote.url || "");
       setUrlDisplayText(selectedNote.url_display_text || "");
       setIsDiscussion(selectedNote.is_discussion);
+      setTimeSet(selectedNote.time_set);
       setHasChanges(false); // Reset changes flag on note selection
     } else {
       // Reset form when no note is selected
@@ -60,6 +63,7 @@ export default function NoteEditor() {
       setExternalUrl("");
       setUrlDisplayText("");
       setIsDiscussion(false);
+      setTimeSet(null);
       setHasChanges(false);
     }
   }, [selectedNote]);
@@ -80,6 +84,7 @@ export default function NoteEditor() {
         url: externalUrl || null,
         url_display_text: externalUrl ? (urlDisplayText || null) : null,
         is_discussion: isDiscussion,
+        time_set: timeSet,
       };
       
       // Update the note in local state first
@@ -111,7 +116,7 @@ export default function NoteEditor() {
         variant: "destructive",
       });
     }
-  }, [selectedNote, currentProjectId, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, updateNote, saveProject, toast]);
+  }, [selectedNote, currentProjectId, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, timeSet, updateNote, saveProject, toast]);
   
   // Auto-save when a field loses focus and there are changes
   const handleBlur = useCallback(async (e: React.FocusEvent) => {
@@ -197,6 +202,11 @@ export default function NoteEditor() {
   const handleDiscussionChange = (checked: boolean | "indeterminate") => {
     const newValue = checked === true;
     setIsDiscussion(newValue);
+    setHasChanges(true);
+  };
+  
+  const handleTimeChange = (value: string | null) => {
+    setTimeSet(value);
     setHasChanges(true);
   };
 
@@ -374,6 +384,35 @@ export default function NoteEditor() {
                   />
                 </div>
               )}
+              
+              {/* Time Picker - more compact */}
+              <div className="flex items-center space-x-2">
+                <div className="flex-shrink-0">
+                  <Clock size={14} className="text-gray-400" />
+                </div>
+                <div className="timepicker-container">
+                  <TimePicker
+                    onChange={handleTimeChange}
+                    value={timeSet}
+                    format="HH:mm"
+                    disableClock={true}
+                    clearIcon={null}
+                    className="h-8 text-xs bg-gray-850 border border-gray-700 rounded-md p-1"
+                    hourPlaceholder="HH"
+                    minutePlaceholder="MM"
+                  />
+                </div>
+                {timeSet && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-gray-400 hover:text-gray-200"
+                    onClick={() => handleTimeChange(null)}
+                  >
+                    <X size={12} />
+                  </Button>
+                )}
+              </div>
               
               {/* Discussion Flag - more compact */}
               <div className="flex items-center space-x-2 mt-1">
