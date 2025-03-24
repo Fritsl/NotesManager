@@ -133,7 +133,7 @@ export default function TrashModal({ isOpen, onClose, onProjectRestored }: Trash
           <DialogHeader className="border-b border-gray-800 pb-4">
             <DialogTitle className="text-2xl font-bold flex items-center gap-2">
               <Trash2 className="h-6 w-6 text-gray-400" />
-              <span className="bg-gradient-to-r from-red-500 to-amber-500 bg-clip-text text-transparent">Trash</span>
+              <span className="text-gray-200">Trash</span>
             </DialogTitle>
             <DialogDescription className="text-gray-400">
               Projects moved to trash are kept here for recovery. You can restore them or delete permanently.
@@ -220,7 +220,7 @@ export default function TrashModal({ isOpen, onClose, onProjectRestored }: Trash
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={handlePermanentDelete}
-              className="bg-red-900 hover:bg-red-800 text-gray-200 border-none"
+              className="bg-amber-900 hover:bg-amber-800 text-gray-200 border-none"
             >
               Delete Forever
             </AlertDialogAction>
