@@ -4,7 +4,7 @@ import NoteTree from "@/components/NoteTree";
 import NoteEditor from "@/components/NoteEditor";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { FilePlus, Menu, Edit, FilterX } from "lucide-react";
+import { FilePlus, Menu, Edit, FilterX, X } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 import FilterMenu, { FilterType } from "@/components/FilterMenu";
@@ -18,16 +18,10 @@ export default function NotesEditor() {
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
   const { selectedNote, hasActiveProject, currentProjectName, addNote } = useNotes();
 
-  // Close sidebar when a note is selected on mobile
+  // Handle note selection on mobile
   useEffect(() => {
-    if (isMobile && selectedNote && sidebarOpen) {
-      setSidebarOpen(false);
-    }
-  }, [selectedNote, isMobile, sidebarOpen]);
-
-  // Auto-open editor when a note is selected on mobile
-  useEffect(() => {
-    if (isMobile && selectedNote && !sidebarOpen) {
+    if (isMobile && selectedNote) {
+      // Keep the editor open when a note is selected
       setSidebarOpen(true);
     }
   }, [selectedNote, isMobile]);
@@ -142,8 +136,25 @@ export default function NotesEditor() {
                         <Edit className="h-5 w-5" />
                       </Button>
                     </SheetTrigger>
-                    <SheetContent side="right" className="w-[90%] sm:w-[75%] p-0 bg-gray-950 border-l border-gray-800 overflow-auto mobile-touch-scrolling">
-                      <NoteEditor />
+                    <SheetContent 
+                      side="right" 
+                      className="w-[90%] sm:w-[75%] p-0 bg-gray-950 border-l border-gray-800 overflow-auto mobile-touch-scrolling"
+                    >
+                      <div className="sticky top-0 z-10 bg-gray-900 border-b border-gray-800 p-2 flex justify-between items-center">
+                        <h2 className="text-sm font-medium text-gray-200">Edit Note</h2>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setSidebarOpen(false)}
+                          className="h-8 w-8 p-0 rounded-full"
+                        >
+                          <span className="sr-only">Close</span>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="p-0">
+                        <NoteEditor />
+                      </div>
                     </SheetContent>
                   </Sheet>
                 )}
