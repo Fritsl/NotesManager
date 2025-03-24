@@ -515,15 +515,15 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                                       description: "Image has been removed from the note",
                                     });
                                     
-                                    // Save the project to ensure changes are synced
-                                    await saveProject();
-                                    
-                                    // Update the note in local state
+                                    // First update the note in local state
                                     const updatedNote = {
                                       ...note,
                                       images: (note.images || []).filter(img => img.id !== image.id)
                                     };
                                     updateNote(updatedNote);
+                                    
+                                    // Then save the project to ensure changes are synced
+                                    await saveProject();
                                   }
                                 } catch (err) {
                                   console.error("Failed to remove image:", err);
@@ -565,15 +565,20 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                               description: "Image has been added to the note",
                             });
                             
-                            // Save the project to ensure images are synced
-                            await saveProject();
+                            // Ensure the note has an images array
+                            const existingImages = note.images || [];
                             
-                            // Force refresh the note with current server data
+                            // Create updated note with the new image properly integrated
                             const updatedNote = {
                               ...note,
-                              images: [...(note.images || []), result]
+                              images: [...existingImages, result]
                             };
+                            
+                            // First update the note in the state
                             updateNote(updatedNote);
+                            
+                            // Then save the project to ensure images are synced with server
+                            await saveProject();
                           }
                           // Clear the input after upload
                           e.target.value = '';
