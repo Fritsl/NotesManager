@@ -11,6 +11,7 @@ export interface Project {
   user_id: string;
   data: NotesData;
   description?: string; // Optional field for project description
+  deleted_at?: string; // Timestamp when the project was moved to trash
 }
 
 // Interface for database note records
@@ -298,6 +299,53 @@ export async function getProjects(): Promise<Project[]> {
     return projects;
   } catch (error) {
     console.error('Error in getProjects:', error);
+    return [];
+  }
+}
+
+export async function getTrashedProjects(): Promise<Project[]> {
+  try {
+    console.log('--- getTrashedProjects: Starting to fetch trashed projects ---');
+    
+    // Get current user
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !userData.user) {
+      console.error('User not authenticated:', userError);
+      return [];
+    }
+    
+    // Query settings table for trashed projects belonging to the current user
+    console.log('Querying settings table for trashed projects...');
+    const { data, error } = await supabase
+      .from('settings')
+      .select('*')
+      .eq('user_id', userData.user.id)
+      .not('deleted_at', 'is', null) // Only get trashed projects
+      .order('deleted_at', { ascending: false }); // Show recently trashed first
+
+    if (error) {
+      console.error('Error fetching trashed projects:', error);
+      return [];
+    }
+    
+    console.log('Number of trashed projects found:', data ? data.length : 0);
+
+    // Create projects array with empty notes
+    const trashedProjects: Project[] = data?.map(item => ({
+      id: item.id,
+      name: item.title || 'Untitled Project',
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+      user_id: item.user_id,
+      description: item.description || '',
+      deleted_at: item.deleted_at, // Include the deletion timestamp
+      data: { notes: [] } // We don't load notes for trashed projects in the list view
+    })) || [];
+    
+    return trashedProjects;
+  } catch (error) {
+    console.error('Error in getTrashedProjects:', error);
     return [];
   }
 }
@@ -1109,7 +1157,77 @@ export async function updateImagePosition(noteId: string, imageId: string, newPo
   }
 }
 
-export async function deleteProject(id: string): Promise<boolean> {
+export async function moveProjectToTrash(id: string): Promise<boolean> {
+  try {
+    // Get current user
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !userData.user) {
+      console.error('User not authenticated:', userError);
+      return false;
+    }
+    
+    // Move project to trash by setting deleted_at timestamp
+    const now = new Date().toISOString();
+    
+    const { error } = await supabase
+      .from('settings')
+      .update({
+        deleted_at: now,
+        updated_at: now
+      })
+      .eq('id', id)
+      .eq('user_id', userData.user.id); // Ensure user can only delete their own projects
+
+    if (error) {
+      console.error('Error moving project to trash:', error);
+      return false;
+    }
+
+    console.log(`Project ${id} moved to trash successfully`);
+    return true;
+  } catch (error) {
+    console.error('Error in moveProjectToTrash:', error);
+    return false;
+  }
+}
+
+export async function restoreProjectFromTrash(id: string): Promise<boolean> {
+  try {
+    // Get current user
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !userData.user) {
+      console.error('User not authenticated:', userError);
+      return false;
+    }
+    
+    // Restore project by setting deleted_at to null
+    const now = new Date().toISOString();
+    
+    const { error } = await supabase
+      .from('settings')
+      .update({
+        deleted_at: null,
+        updated_at: now
+      })
+      .eq('id', id)
+      .eq('user_id', userData.user.id);
+
+    if (error) {
+      console.error('Error restoring project from trash:', error);
+      return false;
+    }
+
+    console.log(`Project ${id} restored from trash successfully`);
+    return true;
+  } catch (error) {
+    console.error('Error in restoreProjectFromTrash:', error);
+    return false;
+  }
+}
+
+export async function permanentlyDeleteProject(id: string): Promise<boolean> {
   try {
     // Get current user
     const { data: userData, error: userError } = await supabase.auth.getUser();
@@ -1151,26 +1269,28 @@ export async function deleteProject(id: string): Promise<boolean> {
       // Continue with project deletion anyway
     }
     
-    // Use soft delete (set deleted_at) instead of actual deletion for the project
-    const now = new Date().toISOString();
-    
+    // Permanently delete the project from settings table
     const { error } = await supabase
       .from('settings')
-      .update({
-        deleted_at: now,
-        updated_at: now
-      })
+      .delete()
       .eq('id', id)
-      .eq('user_id', userData.user.id); // Ensure user can only delete their own projects
+      .eq('user_id', userData.user.id);
 
     if (error) {
-      console.error('Error deleting project:', error);
+      console.error('Error permanently deleting project:', error);
       return false;
     }
 
+    console.log(`Project ${id} permanently deleted`);
     return true;
   } catch (error) {
-    console.error('Error in deleteProject:', error);
+    console.error('Error in permanentlyDeleteProject:', error);
     return false;
   }
+}
+
+// Keep the original deleteProject function for backward compatibility
+// but make it call the new moveProjectToTrash function
+export async function deleteProject(id: string): Promise<boolean> {
+  return moveProjectToTrash(id);
 }

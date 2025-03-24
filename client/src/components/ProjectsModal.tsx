@@ -3,16 +3,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { PlusCircle, LoaderCircle, Trash2, Save, FileDown, Edit } from 'lucide-react';
+import { PlusCircle, LoaderCircle, Trash2, Save, FileDown, Edit, Archive } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 import { 
   getProjects, 
   getProject,
   createProject, 
-  deleteProject, 
+  moveProjectToTrash, 
   updateProject,
   Project 
 } from '../lib/projectService';
+import TrashModal from './TrashModal';
 import { useNotes } from '../context/NotesContext';
 import { 
   AlertDialog,
@@ -40,6 +41,7 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [showTrashModal, setShowTrashModal] = useState(false);
   const { toast } = useToast();
   const { 
     notes, 
@@ -159,18 +161,18 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
     if (!projectToDelete) return;
     
     try {
-      const success = await deleteProject(projectToDelete.id);
+      const success = await moveProjectToTrash(projectToDelete.id);
       
       if (success) {
         toast({
-          title: 'Success',
-          description: 'Project deleted successfully',
+          title: 'Moved to Trash',
+          description: 'Project moved to trash successfully',
         });
         await fetchProjects();
       } else {
         toast({
           title: 'Error',
-          description: 'Failed to delete project',
+          description: 'Failed to move project to trash',
           variant: 'destructive',
         });
       }
@@ -425,10 +427,13 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent className="bg-gray-900 border border-gray-800">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-gray-200">Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle className="text-gray-200 flex items-center">
+              <Trash2 className="mr-2 h-5 w-5 text-red-500" />
+              Move to Trash
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-gray-400">
-              This will permanently delete the project "{projectToDelete?.name}". 
-              This action cannot be undone.
+              The project "{projectToDelete?.name}" will be moved to trash. 
+              You can restore it later from the Trash if needed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -437,7 +442,7 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
               onClick={handleDeleteProject}
               className="bg-red-900 hover:bg-red-800 text-gray-200 border-none"
             >
-              Delete
+              Move to Trash
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
