@@ -78,6 +78,7 @@ export default function NoteEditor() {
       autoSaveTimerRef.current = setTimeout(async () => {
         try {
           // Create updated note with current field values
+          // Make sure we preserve any images that have been added
           const updatedNote = {
             ...selectedNote,
             content,
@@ -85,44 +86,60 @@ export default function NoteEditor() {
             url: externalUrl || null,
             url_display_text: externalUrl ? (urlDisplayText || null) : null,
             is_discussion: isDiscussion,
+            // Explicitly keep the images from the selected note to ensure they're preserved
+            images: selectedNote.images || [],
           };
           
           console.log("Auto-saving note with content:", content);
+          console.log("Auto-saving note with images:", updatedNote.images);
           
           // Update the note in local state
           updateNote(updatedNote);
           setHasChanges(false);
           
-          // Save the entire project if we have a project ID
+          // Always immediately save the entire project after a note update
           if (currentProjectId) {
-            await saveProject();
-            console.log("Project auto-saved after note update");
-          }
-          
-          // Update save status
-          setSaveStatus("saved");
-          
-          // Reset status after a delay
-          setTimeout(() => {
+            try {
+              await saveProject();
+              console.log("Project auto-saved after note update");
+              
+              // Update save status
+              setSaveStatus("saved");
+              
+              // Reset status after a delay
+              setTimeout(() => {
+                setSaveStatus("idle");
+              }, 1500);
+              
+              // Show a subtle toast notification for auto-save
+              toast({
+                title: "Auto-saved",
+                description: "Your changes have been automatically saved",
+                variant: "default",
+              });
+              
+            } catch (saveError) {
+              console.error("Failed to auto-save project:", saveError);
+              setSaveStatus("idle");
+              toast({
+                title: "Save Error",
+                description: "Failed to save project. Please try using the Save button in the menu.",
+                variant: "destructive",
+              });
+            }
+          } else {
             setSaveStatus("idle");
-          }, 1500);
-          
-          // Show a subtle toast notification for auto-save
-          toast({
-            title: "Auto-saved",
-            description: "Your changes have been automatically saved",
-            variant: "default",
-          });
+          }
         } catch (error) {
-          console.error("Failed to auto-save:", error);
+          console.error("Failed to update note:", error);
           setSaveStatus("idle");
           toast({
             title: "Save Error",
-            description: "Failed to save changes. Please try again.",
+            description: "Failed to update note. Please try again or use the Save button in the menu.",
             variant: "destructive",
           });
         }
-      }, 100); // Reduced delay for faster saving
+      }, 300); // Increased delay slightly to ensure all field changes are captured
     }
   }, [selectedNote, hasChanges, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, updateNote, toast, saveProject, currentProjectId]);
   

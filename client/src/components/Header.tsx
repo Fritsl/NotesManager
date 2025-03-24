@@ -377,7 +377,37 @@ export default function Header() {
                   <FolderOpen className="h-4 w-4 mr-2" />
                   <span>Projects</span>
                 </DropdownMenuItem>
-                {/* Save is now automatic when fields lose focus */}
+                
+                {/* Manual save button (restore it for now) */}
+                <DropdownMenuItem onClick={async () => {
+                  if (currentProjectId) {
+                    try {
+                      await saveProject();
+                      console.log("Project manually saved from header menu");
+                      toast({
+                        title: "Project Saved",
+                        description: "All changes have been saved",
+                        variant: "default",
+                      });
+                    } catch (error) {
+                      console.error("Failed to save project:", error);
+                      toast({
+                        title: "Save Error",
+                        description: "Failed to save project. Please try again.",
+                        variant: "destructive",
+                      });
+                    }
+                  } else {
+                    toast({
+                      title: "Cannot Save",
+                      description: "No active project to save",
+                      variant: "destructive",
+                    });
+                  }
+                }}>
+                  <Save className="h-4 w-4 mr-2" />
+                  <span>Save Project</span>
+                </DropdownMenuItem>
                 
                 {/* Debug button */}
                 <DropdownMenuItem onClick={() => {
