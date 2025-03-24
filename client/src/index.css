@@ -91,4 +91,43 @@
   .mobile-text-sm {
     @apply text-xs sm:text-sm;
   }
+  
+  /* Time picker styling */
+  .timepicker-container {
+    @apply w-auto inline-block text-white;
+  }
+  
+  .react-time-picker {
+    @apply text-xs text-white;
+  }
+  
+  .react-time-picker__wrapper {
+    @apply border-0 bg-transparent;
+  }
+  
+  .react-time-picker__inputGroup {
+    @apply bg-gray-850 rounded-md p-1;
+  }
+  
+  .react-time-picker__inputGroup__input {
+    @apply bg-transparent text-white outline-none;
+    color: white !important;
+  }
+  
+  .react-time-picker__inputGroup__divider {
+    @apply text-gray-400;
+  }
+  
+  .react-time-picker__clear-button {
+    @apply hidden;
+  }
+  
+  .react-time-picker__inputGroup__input:focus {
+    @apply outline-none;
+  }
+  
+  .react-time-picker__inputGroup__hour,
+  .react-time-picker__inputGroup__minute {
+    @apply bg-transparent;
+  }
 }

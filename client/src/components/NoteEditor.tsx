@@ -172,7 +172,7 @@ export default function NoteEditor() {
         clearTimeout(inactivitySaveTimerRef.current);
       }
     };
-  }, [selectedNote, hasChanges, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, saveDirectly]);
+  }, [selectedNote, hasChanges, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, timeSet, saveDirectly]);
   
   // Set up change tracking with proper state updates
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
