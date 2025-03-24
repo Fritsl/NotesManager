@@ -392,8 +392,10 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       // If we deleted from a parent's children, clean those children's positions
       if (parentNote) {
         // Update the positions of the remaining children
-        if (parentNote.children && parentNote.children.length > 0) {
-          parentNote.children = parentNote.children.map((child: Note, index: number) => ({
+        // Cast to Note to avoid type errors - we know this is a valid parent note
+        const typedParent = parentNote as Note;
+        if (typedParent.children && typedParent.children.length > 0) {
+          typedParent.children = typedParent.children.map((child: Note, index: number) => ({
             ...child,
             position: index
           }));

@@ -546,7 +546,17 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                   addNote(null);
                 } else {
                   // Create a sibling by using parent as the parent
-                  addNote(parentId ? { id: parentId, children: [] } as Note : null);
+                  addNote(parentId ? { 
+                    id: parentId, 
+                    content: "", 
+                    position: 0,
+                    is_discussion: false,
+                    time_set: null,
+                    youtube_url: null,
+                    url: null,
+                    url_display_text: null,
+                    children: [] 
+                  } as Note : null);
                 }
               }}
             >
