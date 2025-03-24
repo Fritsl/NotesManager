@@ -509,6 +509,7 @@ export default function Header() {
       {showExportModal && <ExportModal onClose={() => setShowExportModal(false)} />}
       {showProjectsModal && <ProjectsModal isOpen={showProjectsModal} onClose={() => setShowProjectsModal(false)} />}
       {showPayoffModal && <PayoffModal isOpen={showPayoffModal} onClose={() => setShowPayoffModal(false)} />}
+      {showDescriptionModal && <ProjectDescriptionModal isOpen={showDescriptionModal} onClose={() => setShowDescriptionModal(false)} />}
     </header>
   );
 }
