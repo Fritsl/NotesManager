@@ -396,30 +396,7 @@ export default function Header() {
                     <span className="ml-auto text-xs text-muted-foreground">{currentProjectId ? "(Manual)" : "(No Project)"}</span>
                   </DropdownMenuItem>
                   
-                  {/* Debug button */}
-                  <DropdownMenuItem onClick={() => {
-                    // Use the debugInfo function already passed to this component from context
-                    // Instead of trying to call useNotes() inside the event handler
-                    const noteCount = Array.isArray(notes) ? notes.length : 0;
-                    const debugData = {
-                      currentProjectName,
-                      currentProjectId, 
-                      noteCount,
-                      hasActiveProject
-                    };
-                    console.log("DEBUG INFO:", debugData);
-                    
-                    // Show debug info in toast
-                    toast({
-                      title: "Debug Info",
-                      description: `Project: ${currentProjectName || 'None'}, ID: ${currentProjectId || 'None'}, Notes: ${noteCount}`,
-                    });
-                  }}>
-                    <Info className="h-4 w-4 mr-2" />
-                    <span>Debug Info</span>
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenuSeparator />
+
                   
                   {/* Import/Export */}
                   <DropdownMenuItem onClick={() => setShowImportModal(true)}>
