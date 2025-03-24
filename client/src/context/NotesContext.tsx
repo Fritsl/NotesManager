@@ -402,31 +402,20 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const deleteNote = useCallback((noteId: string) => {
     setNotes((prevNotes) => {
       const updatedNotes = [...prevNotes];
-      let isRootLevel = true;
-      let parentNote: Note | null = null;
+      let parentWithUpdatedChildren: Note | null = null;
       
-      // Helper function to find and remove the note
-      const findAndRemoveNote = (nodes: Note[], parent: Note | null = null): boolean => {
+      // Find and remove the note at any level in the tree
+      const removeNoteFromTree = (nodes: Note[], parent: Note | null = null): boolean => {
         for (let i = 0; i < nodes.length; i++) {
-          // If this is the note to delete
           if (nodes[i].id === noteId) {
-            // Remove the note from the array
             nodes.splice(i, 1);
-            
-            // If parent exists, we'll need to update its children positions
-            if (parent) {
-              isRootLevel = false;
-              // Make sure parent is properly typed as Note
-              parentNote = parent as Note;
-            }
-            
+            // Keep track of parent that had a child removed
+            parentWithUpdatedChildren = parent;
             return true;
           }
           
-          // Try to find and remove in children
-          const childrenArray = nodes[i].children;
-          if (childrenArray && childrenArray.length > 0) {
-            if (findAndRemoveNote(childrenArray, nodes[i])) {
+          if (nodes[i].children.length > 0) {
+            if (removeNoteFromTree(nodes[i].children, nodes[i])) {
               return true;
             }
           }
@@ -435,27 +424,22 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         return false;
       };
       
-      // Attempt to find and remove the note
-      findAndRemoveNote(updatedNotes);
+      removeNoteFromTree(updatedNotes);
       
-      // After note removal, update positions of siblings
-      if (isRootLevel) {
-        // If we deleted from root level, reindex all root notes
+      // If we deleted from a parent's children, clean those children's positions
+      if (parentWithUpdatedChildren && parentWithUpdatedChildren.children) {
+        parentWithUpdatedChildren.children = parentWithUpdatedChildren.children.map((child: Note, index: number) => ({
+          ...child,
+          position: index
+        }));
+      } else {
+        // If we deleted from root level, clean root positions
         updatedNotes.forEach((note, index) => {
           note.position = index;
         });
-      } else if (parentNote && 'children' in parentNote) {
-        // If we deleted from a parent's children, reindex those children
-        // Using property check to ensure TypeScript recognizes children exists
-        const children = parentNote.children;
-        if (children && children.length > 0) {
-          children.forEach((child: Note, index: number) => {
-            child.position = index;
-          });
-        }
       }
       
-      // Finally, clean all positions in the tree to ensure consistency
+      // Apply full position cleaning to ensure consistency
       return cleanNotePositions(updatedNotes);
     });
     
