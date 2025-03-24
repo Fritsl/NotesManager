@@ -40,8 +40,9 @@ export default function NoteEditor() {
   const externalUrlRef = useRef<HTMLInputElement>(null);
   const urlDisplayTextRef = useRef<HTMLInputElement>(null);
   
-  // Auto-save timer reference
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Auto-save timer references
+  const blurSaveTimerRef = useRef<NodeJS.Timeout | null>(null);  // For blur-based auto-save
+  const inactivitySaveTimerRef = useRef<NodeJS.Timeout | null>(null);  // For inactivity (5 seconds) auto-save
 
   // Update form when selected note changes
   useEffect(() => {
@@ -112,19 +113,20 @@ export default function NoteEditor() {
     }
   }, [selectedNote, currentProjectId, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, updateNote, saveProject, toast]);
   
-  // Auto-save when any field loses focus if there are changes (similar to Google Docs)
+  // Auto-save when a field loses focus and there are changes
   const handleBlur = useCallback(async (e: React.FocusEvent) => {
-    // Save the note whenever a field loses focus, even if moving to another field in the form
     if (selectedNote && hasChanges) {
-      // Use a small delay to prevent saving while user is still interacting with the form
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
+      // Clear any existing blur timer
+      if (blurSaveTimerRef.current) {
+        clearTimeout(blurSaveTimerRef.current);
       }
       
-      autoSaveTimerRef.current = setTimeout(async () => {
+      // Set a short delay to prevent saving while moving between fields
+      blurSaveTimerRef.current = setTimeout(async () => {
         try {
-          // Use our direct save function to ensure project is saved properly
+          console.log("Blur auto-save triggered for note:", selectedNote.id);
           await saveDirectly();
+          console.log("Blur auto-save completed successfully");
         } catch (error) {
           console.error("Failed during blur auto-save:", error);
           toast({
@@ -136,6 +138,36 @@ export default function NoteEditor() {
       }, 500);
     }
   }, [selectedNote, hasChanges, saveDirectly, toast]);
+  
+  // Auto-save after 5 seconds of inactivity in text fields
+  useEffect(() => {
+    // Only start inactivity timer if there are unsaved changes
+    if (selectedNote && hasChanges) {
+      // Clear any existing inactivity timer
+      if (inactivitySaveTimerRef.current) {
+        clearTimeout(inactivitySaveTimerRef.current);
+      }
+      
+      // Set up a new inactivity timer for 5 seconds
+      inactivitySaveTimerRef.current = setTimeout(async () => {
+        try {
+          console.log("Inactivity auto-save triggered after 5 seconds");
+          await saveDirectly();
+          console.log("Inactivity auto-save completed successfully");
+        } catch (error) {
+          console.error("Failed during inactivity auto-save:", error);
+          // No toast here to avoid disturbing the user during typing
+        }
+      }, 5000); // 5 seconds of inactivity
+    }
+    
+    // Clean up the timer when component unmounts or note changes
+    return () => {
+      if (inactivitySaveTimerRef.current) {
+        clearTimeout(inactivitySaveTimerRef.current);
+      }
+    };
+  }, [selectedNote, hasChanges, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, saveDirectly]);
   
   // Set up change tracking with proper state updates
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
