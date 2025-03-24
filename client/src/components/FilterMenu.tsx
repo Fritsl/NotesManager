@@ -1,16 +1,17 @@
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Note } from "@/types/notes";
+import { useNotes } from "@/context/NotesContext";
 import {
   DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuCheckboxItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { FilterIcon } from "lucide-react";
-import { useNotes } from "@/context/NotesContext";
-import { Note } from "@/types/notes";
+import { Button } from "@/components/ui/button";
+import { Clock, MessageSquare, Image, Link2, Video, Filter } from "lucide-react";
 
 export type FilterType = "time" | "video" | "image" | "discussion" | "link" | null;
 
@@ -21,125 +22,140 @@ interface FilterMenuProps {
 export default function FilterMenu({ onFilterChange }: FilterMenuProps) {
   const { notes } = useNotes();
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
-
-  const findAllNotesWithAttribute = (
-    notesArray: Note[],
-    filterType: FilterType,
-    results: Note[] = []
-  ): Note[] => {
-    for (const note of notesArray) {
-      // Check if the note matches the filter criteria
-      let shouldInclude = false;
-      
-      switch (filterType) {
-        case "time":
-          shouldInclude = !!note.time_set;
-          break;
-        case "video":
-          shouldInclude = !!note.youtube_url;
-          break;
-        case "image":
-          shouldInclude = !!note.images && note.images.length > 0;
-          break;
-        case "discussion":
-          shouldInclude = !!note.is_discussion;
-          break;
-        case "link":
-          shouldInclude = !!note.url;
-          break;
-        default:
-          shouldInclude = false;
-      }
-      
-      if (shouldInclude) {
-        results.push(note);
-      }
-      
-      // Recursively search through children
-      if (note.children && note.children.length > 0) {
-        findAllNotesWithAttribute(note.children, filterType, results);
-      }
-    }
+  
+  // Helper function to get all notes with their children flattened
+  const flattenNotes = (notes: Note[]): Note[] => {
+    let flatNotes: Note[] = [];
     
-    return results;
+    const traverse = (notesArray: Note[]) => {
+      for (const note of notesArray) {
+        flatNotes.push(note);
+        if (note.children && note.children.length > 0) {
+          traverse(note.children);
+        }
+      }
+    };
+    
+    traverse(notes);
+    return flatNotes;
   };
-
-  const handleFilterSelect = (filterType: FilterType) => {
-    // If selecting the already active filter, clear it
-    if (activeFilter === filterType) {
-      setActiveFilter(null);
+  
+  const applyFilter = (
+    filterType: FilterType,
+    predicate: (note: Note) => boolean
+  ) => {
+    setActiveFilter(filterType);
+    
+    if (!filterType) {
       onFilterChange([], null);
       return;
     }
     
-    setActiveFilter(filterType);
-    
-    if (filterType) {
-      const filteredResults = findAllNotesWithAttribute(notes, filterType);
-      onFilterChange(filteredResults, filterType);
-    } else {
-      onFilterChange([], null);
+    const allNotes = flattenNotes(notes);
+    const filtered = allNotes.filter(predicate);
+    onFilterChange(filtered, filterType);
+  };
+  
+  const handleFilterSelect = (filterType: FilterType) => {
+    switch (filterType) {
+      case "time":
+        applyFilter("time", (note) => !!note.time_set);
+        break;
+      case "video":
+        applyFilter("video", (note) => !!note.youtube_url);
+        break;
+      case "image":
+        applyFilter("image", (note) => !!(note.images && note.images.length > 0));
+        break;
+      case "discussion":
+        applyFilter("discussion", (note) => !!note.is_discussion);
+        break;
+      case "link":
+        applyFilter("link", (note) => !!note.url);
+        break;
+      default:
+        applyFilter(null, () => false);
+        break;
     }
   };
-
+  
   const getFilterLabel = (filterType: FilterType): string => {
     switch (filterType) {
       case "time":
-        return "Time set";
+        return "Notes with time";
       case "video":
-        return "YouTube videos";
+        return "Notes with videos";
       case "image":
-        return "Images";
+        return "Notes with images";
       case "discussion":
-        return "Discussions";
+        return "Discussion notes";
       case "link":
-        return "Links";
+        return "Notes with links";
       default:
-        return "Show all notes with...";
+        return "Filter notes";
     }
   };
-
+  
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="flex items-center gap-2">
-          <FilterIcon className="h-4 w-4" />
-          {activeFilter ? getFilterLabel(activeFilter) : "Show all notes with..."}
+        <Button 
+          variant="ghost" 
+          size="sm"
+          className={`flex items-center gap-1 ${activeFilter ? 'text-primary' : 'text-gray-400'}`}
+        >
+          <Filter className="h-4 w-4" />
+          <span>{activeFilter ? getFilterLabel(activeFilter) : "Filter"}</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>Filter by attribute</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuCheckboxItem
-          checked={activeFilter === "time"}
-          onCheckedChange={() => handleFilterSelect("time")}
-        >
-          Time set
-        </DropdownMenuCheckboxItem>
-        <DropdownMenuCheckboxItem
-          checked={activeFilter === "video"}
-          onCheckedChange={() => handleFilterSelect("video")}
-        >
-          YouTube videos
-        </DropdownMenuCheckboxItem>
-        <DropdownMenuCheckboxItem
-          checked={activeFilter === "image"}
-          onCheckedChange={() => handleFilterSelect("image")}
-        >
-          Images
-        </DropdownMenuCheckboxItem>
-        <DropdownMenuCheckboxItem
-          checked={activeFilter === "discussion"}
-          onCheckedChange={() => handleFilterSelect("discussion")}
-        >
-          Discussions
-        </DropdownMenuCheckboxItem>
-        <DropdownMenuCheckboxItem
-          checked={activeFilter === "link"}
-          onCheckedChange={() => handleFilterSelect("link")}
-        >
-          Links
-        </DropdownMenuCheckboxItem>
+      <DropdownMenuContent align="start" className="w-56 bg-gray-900 border-gray-800 text-gray-100">
+        <DropdownMenuLabel className="text-gray-400">Filter Notes By</DropdownMenuLabel>
+        <DropdownMenuSeparator className="bg-gray-800" />
+        <DropdownMenuRadioGroup value={activeFilter || ""} onValueChange={(value) => handleFilterSelect(value as FilterType || null)}>
+          <DropdownMenuRadioItem 
+            value="" 
+            className="flex items-center gap-2 focus:bg-gray-800 focus:text-white"
+          >
+            <Filter className="h-4 w-4" />
+            <span>Show all notes</span>
+          </DropdownMenuRadioItem>
+          <DropdownMenuSeparator className="bg-gray-800" />
+          <DropdownMenuRadioItem 
+            value="time"
+            className="flex items-center gap-2 focus:bg-gray-800 focus:text-white"
+          >
+            <Clock className="h-4 w-4" />
+            <span>Notes with time</span>
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem 
+            value="video"
+            className="flex items-center gap-2 focus:bg-gray-800 focus:text-white"
+          >
+            <Video className="h-4 w-4" />
+            <span>Notes with videos</span>
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem 
+            value="image"
+            className="flex items-center gap-2 focus:bg-gray-800 focus:text-white"
+          >
+            <Image className="h-4 w-4" />
+            <span>Notes with images</span>
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem 
+            value="discussion"
+            className="flex items-center gap-2 focus:bg-gray-800 focus:text-white"
+          >
+            <MessageSquare className="h-4 w-4" />
+            <span>Discussion notes</span>
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem 
+            value="link"
+            className="flex items-center gap-2 focus:bg-gray-800 focus:text-white"
+          >
+            <Link2 className="h-4 w-4" />
+            <span>Notes with links</span>
+          </DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );

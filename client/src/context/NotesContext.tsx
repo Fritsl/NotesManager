@@ -322,8 +322,8 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       removeNoteFromTree(updatedNotes);
       
       // If we deleted from a parent's children, clean those children's positions
-      if (parentWithUpdatedChildren && parentWithUpdatedChildren.children && Array.isArray(parentWithUpdatedChildren.children)) {
-        parentWithUpdatedChildren.children = (parentWithUpdatedChildren.children as Note[]).map((child: Note, index: number) => ({
+      if (parentWithUpdatedChildren) {
+        parentWithUpdatedChildren.children = parentWithUpdatedChildren.children.map((child: Note, index: number) => ({
           ...child,
           position: index
         }));
