@@ -52,6 +52,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [currentLevel, setCurrentLevel] = useState<number>(1);
   const [currentProjectName, setCurrentProjectName] = useState<string>('');
+  const [currentProjectDescription, setCurrentProjectDescription] = useState<string>('');
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [hasActiveProject, setHasActiveProject] = useState<boolean>(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
@@ -992,6 +993,8 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         maxDepth,
         currentProjectName,
         setCurrentProjectName,
+        currentProjectDescription,
+        setCurrentProjectDescription,
         hasActiveProject,
         setHasActiveProject,
         createNewProject,
