@@ -668,10 +668,10 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
     if (flatNotes.length > 0) {
       console.log('First flattened note sample:', JSON.stringify(flatNotes[0]));
       
+      // Create a mapping of old IDs to new IDs
+      const idMapping: Record<string, string> = {};
+      
       try {
-        // First, let's create a mapping of old IDs to new IDs that we'll generate
-        const idMapping: Record<string, string> = {};
-        
         // Pre-generate all new IDs and create the mapping
         flatNotes.forEach(note => {
           const newId = crypto.randomUUID();
@@ -700,21 +700,52 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
         
         console.log('Processed notes with updated IDs and parent references');
         
-        // Now insert the notes in batches
-        for (let i = 0; i < processedNotes.length; i += BATCH_SIZE) {
-          const batch = processedNotes.slice(i, i + BATCH_SIZE);
-          console.log(`Inserting batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(processedNotes.length/BATCH_SIZE)}, size: ${batch.length}`);
-          
-          const { data: insertedData, error: insertError } = await supabase
-            .from('notes')
-            .insert(batch)
-            .select();
+        // Now insert the notes in batches, but insert in two phases to ensure parent notes exist first
+        // First insert all root notes (notes with no parent)
+        const rootNotes = processedNotes.filter(note => !note.parent_id);
+        const childNotes = processedNotes.filter(note => note.parent_id);
+        
+        console.log(`Split notes into ${rootNotes.length} root notes and ${childNotes.length} child notes`);
+        
+        // Insert root notes first
+        if (rootNotes.length > 0) {
+          console.log('Inserting root notes first');
+          for (let i = 0; i < rootNotes.length; i += BATCH_SIZE) {
+            const batch = rootNotes.slice(i, i + BATCH_SIZE);
+            console.log(`Inserting root batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(rootNotes.length/BATCH_SIZE)}, size: ${batch.length}`);
             
-          if (insertError) {
-            console.error(`Error inserting notes batch ${Math.floor(i/BATCH_SIZE) + 1}:`, insertError);
-            throw new Error(`Failed to insert notes: ${insertError.message}`);
-          } else {
-            console.log(`Successfully inserted batch ${Math.floor(i/BATCH_SIZE) + 1}, received:`, insertedData?.length || 0, 'records');
+            const { data: insertedData, error: insertError } = await supabase
+              .from('notes')
+              .insert(batch)
+              .select();
+              
+            if (insertError) {
+              console.error(`Error inserting root notes batch ${Math.floor(i/BATCH_SIZE) + 1}:`, insertError);
+              throw new Error(`Failed to insert root notes: ${insertError.message}`);
+            } else {
+              console.log(`Successfully inserted root batch ${Math.floor(i/BATCH_SIZE) + 1}, received:`, insertedData?.length || 0, 'records');
+            }
+          }
+        }
+        
+        // Then insert child notes
+        if (childNotes.length > 0) {
+          console.log('Inserting child notes next');
+          for (let i = 0; i < childNotes.length; i += BATCH_SIZE) {
+            const batch = childNotes.slice(i, i + BATCH_SIZE);
+            console.log(`Inserting child batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(childNotes.length/BATCH_SIZE)}, size: ${batch.length}`);
+            
+            const { data: insertedData, error: insertError } = await supabase
+              .from('notes')
+              .insert(batch)
+              .select();
+              
+            if (insertError) {
+              console.error(`Error inserting child notes batch ${Math.floor(i/BATCH_SIZE) + 1}:`, insertError);
+              throw new Error(`Failed to insert child notes: ${insertError.message}`);
+            } else {
+              console.log(`Successfully inserted child batch ${Math.floor(i/BATCH_SIZE) + 1}, received:`, insertedData?.length || 0, 'records');
+            }
           }
         }
       } catch (error) {
