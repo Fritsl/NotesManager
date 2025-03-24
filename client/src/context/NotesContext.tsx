@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, ReactNode, useCallback, useMemo, useRef, useEffect } from "react";
-import { Note, NotesData } from "@/types/notes";
+import { Note, NotesData, NoteImage } from "@/types/notes";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
-import { createProject, updateProject } from "@/lib/projectService";
+import { createProject, updateProject, addImageToNote, removeImageFromNote, updateImagePosition } from "@/lib/projectService";
 
 interface NotesContextType {
   notes: Note[];
@@ -29,9 +29,13 @@ interface NotesContextType {
   hasActiveProject: boolean;
   setHasActiveProject: (hasProject: boolean) => void;
   createNewProject: (name: string) => void;
-  saveProject: () => Promise<void>;
+  saveProject: () => Promise<any>;  // Changed return type to allow returning the updated project
   currentProjectId: string | null;
   setCurrentProjectId: (id: string | null) => void;
+  // Image handling functions
+  uploadImage?: (noteId: string, file: File) => Promise<NoteImage | null>;
+  removeImage?: (imageId: string) => Promise<boolean>;
+  reorderImage?: (noteId: string, imageId: string, newPosition: number) => Promise<boolean>;
   debugInfo: () => any; // For debugging purposes
 }
 
@@ -46,6 +50,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const [currentProjectName, setCurrentProjectName] = useState<string>('');
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [hasActiveProject, setHasActiveProject] = useState<boolean>(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const { toast } = useToast();
 
   // Clean note positions to ensure sequential ordering without gaps
@@ -625,15 +630,41 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         return;
       }
       
+      // Enhanced logging to debug ghost data issues
       console.log('Saving project:', { 
         id: currentProjectId, 
         name: currentProjectName,
         notesCount: notes.length,
-        firstNote: notes.length > 0 ? notes[0].content : 'No notes'
+        firstNote: notes.length > 0 ? 
+          (notes[0].content.substring(0, 30) + (notes[0].content.length > 30 ? '...' : '')) : 
+          'No notes',
+        totalChildren: notes.reduce((sum, note) => sum + note.children.length, 0)
       });
       
-      // Create a clean copy of the notes data to save
-      const notesData: NotesData = { notes: cleanNotePositions([...notes]) };
+      // Pre-save validation check
+      if (!Array.isArray(notes)) {
+        console.error('Notes is not an array before saving:', notes);
+        throw new Error('Notes data is corrupted (not an array)');
+      }
+
+      // Run full position cleaning to ensure tree consistency
+      const cleanedNotes = cleanNotePositions([...notes]);
+      
+      // Create a complete copy of the notes data for saving
+      // This ensures we're saving the whole tree and not just references
+      const notesData: NotesData = { 
+        notes: JSON.parse(JSON.stringify(cleanedNotes)) 
+      };
+      
+      // Extra validation before sending to API
+      if (!Array.isArray(notesData.notes)) {
+        console.error('Notes is not an array after cleaning:', notesData.notes);
+        throw new Error('Failed to prepare notes data for saving');
+      }
+      
+      console.log(`Prepared ${notesData.notes.length} root notes with ${
+        notesData.notes.reduce((sum, note) => sum + note.children.length, 0)
+      } total children for saving`);
       
       // Update the project in the database
       const updatedProject = await updateProject(currentProjectId, currentProjectName, notesData);
@@ -648,12 +679,22 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      console.log('Project saved successfully:', updatedProject);
-      
-      toast({
-        title: "Project Saved",
-        description: `"${currentProjectName}" has been saved`,
+      console.log('Project saved successfully:', {
+        id: updatedProject.id,
+        name: updatedProject.name,
+        savedNotesCount: updatedProject.data?.notes?.length || 0
       });
+      
+      // Only show toast for manual saves, not auto-saves
+      // This prevents UI clutter during frequent auto-saves
+      if (saveStatus === "saving") {
+        toast({
+          title: "Project Saved",
+          description: `"${currentProjectName}" has been saved`,
+        });
+      }
+      
+      return updatedProject;
     } catch (error) {
       console.error('Error saving project:', error);
       toast({
@@ -661,8 +702,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive",
       });
+      throw error; // Re-throw to allow callers to handle the error
     }
-  }, [currentProjectId, currentProjectName, notes, cleanNotePositions, toast]);
+  }, [currentProjectId, currentProjectName, notes, cleanNotePositions, toast, saveStatus]);
 
   // Debug info function to examine project state
   const debugInfo = useCallback(() => {
