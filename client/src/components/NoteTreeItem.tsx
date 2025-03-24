@@ -875,23 +875,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             </AlertDialog>
           </div>
           
-          {/* Edit button in separate row for better mobile access */}
-          <div className="mt-2 flex justify-start">
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-gray-400 hover:text-green-500 hover:border-green-500 px-3 py-1 touch-target"
-              title="Edit Note"
-              onClick={(e) => {
-                e.stopPropagation();
-                startEditing(e);
-              }}
-              disabled={isEditing}
-            >
-              <Edit size={14} className="mr-1" />
-              Edit
-            </Button>
-          </div>
+          {/* Edit button has been moved above the note card */}
         </div>
       </div>
       
