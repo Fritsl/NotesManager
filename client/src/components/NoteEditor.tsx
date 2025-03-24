@@ -206,20 +206,37 @@ export default function NoteEditor() {
   };
   
   const handleTimeChange = (value: string | null) => {
-    // Only store HH:MM without seconds for cleaner display
-    // Make sure we don't have any seconds component
+    // Store time as HH:MM with no seconds
     let formattedTime = null;
     if (value) {
       // Extract just the HH:MM part if there's more
       const timeParts = value.split(':');
       if (timeParts.length >= 2) {
+        // Only use hours and minutes, no seconds
         formattedTime = `${timeParts[0]}:${timeParts[1]}`;
       } else {
         formattedTime = value;
       }
     }
+    
+    // Update state with the formatted time
     setTimeSet(formattedTime);
     setHasChanges(true);
+    
+    // Immediate save if needed
+    if (selectedNote) {
+      // Update the note with the new time
+      const updatedNote = {
+        ...selectedNote,
+        time_set: formattedTime
+      };
+      updateNote(updatedNote);
+    }
+  };
+  
+  // Handler for Apply button in the time picker
+  const handleApplyTime = () => {
+    saveDirectly();
   };
 
   const handleSave = async () => {
@@ -415,7 +432,7 @@ export default function NoteEditor() {
                         className="h-9 px-4 flex items-center justify-between bg-gray-850 border-gray-700 hover:bg-gray-800 hover:border-gray-600 w-32"
                       >
                         <span className="text-sm">
-                          {timeSet ? timeSet.substring(0, 5) : "Set time"}
+                          {timeSet ? (timeSet.includes(':') ? timeSet.split(':').slice(0, 2).join(':') : timeSet) : "Set time"}
                         </span>
                         <Clock size={14} className="ml-2 text-gray-400" />
                       </Button>
@@ -427,7 +444,7 @@ export default function NoteEditor() {
                       <div className="flex flex-col space-y-4">
                         <Input 
                           type="time"
-                          value={timeSet?.substring(0, 5) || ""}
+                          value={timeSet ? (timeSet.includes(':') ? timeSet.split(':').slice(0, 2).join(':') : timeSet) : ""}
                           onChange={(e) => handleTimeChange(e.target.value)}
                           className="text-lg px-3 py-2 h-10 bg-gray-800 border-gray-600 focus:border-primary"
                         />
@@ -440,7 +457,7 @@ export default function NoteEditor() {
                             Clear
                           </Button>
                           <Popover.Close asChild>
-                            <Button>Apply</Button>
+                            <Button onClick={handleApplyTime}>Apply</Button>
                           </Popover.Close>
                         </div>
                       </div>
