@@ -15,7 +15,7 @@ export default function SearchBar() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
-  const { notes, selectNote } = useNotes();
+  const { notes, selectNote, expandedNodes, setExpandedNodes } = useNotes();
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -72,7 +72,7 @@ export default function SearchBar() {
 
     setSearchResults(results);
     setIsSearching(false);
-  }, [notes]);
+  }, [notes, expandedNodes, setExpandedNodes]);
 
   // Handle search term change
   useEffect(() => {
@@ -119,8 +119,45 @@ export default function SearchBar() {
       return null;
     };
 
+    // Find the path to the note (all parent IDs)
+    const findPathToNote = (noteId: string, notesList: any[], path: string[] = []): string[] | null => {
+      for (const note of notesList) {
+        // Check if this is the target note
+        if (note.id === noteId) {
+          return [...path, note.id];
+        }
+        
+        // Check children
+        if (note.children && note.children.length > 0) {
+          const foundPath = findPathToNote(noteId, note.children, [...path, note.id]);
+          if (foundPath) return foundPath;
+        }
+      }
+      return null;
+    };
+
     const note = findNote(result.id, notes);
     if (note) {
+      // Get path to the note
+      const path = findPathToNote(result.id, notes);
+      
+      // Expand all nodes in the path (excluding the target note itself)
+      if (path && path.length > 0) {
+        const nodesToExpand = path.slice(0, -1); // Exclude the target note
+        
+        // Get the current expanded nodes
+        const expandedNodesCopy = new Set<string>(expandedNodes);
+        
+        // Add all parent nodes to the expanded set
+        nodesToExpand.forEach(nodeId => {
+          expandedNodesCopy.add(nodeId);
+        });
+        
+        // Update expanded nodes
+        setExpandedNodes(expandedNodesCopy);
+      }
+      
+      // Select the note
       selectNote(note);
       setShowResults(false);
     }
