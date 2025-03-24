@@ -102,10 +102,11 @@ export default function FilterMenu({ onFilterChange }: FilterMenuProps) {
         <Button 
           variant="ghost" 
           size="sm"
-          className={`flex items-center gap-1 ${activeFilter ? 'text-primary' : 'text-gray-400'}`}
+          className={`flex items-center ${activeFilter ? 'text-primary' : 'text-gray-400'}`}
+          title={activeFilter ? getFilterLabel(activeFilter) : "Filter notes"}
         >
           <Filter className="h-4 w-4" />
-          <span>{activeFilter ? getFilterLabel(activeFilter) : "Filter"}</span>
+          <span className="hidden sm:inline-block ml-1.5">{activeFilter ? getFilterLabel(activeFilter) : "Filter"}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56 bg-gray-900 border-gray-800 text-gray-100">

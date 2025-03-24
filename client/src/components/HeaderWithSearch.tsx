@@ -465,9 +465,14 @@ export default function Header() {
             </div>
           </div>
           
-          {/* Search bar in the middle */}
-          <div className="w-full">
-            <SearchBar />
+          {/* Search and filter row */}
+          <div className="w-full flex items-center space-x-2">
+            <div className="flex-shrink-0">
+              <FilterMenu onFilterChange={handleFilterChange} />
+            </div>
+            <div className="flex-grow">
+              <SearchBar />
+            </div>
           </div>
         </div>
       ) : (

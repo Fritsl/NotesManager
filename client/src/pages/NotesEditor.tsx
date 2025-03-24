@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/HeaderWithSearch";
 import NoteTree from "@/components/NoteTree";
 import { Button } from "@/components/ui/button";
 import { FilePlus, FilterX } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { useIsMobile } from "@/hooks/useMediaQuery";
-import FilterMenu, { FilterType } from "@/components/FilterMenu";
+import { FilterType } from "@/components/FilterMenu";
 import FilteredNotesView from "@/components/FilteredNotesView";
 import { Note } from "@/types/notes";
 
@@ -14,19 +14,6 @@ export default function NotesEditor() {
   const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
   const { hasActiveProject, currentProjectName, addNote } = useNotes();
-  
-  // Handle filter change
-  const handleFilterChange = (filtered: Note[], type: FilterType) => {
-    setFilteredNotes(filtered);
-    setActiveFilter(type);
-    
-    // Update document title when applying a filter
-    if (type) {
-      document.title = `Filtered Notes - ${currentProjectName || "Notes"}`;
-    } else {
-      document.title = currentProjectName || "Notes";
-    }
-  };
 
   return (
     <div className="flex flex-col h-screen bg-gray-950 text-gray-100">
@@ -36,11 +23,6 @@ export default function NotesEditor() {
         <div className="flex flex-1 h-[calc(100vh-42px)] overflow-hidden">
           {/* Main content area - full width with no side panel */}
           <div className="w-full bg-gray-950 overflow-auto custom-scrollbar mobile-touch-scrolling">
-            {/* Filter Menu */}
-            <div className="sticky top-0 z-10 bg-gray-900 border-b border-gray-800 p-2">
-              <FilterMenu onFilterChange={handleFilterChange} />
-            </div>
-            
             {activeFilter ? (
               <FilteredNotesView filteredNotes={filteredNotes} filterType={activeFilter} />
             ) : (

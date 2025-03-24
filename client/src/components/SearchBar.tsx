@@ -184,13 +184,13 @@ export default function SearchBar() {
       onClick={focusSearch}
     >
       <div className="relative flex items-center">
-        <Search className="absolute left-3 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-2.5 h-3.5 w-3.5 text-gray-400" />
         <Input
           ref={inputRef}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Search notes..."
-          className="pl-9 pr-8 h-9 bg-gray-800 border-gray-700 focus-visible:ring-primary focus-visible:ring-offset-gray-900 w-full"
+          placeholder="Search notes"
+          className="pl-8 pr-8 h-8 bg-gray-800 border-gray-700 focus-visible:ring-primary focus-visible:ring-offset-gray-900 w-full text-sm"
         />
         {searchTerm && (
           <Button 
