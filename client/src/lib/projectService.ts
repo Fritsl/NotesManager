@@ -782,21 +782,15 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
         console.log('Inserting', flatImages.length, 'image records');
         
         try {
-          // Process images to update their note_id references to match the new note IDs
+          // Process images - reuse the existing note IDs to avoid ID mapping issues
           const processedImages = flatImages.map(img => {
-            // If this image's note_id has a new mapping, use that
-            let newNoteId = img.note_id;
-            if (img.note_id && idMapping[img.note_id]) {
-              newNoteId = idMapping[img.note_id];
-            }
-            
             // Keep existing image ID if it has one, otherwise generate a new one
             const imageId = img.id || crypto.randomUUID();
             
             return {
               ...img,
-              id: imageId,
-              note_id: newNoteId // Updated note_id reference
+              id: imageId
+              // Keep the original note_id to avoid mapping complications
             };
           });
           
