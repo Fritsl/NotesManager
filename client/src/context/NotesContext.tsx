@@ -1,8 +1,8 @@
-import { createContext, useContext, useState, ReactNode, useCallback, useMemo, useRef } from "react";
-import { Note, NotesData, NoteImage } from "@/types/notes";
+import { createContext, useContext, useState, ReactNode, useCallback, useMemo, useRef, useEffect } from "react";
+import { Note, NotesData } from "@/types/notes";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
-import { createProject, updateProject, addImageToNote, removeImageFromNote, updateImagePosition } from "@/lib/projectService";
+import { createProject, updateProject } from "@/lib/projectService";
 
 interface NotesContextType {
   notes: Note[];
@@ -32,9 +32,6 @@ interface NotesContextType {
   saveProject: () => Promise<void>;
   currentProjectId: string | null;
   setCurrentProjectId: (id: string | null) => void;
-  uploadImage: (noteId: string, file: File) => Promise<NoteImage | null>;
-  removeImage: (imageId: string) => Promise<boolean>;
-  reorderImage: (noteId: string, imageId: string, newPosition: number) => Promise<boolean>;
   debugInfo: () => any; // For debugging purposes
 }
 
@@ -51,12 +48,6 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const [hasActiveProject, setHasActiveProject] = useState<boolean>(false);
   const { toast } = useToast();
 
-  // Reference for debounced auto-save during text edits
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // Reference to track if a move operation is in progress to prevent multiple simultaneous moves
-  const isMovingRef = useRef<boolean>(false);
-
   // Clean note positions to ensure sequential ordering without gaps
   const cleanNotePositions = useCallback((noteList: Note[]): Note[] => {
     // Sort the notes by their current position
@@ -72,177 +63,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     
     return cleanedNotes;
   }, []);
-  
-  // Find a note and its path by ID
-  const findNoteAndPath = useCallback((
-    noteId: string,
-    currentNodes: Note[] = notes,
-    path: Note[] = []
-  ): { note: Note | null; path: Note[] } => {
-    for (const note of currentNodes) {
-      if (note.id === noteId) {
-        return { note, path };
-      }
-      
-      if (note.children.length > 0) {
-        const result = findNoteAndPath(noteId, note.children, [...path, note]);
-        if (result.note) {
-          return result;
-        }
-      }
-    }
-    
-    return { note: null, path: [] };
-  }, [notes]);
 
-  // Select a note and update breadcrumbs
-  const selectNote = useCallback((note: Note | null) => {
-    if (!note) {
-      setSelectedNote(null);
-      setBreadcrumbs([]);
-      return;
-    }
-    
-    const { path } = findNoteAndPath(note.id);
-    setSelectedNote(note);
-    setBreadcrumbs(path);
-  }, [findNoteAndPath]);
-
-  // Find a note and its parent
-  const findNoteAndParent = useCallback((
-    noteId: string,
-    currentNodes: Note[] = notes,
-    parent: Note | null = null
-  ): { note: Note | null; parent: Note | null; index: number } => {
-    for (let i = 0; i < currentNodes.length; i++) {
-      if (currentNodes[i].id === noteId) {
-        return { note: currentNodes[i], parent, index: i };
-      }
-      
-      if (currentNodes[i].children.length > 0) {
-        const result = findNoteAndParent(noteId, currentNodes[i].children, currentNodes[i]);
-        if (result.note) {
-          return result;
-        }
-      }
-    }
-    
-    return { note: null, parent: null, index: -1 };
-  }, [notes]);
-  
-  // Get all note IDs in the tree
-  const getAllNoteIds = useCallback((notesArray: Note[]): string[] => {
-    let ids: string[] = [];
-    notesArray.forEach(note => {
-      ids.push(note.id);
-      if (note.children && note.children.length > 0) {
-        ids = [...ids, ...getAllNoteIds(note.children)];
-      }
-    });
-    return ids;
-  }, []);
-  
-  // Calculate the maximum depth of the tree
-  const calculateMaxDepth = useCallback((notesArray: Note[], currentDepth = 0): number => {
-    if (!notesArray || notesArray.length === 0) {
-      return currentDepth;
-    }
-
-    let maxChildDepth = currentDepth;
-    for (const note of notesArray) {
-      if (note.children && note.children.length > 0) {
-        const childDepth = calculateMaxDepth(note.children, currentDepth + 1);
-        maxChildDepth = Math.max(maxChildDepth, childDepth);
-      }
-    }
-
-    return maxChildDepth;
-  }, []);
-  
-  // Save the current project
-  const saveProject = useCallback(async () => {
-    try {
-      if (!currentProjectId) {
-        console.warn('Cannot save: No current project ID');
-        toast({
-          title: "Cannot Save",
-          description: "No active project. Create or load a project first.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Clone and clean the entire tree structure
-      // This ensures positions are consistent and there's no "ghost data"
-      const currentNotes = structuredClone(notes);
-      const cleanedNotes = cleanNotePositions(currentNotes);
-      
-      console.log('Saving complete project:', { 
-        id: currentProjectId, 
-        name: currentProjectName,
-        notesCount: cleanedNotes.length,
-        noteStructureDepth: calculateMaxDepth(cleanedNotes),
-        totalItems: getAllNoteIds(cleanedNotes).length
-      });
-      
-      // Create a fresh notes data object with the entire tree
-      const notesData: NotesData = { notes: cleanedNotes };
-      
-      // Validate note structure before saving
-      if (!Array.isArray(notesData.notes)) {
-        throw new Error("Invalid notes structure: notes property is not an array");
-      }
-      
-      // Update the project in the database with complete tree
-      const updatedProject = await updateProject(currentProjectId, currentProjectName, notesData);
-      
-      if (!updatedProject) {
-        console.error('Failed to update project - no project returned');
-        toast({
-          title: "Error Saving Project",
-          description: "Could not save the project. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Verify returned data
-      if (!updatedProject.data || !updatedProject.data.notes) {
-        console.warn('Project saved but returned data structure may be incomplete', updatedProject);
-      } else {
-        console.log('Project saved successfully with', 
-          updatedProject.data.notes.length, 
-          'root notes and', 
-          getAllNoteIds(updatedProject.data.notes).length, 
-          'total notes'
-        );
-      }
-      
-      // Simple success toast
-      toast({
-        title: "Project Saved",
-        description: `"${currentProjectName}" has been saved`,
-      });
-    } catch (error) {
-      console.error('Error saving project:', error);
-      
-      // Enhanced error logging for troubleshooting
-      if (error instanceof Error) {
-        console.error('Error details:', {
-          message: error.message,
-          stack: error.stack,
-          name: error.name
-        });
-      }
-      
-      toast({
-        title: "Error Saving Project",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive",
-      });
-    }
-  }, [currentProjectId, currentProjectName, notes, cleanNotePositions, toast, calculateMaxDepth, getAllNoteIds]);
-  
   // Import notes from JSON
   const importNotes = useCallback((data: NotesData, projectName?: string, projectId?: string | null) => {
     console.log('ImportNotes received data:', data);
@@ -311,6 +132,63 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     return { notes };
   }, [notes]);
 
+  // Find a note and its path by ID
+  const findNoteAndPath = useCallback((
+    noteId: string,
+    currentNodes: Note[] = notes,
+    path: Note[] = []
+  ): { note: Note | null; path: Note[] } => {
+    for (const note of currentNodes) {
+      if (note.id === noteId) {
+        return { note, path };
+      }
+      
+      if (note.children.length > 0) {
+        const result = findNoteAndPath(noteId, note.children, [...path, note]);
+        if (result.note) {
+          return result;
+        }
+      }
+    }
+    
+    return { note: null, path: [] };
+  }, [notes]);
+
+  // Select a note and update breadcrumbs
+  const selectNote = useCallback((note: Note | null) => {
+    if (!note) {
+      setSelectedNote(null);
+      setBreadcrumbs([]);
+      return;
+    }
+    
+    const { path } = findNoteAndPath(note.id);
+    setSelectedNote(note);
+    setBreadcrumbs(path);
+  }, [findNoteAndPath]);
+
+  // Find a note and its parent
+  const findNoteAndParent = useCallback((
+    noteId: string,
+    currentNodes: Note[] = notes,
+    parent: Note | null = null
+  ): { note: Note | null; parent: Note | null; index: number } => {
+    for (let i = 0; i < currentNodes.length; i++) {
+      if (currentNodes[i].id === noteId) {
+        return { note: currentNodes[i], parent, index: i };
+      }
+      
+      if (currentNodes[i].children.length > 0) {
+        const result = findNoteAndParent(noteId, currentNodes[i].children, currentNodes[i]);
+        if (result.note) {
+          return result;
+        }
+      }
+    }
+    
+    return { note: null, parent: null, index: -1 };
+  }, [notes]);
+
   // Add a new note
   const addNote = useCallback((parent: Note | null) => {
     const newNote: Note = {
@@ -354,25 +232,12 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     }
 
     selectNote(newNote);
-    
-    // Auto-save immediately when a new note is created
-    if (currentProjectId) {
-      setTimeout(async () => {
-        try {
-          await saveProject();
-          console.log("Project auto-saved after note creation");
-        } catch (error) {
-          console.error("Failed to auto-save after note creation:", error);
-        }
-      }, 0);
-    }
-    
     toast({
       title: "Note Added",
       description: "A new note has been added",
     });
-  }, [findNoteAndPath, selectNote, cleanNotePositions, currentProjectId, saveProject, toast]);
-  
+  }, [findNoteAndPath, selectNote, cleanNotePositions, toast]);
+
   // Update a note
   const updateNote = useCallback((updatedNote: Note) => {
     setNotes((prevNotes) => {
@@ -405,32 +270,11 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     });
     
     setSelectedNote(updatedNote);
-    
-    // Show immediate toast for UI feedback
     toast({
       title: "Note Updated",
       description: "Your changes have been saved",
     });
-    
-    // Set up a debounced auto-save for content text changes
-    // This prevents saving on every keystroke, but still auto-saves after some inactivity
-    if (currentProjectId) {
-      // Clear any existing auto-save timer
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-      }
-      
-      // Set a new timer for auto-save (5 seconds after last change)
-      autoSaveTimerRef.current = setTimeout(async () => {
-        try {
-          await saveProject();
-          console.log("Project auto-saved after note update (debounced)");
-        } catch (error) {
-          console.error("Failed to auto-save after note update:", error);
-        }
-      }, 5000); // 5 seconds debounce time
-    }
-  }, [toast, currentProjectId, saveProject]);
+  }, [toast]);
 
   // Delete a note
   const deleteNote = useCallback((noteId: string) => {
@@ -482,24 +326,15 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       setBreadcrumbs([]);
     }
     
-    // Auto-save immediately when a note is deleted
-    if (currentProjectId) {
-      setTimeout(async () => {
-        try {
-          await saveProject();
-          console.log("Project auto-saved after note deletion");
-        } catch (error) {
-          console.error("Failed to auto-save after note deletion:", error);
-        }
-      }, 0);
-    }
-    
     toast({
       title: "Note Deleted",
       description: "The note has been removed",
     });
-  }, [selectedNote, cleanNotePositions, currentProjectId, saveProject, toast]);
+  }, [selectedNote, cleanNotePositions, toast]);
 
+  // Reference to track if a move operation is in progress to prevent multiple simultaneous moves
+  const isMovingRef = useRef<boolean>(false);
+  
   // Move a note in the tree
   const moveNote = useCallback((noteId: string, targetParentId: string | null, position: number) => {
     // Prevent multiple drop handlers from triggering simultaneously
@@ -619,23 +454,11 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       return cleanNotePositions(updatedNotes);
     });
     
-    // Auto-save immediately when a note is moved
-    if (currentProjectId) {
-      setTimeout(async () => {
-        try {
-          await saveProject();
-          console.log("Project auto-saved after note movement");
-        } catch (error) {
-          console.error("Failed to auto-save after note movement:", error);
-        }
-      }, 0);
-    }
-    
     toast({
       title: "Note Moved",
       description: "The note has been moved to a new position",
     });
-  }, [findNoteAndParent, cleanNotePositions, currentProjectId, saveProject, toast]);
+  }, [findNoteAndParent, cleanNotePositions, toast]);
 
   // Toggle expansion for a single node
   const toggleExpand = useCallback((noteId: string) => {
@@ -650,6 +473,18 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // Get all note IDs in the tree
+  const getAllNoteIds = useCallback((notesArray: Note[]): string[] => {
+    let ids: string[] = [];
+    notesArray.forEach(note => {
+      ids.push(note.id);
+      if (note.children && note.children.length > 0) {
+        ids = [...ids, ...getAllNoteIds(note.children)];
+      }
+    });
+    return ids;
+  }, []);
+
   // Expand all nodes in the tree
   const expandAll = useCallback(() => {
     const allIds = getAllNoteIds(notes);
@@ -659,6 +494,23 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   // Collapse all nodes in the tree
   const collapseAll = useCallback(() => {
     setExpandedNodes(new Set());
+  }, []);
+
+  // Calculate the maximum depth of the tree
+  const calculateMaxDepth = useCallback((notesArray: Note[], currentDepth = 0): number => {
+    if (!notesArray || notesArray.length === 0) {
+      return currentDepth;
+    }
+
+    let maxChildDepth = currentDepth;
+    for (const note of notesArray) {
+      if (note.children && note.children.length > 0) {
+        const childDepth = calculateMaxDepth(note.children, currentDepth + 1);
+        maxChildDepth = Math.max(maxChildDepth, childDepth);
+      }
+    }
+
+    return maxChildDepth;
   }, []);
 
   // Calculate the depth of the tree (memoized)
@@ -758,167 +610,59 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         variant: "destructive",
       });
     }
-  }, [toast]);
+  }, [toast, setCurrentProjectId, setCurrentProjectName]);
 
-  // Upload an image for a note
-  const uploadImage = useCallback(async (noteId: string, file: File): Promise<NoteImage | null> => {
+  // Save the current project
+  const saveProject = useCallback(async () => {
     try {
       if (!currentProjectId) {
-        console.warn('Cannot upload image: No current project ID');
+        console.warn('Cannot save: No current project ID');
         toast({
-          title: "Cannot Upload Image",
+          title: "Cannot Save",
           description: "No active project. Create or load a project first.",
           variant: "destructive",
         });
-        return null;
+        return;
       }
       
-      // Upload the image to the server
-      const uploadedImage = await addImageToNote(noteId, file);
-      
-      if (!uploadedImage) {
-        console.error('Failed to upload image');
-        toast({
-          title: "Image Upload Failed",
-          description: "Could not upload the image. Please try again.",
-          variant: "destructive",
-        });
-        return null;
-      }
-      
-      console.log('Image uploaded successfully:', uploadedImage);
-      
-      // Auto-save the project after image upload
-      setTimeout(async () => {
-        try {
-          await saveProject();
-          console.log("Project auto-saved after image upload");
-        } catch (error) {
-          console.error("Failed to auto-save after image upload:", error);
-        }
-      }, 0);
-      
-      toast({
-        title: "Image Uploaded",
-        description: "The image has been added to your note",
+      console.log('Saving project:', { 
+        id: currentProjectId, 
+        name: currentProjectName,
+        notesCount: notes.length,
+        firstNote: notes.length > 0 ? notes[0].content : 'No notes'
       });
       
-      return uploadedImage;
-    } catch (error) {
-      console.error('Error uploading image:', error);
+      // Create a clean copy of the notes data to save
+      const notesData: NotesData = { notes: cleanNotePositions([...notes]) };
+      
+      // Update the project in the database
+      const updatedProject = await updateProject(currentProjectId, currentProjectName, notesData);
+      
+      if (!updatedProject) {
+        console.error('Failed to update project');
+        toast({
+          title: "Error Saving Project",
+          description: "Could not save the project. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      console.log('Project saved successfully:', updatedProject);
+      
       toast({
-        title: "Image Upload Error",
+        title: "Project Saved",
+        description: `"${currentProjectName}" has been saved`,
+      });
+    } catch (error) {
+      console.error('Error saving project:', error);
+      toast({
+        title: "Error Saving Project",
         description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive",
       });
-      return null;
     }
-  }, [currentProjectId, toast, saveProject]);
-  
-  // Remove an image from a note
-  const removeImage = useCallback(async (imageId: string): Promise<boolean> => {
-    try {
-      if (!currentProjectId) {
-        console.warn('Cannot remove image: No current project ID');
-        toast({
-          title: "Cannot Remove Image",
-          description: "No active project. Create or load a project first.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      // Remove the image from the server
-      const success = await removeImageFromNote(imageId);
-      
-      if (!success) {
-        console.error('Failed to remove image');
-        toast({
-          title: "Image Removal Failed",
-          description: "Could not remove the image. Please try again.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      console.log('Image removed successfully:', imageId);
-      
-      // Auto-save the project after image removal
-      setTimeout(async () => {
-        try {
-          await saveProject();
-          console.log("Project auto-saved after image removal");
-        } catch (error) {
-          console.error("Failed to auto-save after image removal:", error);
-        }
-      }, 0);
-      
-      toast({
-        title: "Image Removed",
-        description: "The image has been removed from your note",
-      });
-      
-      return true;
-    } catch (error) {
-      console.error('Error removing image:', error);
-      toast({
-        title: "Image Removal Error",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive",
-      });
-      return false;
-    }
-  }, [currentProjectId, toast, saveProject]);
-  
-  // Reorder an image within a note
-  const reorderImage = useCallback(async (noteId: string, imageId: string, newPosition: number): Promise<boolean> => {
-    try {
-      if (!currentProjectId) {
-        console.warn('Cannot reorder image: No current project ID');
-        toast({
-          title: "Cannot Reorder Image",
-          description: "No active project. Create or load a project first.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      // Update the image position on the server
-      const success = await updateImagePosition(noteId, imageId, newPosition);
-      
-      if (!success) {
-        console.error('Failed to reorder image');
-        toast({
-          title: "Image Reordering Failed",
-          description: "Could not reorder the image. Please try again.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      console.log('Image reordered successfully:', { noteId, imageId, newPosition });
-      
-      // Auto-save the project after image reordering
-      setTimeout(async () => {
-        try {
-          await saveProject();
-          console.log("Project auto-saved after image reordering");
-        } catch (error) {
-          console.error("Failed to auto-save after image reordering:", error);
-        }
-      }, 0);
-      
-      return true;
-    } catch (error) {
-      console.error('Error reordering image:', error);
-      toast({
-        title: "Image Reordering Error",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive",
-      });
-      return false;
-    }
-  }, [currentProjectId, toast, saveProject]);
+  }, [currentProjectId, currentProjectName, notes, cleanNotePositions, toast]);
 
   // Debug info function to examine project state
   const debugInfo = useCallback(() => {
@@ -965,9 +709,6 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         saveProject,
         currentProjectId,
         setCurrentProjectId,
-        uploadImage,
-        removeImage,
-        reorderImage,
         debugInfo
       }}
     >
