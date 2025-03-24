@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { PlusCircle, LoaderCircle, Trash2, Save, FileDown } from 'lucide-react';
+import { PlusCircle, LoaderCircle, Trash2, Save, FileDown, Edit } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 import { 
   getProjects, 
@@ -328,33 +328,91 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                       className="p-3 border border-gray-800 rounded-md bg-gray-850 hover:bg-gray-700 transition-colors cursor-pointer flex flex-col relative"
                       onClick={() => handleLoadProject(project)}
                     >
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center">
-                          <FileDown className="h-5 w-5 mr-3 text-gray-400" />
-                          <div>
-                            <h4 className="font-medium text-gray-200 flex items-center">
-                              {project.name}
-                              <span className="ml-2 text-xs text-gray-500 border border-gray-700 rounded px-1 py-0.5">Click to load</span>
-                            </h4>
-                            <p className="text-sm text-gray-400">
-                              Updated: {formatDate(project.updated_at)}
-                            </p>
+                      {editingProject?.id === project.id ? (
+                        // Edit mode
+                        <div onClick={(e) => e.stopPropagation()} className="space-y-3">
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-name" className="text-gray-300">Project Name</Label>
+                            <Input 
+                              id="edit-name" 
+                              value={editName}
+                              onChange={(e) => setEditName(e.target.value)}
+                              className="bg-gray-800 border-gray-700"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-description" className="text-gray-300">Project Description</Label>
+                            <textarea 
+                              id="edit-description" 
+                              value={editDescription}
+                              onChange={(e) => setEditDescription(e.target.value)}
+                              className="w-full rounded-md px-3 py-2 bg-gray-800 border border-gray-700 text-gray-200 h-20"
+                              placeholder="Add a description for your project"
+                            />
+                          </div>
+                          <div className="flex justify-end space-x-2 mt-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={cancelEditing}
+                              className="border-gray-700"
+                            >
+                              Cancel
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              onClick={saveProjectChanges}
+                              disabled={!editName.trim()}
+                            >
+                              Save Changes
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="border-gray-700 hover:bg-red-900 hover:text-red-200" 
-                            onClick={(e) => {
-                              e.stopPropagation(); // Prevent triggering the parent div's onClick
-                              confirmDeleteProject(project);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
+                      ) : (
+                        // View mode
+                        <>
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center">
+                              <FileDown className="h-5 w-5 mr-3 text-gray-400" />
+                              <div>
+                                <h4 className="font-medium text-gray-200 flex items-center">
+                                  {project.name}
+                                  <span className="ml-2 text-xs text-gray-500 border border-gray-700 rounded px-1 py-0.5">Click to load</span>
+                                </h4>
+                                <p className="text-sm text-gray-400">
+                                  Updated: {formatDate(project.updated_at)}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-gray-700 hover:bg-blue-900 hover:text-blue-200" 
+                                onClick={(e) => startEditingProject(e, project)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-gray-700 hover:bg-red-900 hover:text-red-200" 
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Prevent triggering the parent div's onClick
+                                  confirmDeleteProject(project);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          {project.description && (
+                            <div className="mt-2 text-sm text-gray-400 border-t border-gray-800 pt-2">
+                              {project.description}
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
