@@ -22,7 +22,7 @@ interface FilteredNotesViewProps {
 }
 
 export default function FilteredNotesView({ filteredNotes, filterType }: FilteredNotesViewProps) {
-  const { selectNote, updateNote, saveProject, uploadImage, removeImage } = useNotes();
+  const { notes, selectNote, updateNote, saveProject, uploadImage, removeImage } = useNotes();
   const { toast } = useToast();
   
   // State for keeping track of which note is being edited
@@ -248,6 +248,51 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
     }
   };
 
+  // Function to find a note's level in the hierarchy (depth in the tree)
+  const getNoteLevelInHierarchy = (targetNote: Note): number => {
+    // Default to level 0 if we can't determine depth
+    let level = 0;
+    
+    // First build a map of all notes by ID for quick lookup
+    const noteMap = new Map<string, { note: Note, parent: string | null }>();
+    
+    // Recursive function to map the entire hierarchy
+    const mapNoteHierarchy = (noteList: Note[], parentId: string | null = null, currentLevel = 0) => {
+      for (const note of noteList) {
+        noteMap.set(note.id, { note, parent: parentId });
+        if (note.children && note.children.length > 0) {
+          mapNoteHierarchy(note.children, note.id, currentLevel + 1);
+        }
+      }
+    };
+    
+    // Map the current note hierarchy
+    mapNoteHierarchy(notes);
+    
+    // Now trace the path from our target note to the root to determine the level
+    let currentNoteId = targetNote.id;
+    let depth = 0;
+    let maxIterations = 10; // Safety to prevent infinite loops
+    
+    while (currentNoteId && maxIterations > 0) {
+      const nodeInfo = noteMap.get(currentNoteId);
+      if (!nodeInfo) break;
+      
+      if (nodeInfo.parent === null) {
+        // We've reached a root node
+        break;
+      }
+      
+      // Move up one level in the hierarchy
+      currentNoteId = nodeInfo.parent;
+      depth++;
+      maxIterations--;
+    }
+    
+    // Ensure the level is within the bounds of our color array
+    return Math.min(depth, levelColors.length - 1);
+  };
+  
   // Display multi-line content with preview
   const getContentPreview = (content: string) => {
     const contentLines = content.split('\n');
@@ -278,8 +323,9 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
           const { displayContent, previewLines, hasMoreLines } = getContentPreview(note.content);
           const isEditing = editingNoteId === note.id;
           
-          // Determine level for styling - use a calculated level based on the filter type
-          const level = Math.min(filteredNotes.indexOf(note) % levelColors.length, levelColors.length - 1);
+          // We need to determine the actual depth/level of each note in the tree
+          // This will be determined by a helper function that finds the note's position in the hierarchy
+          const level = getNoteLevelInHierarchy(note);
           
           return (
             <div 
