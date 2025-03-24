@@ -26,6 +26,8 @@ import ProjectsModal from "@/components/ProjectsModal";
 import PayoffModal from "@/components/PayoffModal";
 import ProjectDescriptionModal from "@/components/ProjectDescriptionModal";
 import SearchBar from "@/components/SearchBar";
+import FilterMenu, { FilterType } from "@/components/FilterMenu";
+import { Note } from "@/types/notes";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,6 +61,23 @@ export default function Header() {
     saveProject,
     currentProjectId
   } = useNotes();
+  
+  // For filter functionality
+  const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
+  const [activeFilter, setActiveFilter] = useState<FilterType>(null);
+  
+  // Handle filter change
+  const handleFilterChange = (filtered: Note[], type: FilterType) => {
+    setFilteredNotes(filtered);
+    setActiveFilter(type);
+    
+    // Update document title when applying a filter
+    if (type) {
+      document.title = `Filtered Notes - ${currentProjectName || "Notes"}`;
+    } else {
+      document.title = currentProjectName || "Notes";
+    }
+  };
   const { signOut } = useAuth();
   const { toast } = useToast();
   
