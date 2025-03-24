@@ -206,8 +206,18 @@ export default function NoteEditor() {
   };
   
   const handleTimeChange = (value: string | null) => {
-    // Format time to ensure it's stored with seconds (HH:MM:00) for database compatibility
-    const formattedTime = value ? `${value}:00` : null;
+    // Only store HH:MM without seconds for cleaner display
+    // Make sure we don't have any seconds component
+    let formattedTime = null;
+    if (value) {
+      // Extract just the HH:MM part if there's more
+      const timeParts = value.split(':');
+      if (timeParts.length >= 2) {
+        formattedTime = `${timeParts[0]}:${timeParts[1]}`;
+      } else {
+        formattedTime = value;
+      }
+    }
     setTimeSet(formattedTime);
     setHasChanges(true);
   };
