@@ -595,7 +595,7 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
     
     // First update the project name
     console.log('Updating project in settings table...');
-    const { data, error } = await supabase
+    const { data: projectData, error: projectError } = await supabase
       .from('settings')
       .update({
         title: name,
@@ -610,8 +610,8 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
       .select()
       .single();
 
-    if (error) {
-      console.error('Error updating project settings:', error);
+    if (projectError || !projectData) {
+      console.error('Error updating project settings:', projectError);
       return null;
     }
     
@@ -653,53 +653,80 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
       return null;
     }
     
+    // Add a small delay to ensure deletion is complete before insertion
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     console.log('Successfully deleted existing notes, now inserting new notes');
     
     // Then create new notes from the hierarchical structure
     const { notes: flatNotes, images: flatImages } = flattenNoteHierarchy(validNotesData.notes, id, userData.user.id);
     console.log('Flattened notes for DB insertion:', flatNotes.length, 'notes', 'and', flatImages.length, 'images');
     
+    // Define batch size once
+    const BATCH_SIZE = 50;
+    
     if (flatNotes.length > 0) {
       console.log('First flattened note sample:', JSON.stringify(flatNotes[0]));
       
-      // Insert notes in batches to avoid payload size limits
-      const BATCH_SIZE = 50;
-      for (let i = 0; i < flatNotes.length; i += BATCH_SIZE) {
-        const batch = flatNotes.slice(i, i + BATCH_SIZE);
-        console.log(`Inserting batch ${i/BATCH_SIZE + 1}/${Math.ceil(flatNotes.length/BATCH_SIZE)}, size: ${batch.length}`);
-        
-        const { data: insertedData, error: insertError } = await supabase
-          .from('notes')
-          .insert(batch)
-          .select();
+      try {
+        // Insert notes in batches to avoid payload size limits
+        for (let i = 0; i < flatNotes.length; i += BATCH_SIZE) {
+          const batch = flatNotes.slice(i, i + BATCH_SIZE);
+          console.log(`Inserting batch ${i/BATCH_SIZE + 1}/${Math.ceil(flatNotes.length/BATCH_SIZE)}, size: ${batch.length}`);
           
-        if (insertError) {
-          console.error(`Error inserting notes batch ${i/BATCH_SIZE + 1}:`, insertError);
-          // Continue with next batch
-        } else {
-          console.log(`Successfully inserted batch ${i/BATCH_SIZE + 1}, received:`, insertedData?.length || 0, 'records');
+          // Generate new unique IDs for each note to prevent PK conflicts
+          const batchWithNewIds = batch.map(note => ({
+            ...note,
+            id: crypto.randomUUID() // Generate a new UUID to avoid conflicts
+          }));
+          
+          const { data: insertedData, error: insertError } = await supabase
+            .from('notes')
+            .insert(batchWithNewIds)
+            .select();
+            
+          if (insertError) {
+            console.error(`Error inserting notes batch ${i/BATCH_SIZE + 1}:`, insertError);
+            throw new Error(`Failed to insert notes: ${insertError.message}`);
+          } else {
+            console.log(`Successfully inserted batch ${i/BATCH_SIZE + 1}, received:`, insertedData?.length || 0, 'records');
+          }
         }
+      } catch (error) {
+        console.error('Error during note insertion:', error);
+        return null;
       }
       
       // Insert images if any
       if (flatImages.length > 0) {
         console.log('Inserting', flatImages.length, 'image records');
         
-        // Insert images in batches too
-        for (let i = 0; i < flatImages.length; i += BATCH_SIZE) {
-          const batch = flatImages.slice(i, i + BATCH_SIZE);
-          console.log(`Inserting images batch ${i/BATCH_SIZE + 1}/${Math.ceil(flatImages.length/BATCH_SIZE)}, size: ${batch.length}`);
-          
-          const { error: imagesError } = await supabase
-            .from('note_images')
-            .insert(batch);
+        try {
+          // Insert images in batches too
+          for (let i = 0; i < flatImages.length; i += BATCH_SIZE) {
+            const batch = flatImages.slice(i, i + BATCH_SIZE);
+            console.log(`Inserting images batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(flatImages.length/BATCH_SIZE)}, size: ${batch.length}`);
             
-          if (imagesError) {
-            console.error(`Error inserting images batch ${i/BATCH_SIZE + 1}:`, imagesError);
-            // Continue with next batch
-          } else {
-            console.log(`Successfully inserted images batch ${i/BATCH_SIZE + 1}`);
+            // Generate new IDs for images too to avoid conflicts
+            const batchWithNewIds = batch.map(img => ({
+              ...img,
+              id: crypto.randomUUID()
+            }));
+            
+            const { error: imagesError } = await supabase
+              .from('note_images')
+              .insert(batchWithNewIds);
+              
+            if (imagesError) {
+              console.error(`Error inserting images batch ${Math.floor(i/BATCH_SIZE) + 1}:`, imagesError);
+              // Continue with next batch
+            } else {
+              console.log(`Successfully inserted images batch ${Math.floor(i/BATCH_SIZE) + 1}`);
+            }
           }
+        } catch (imageError) {
+          console.error('Error during image insertion:', imageError);
+          // Don't return null here, we'll continue even if image insertion fails
         }
       }
     } else {
@@ -710,11 +737,11 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
     
     // Return updated project with the hierarchical notes
     return {
-      id: data.id,
-      name: data.title,
-      created_at: data.created_at,
-      updated_at: data.updated_at,
-      user_id: data.user_id,
+      id: projectData.id,
+      name: projectData.title,
+      created_at: projectData.created_at,
+      updated_at: projectData.updated_at,
+      user_id: projectData.user_id,
       data: validNotesData
     };
   } catch (error) {
