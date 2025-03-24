@@ -428,7 +428,8 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const deleteNote = useCallback((noteId: string) => {
     setNotes((prevNotes) => {
       const updatedNotes = [...prevNotes];
-      let parentWithUpdatedChildren: Note | null = null;
+      // Adding explicit type annotation to ensure children is recognized
+      let parentWithUpdatedChildren: (Note & { children: Note[] }) | null = null;
       
       // Find and remove the note at any level in the tree
       const removeNoteFromTree = (nodes: Note[], parent: Note | null = null): boolean => {

@@ -430,18 +430,38 @@ export default function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </>
-      ) : (
-        <>
-          {/* No Project UI */}
-          <div className="flex items-center space-x-2">
-            <h1 className="text-base font-semibold text-gray-100">
-              Notes Editor
-            </h1>
+          
+          {/* Bottom row with search */}
+          <div className="flex">
+            <SearchBar />
           </div>
+        </div>
+      ) : (
+        <div className="flex justify-between items-center">
+          <h1 className="text-base sm:text-lg font-semibold text-gray-100">Parenting Notes App</h1>
+          
           <div className="flex items-center space-x-2">
+            <Button 
+              variant="default" 
+              size="sm"
+              onClick={() => createNewProject('New Project')}
+              className="h-8 px-2 sm:px-3 text-xs sm:text-sm touch-target"
+            >
+              <FileText className="h-3.5 w-3.5 mr-1.5" />
+              New Project
+            </Button>
             
-            {/* Consolidated Hamburger Menu */}
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowProjectsModal(true)}
+              className="h-8 px-2 sm:px-3 text-xs sm:text-sm touch-target"
+            >
+              <FolderOpen className="h-3.5 w-3.5 mr-1.5" />
+              Open Project
+            </Button>
+            
+            {/* Hamburger menu for mobile */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 touch-target">
@@ -449,30 +469,6 @@ export default function Header() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                {/* File Operations */}
-                <DropdownMenuItem onClick={() => {
-                  // Create a new project with default name
-                  createNewProject('New Project');
-                }}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  <span>New</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowProjectsModal(true)}>
-                  <FolderOpen className="h-4 w-4 mr-2" />
-                  <span>Projects</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                
-                {/* Import/Export */}
-                <DropdownMenuItem onClick={() => setShowImportModal(true)}>
-                  <FileUp className="h-4 w-4 mr-2" />
-                  <span>Import from JSON</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowExportModal(true)}>
-                  <FileDown className="h-4 w-4 mr-2" />
-                  <span>Export JSON</span>
-                </DropdownMenuItem>
-                
                 {/* Debug button in no-project mode */}
                 <DropdownMenuItem onClick={() => {
                   // Use the properties already available in this component
@@ -504,7 +500,7 @@ export default function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </>
+        </div>
       )}
 
       {showImportModal && (
