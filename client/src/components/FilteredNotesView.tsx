@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Note } from "@/types/notes";
 import { FilterType } from "./FilterMenu";
 import { useNotes } from "@/context/NotesContext";
