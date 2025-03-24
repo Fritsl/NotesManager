@@ -30,6 +30,7 @@ import ProjectDescriptionModal from "@/components/ProjectDescriptionModal";
 import SearchBar from "@/components/SearchBar";
 import FilterMenu, { FilterType } from "@/components/FilterMenu";
 import { Note } from "@/types/notes";
+import { moveProjectToTrash } from "@/lib/projectService";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +44,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { levelColors } from "@/lib/level-colors";
@@ -115,6 +126,7 @@ export default function Header() {
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
   const [isEditingProjectName, setIsEditingProjectName] = useState(false);
   const [editedProjectName, setEditedProjectName] = useState(currentProjectName || '');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const projectNameInputRef = useRef<HTMLInputElement>(null);
 
   // Update local state when context project name changes
@@ -401,6 +413,18 @@ export default function Header() {
                     <FileEdit className="h-4 w-4 mr-2" />
                     <span>Edit Project Description</span>
                   </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      if (currentProjectId) {
+                        setShowDeleteConfirm(true);
+                      }
+                    }}
+                    disabled={!currentProjectId}
+                    className="text-red-500 hover:text-red-400 focus:text-red-400"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    <span>Delete Project</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="h-4 w-4 mr-2" />
                     <span>Sign Out</span>
@@ -490,6 +514,63 @@ export default function Header() {
       {showProjectsModal && <ProjectsModal isOpen={showProjectsModal} onClose={() => setShowProjectsModal(false)} />}
       {showPayoffModal && <PayoffModal isOpen={showPayoffModal} onClose={() => setShowPayoffModal(false)} />}
       {showDescriptionModal && <ProjectDescriptionModal isOpen={showDescriptionModal} onClose={() => setShowDescriptionModal(false)} />}
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent className="bg-gray-900 border border-gray-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-gray-200 flex items-center">
+              <Trash2 className="mr-2 h-5 w-5 text-red-500" />
+              Move to Trash
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              The project "{currentProjectName}" will be moved to trash. 
+              You can restore it later from the Trash if needed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-gray-800 text-gray-300 hover:bg-gray-700 border-gray-700">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={async () => {
+                if (currentProjectId) {
+                  try {
+                    // Call the moveProjectToTrash function
+                    const success = await moveProjectToTrash(currentProjectId);
+                    
+                    if (success) {
+                      toast({
+                        title: 'Moved to Trash',
+                        description: 'Project moved to trash successfully',
+                      });
+                      // Reset app state
+                      setHasActiveProject(false);
+                      
+                      // Remove from localStorage to avoid auto-loading
+                      localStorage.removeItem('lastProjectId');
+                    } else {
+                      toast({
+                        title: 'Error',
+                        description: 'Failed to move project to trash',
+                        variant: 'destructive',
+                      });
+                    }
+                  } catch (error) {
+                    console.error('Error moving project to trash:', error);
+                    toast({
+                      title: 'Error',
+                      description: 'An unexpected error occurred',
+                      variant: 'destructive',
+                    });
+                  }
+                }
+              }}
+              className="bg-red-900 hover:bg-red-800 text-gray-200 border-none"
+            >
+              Move to Trash
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   );
 }
