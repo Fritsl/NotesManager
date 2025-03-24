@@ -102,17 +102,18 @@ export function buildNoteHierarchy(flatNotes: DbNote[], imagesData?: any[] | nul
     // Get images for this note if any
     const noteImages = imageMap.get(dbNote.id) || [];
     
-    // Create Note object with all properties
+    // Create Note object with all properties - prefer direct properties over metaData
+    // This way we preserve the original formatting
     noteMap.set(dbNote.id, {
       id: dbNote.id,
       content: contentText,
       position: position,
-      // Use meta properties if available, otherwise use direct properties if they exist
-      is_discussion: metaData.is_discussion || !!dbNote.is_discussion || false,
-      time_set: metaData.time_set || dbNote.time_set || null,
-      youtube_url: metaData.youtube_url || dbNote.youtube_url || null,
-      url: metaData.url || dbNote.url || null,
-      url_display_text: metaData.url_display_text || dbNote.url_display_text || null,
+      // Use direct properties first if they exist, then fall back to metadata
+      is_discussion: dbNote.is_discussion || metaData.is_discussion || false,
+      time_set: dbNote.time_set || metaData.time_set || null,
+      youtube_url: dbNote.youtube_url || metaData.youtube_url || null,
+      url: dbNote.url || metaData.url || null,
+      url_display_text: dbNote.url_display_text || metaData.url_display_text || null,
       children: [],
       images: noteImages
     });
@@ -162,29 +163,22 @@ export function flattenNoteHierarchy(notes: Note[], projectId: string, userId: s
     // Create a DB record for this note
     const now = new Date().toISOString();
     
-    // Create a structure that includes both the content and metadata
-    // Store the metadata inline with the content since there's no _meta column
-    const contentWithMeta = {
-      text: note.content,
-      meta: {
-        is_discussion: note.is_discussion || false,
-        time_set: note.time_set,
-        youtube_url: note.youtube_url,
-        url: note.url,
-        url_display_text: note.url_display_text
-      }
-    };
-    
     // Use the correct field names based on the Supabase schema
     const dbNote = {
       id: note.id,
-      // Serialize the combined content+metadata to JSON string
-      content: JSON.stringify(contentWithMeta),
+      // Store content directly without wrapping in JSON object
+      content: note.content,
       user_id: userId,
       project_id: projectId,
       parent_id: parentId,
       // Use 'position' not 'note_position' as per Supabase schema
       position: note.position,
+      // Also store these properties directly on the note for compatibility with the original system
+      is_discussion: note.is_discussion || false,
+      time_set: note.time_set,
+      youtube_url: note.youtube_url,
+      url: note.url,
+      url_display_text: note.url_display_text,
       created_at: now,
       updated_at: now
     };
