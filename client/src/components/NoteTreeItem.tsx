@@ -758,6 +758,18 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           
           {/* Action buttons - always visible on mobile, larger touch targets */}
           <div className="flex space-x-1 sm:opacity-0 sm:group-hover:opacity-100 transition">
+            {/* Edit Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-gray-400 hover:text-green-500 p-1 touch-target"
+              title="Edit Note"
+              onClick={startEditing}
+              disabled={isEditing}
+            >
+              <Edit size={16} />
+            </Button>
+            
             {/* Add Sibling Button */}
             <Button
               variant="ghost"
@@ -854,24 +866,6 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          </div>
-          
-          {/* Edit button in separate row for better mobile access */}
-          <div className="mt-2 flex justify-start">
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-gray-400 hover:text-green-500 hover:border-green-500 px-3 py-1 touch-target"
-              title="Edit Note"
-              onClick={(e) => {
-                e.stopPropagation();
-                startEditing(e);
-              }}
-              disabled={isEditing}
-            >
-              <Edit size={14} className="mr-1" />
-              Edit
-            </Button>
           </div>
         </div>
       </div>
