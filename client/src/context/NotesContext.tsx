@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, ReactNode, useCallback, useMemo, useRef, useEffect } from "react";
-import { Note, NotesData } from "@/types/notes";
+import { Note, NotesData, NoteImage } from "@/types/notes";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
-import { createProject, updateProject } from "@/lib/projectService";
+import { createProject, updateProject, addImageToNote, removeImageFromNote, updateImagePosition } from "@/lib/projectService";
 
 interface NotesContextType {
   notes: Note[];
@@ -26,12 +26,17 @@ interface NotesContextType {
   maxDepth: number;
   currentProjectName: string;
   setCurrentProjectName: (name: string) => void;
+  currentProjectDescription: string;
+  setCurrentProjectDescription: (description: string) => void;
   hasActiveProject: boolean;
   setHasActiveProject: (hasProject: boolean) => void;
   createNewProject: (name: string) => void;
-  saveProject: () => Promise<void>;
+  saveProject: () => Promise<any>;
   currentProjectId: string | null;
   setCurrentProjectId: (id: string | null) => void;
+  uploadImage: (noteId: string, file: File) => Promise<NoteImage | null>;
+  removeImage: (imageId: string) => Promise<boolean>;
+  reorderImage: (noteId: string, imageId: string, newPosition: number) => Promise<boolean>;
   debugInfo: () => any; // For debugging purposes
 }
 
@@ -44,6 +49,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [currentLevel, setCurrentLevel] = useState<number>(1);
   const [currentProjectName, setCurrentProjectName] = useState<string>('');
+  const [currentProjectDescription, setCurrentProjectDescription] = useState<string>('');
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [hasActiveProject, setHasActiveProject] = useState<boolean>(false);
   const { toast } = useToast();
@@ -240,18 +246,29 @@ export function NotesProvider({ children }: { children: ReactNode }) {
 
   // Update a note
   const updateNote = useCallback((updatedNote: Note) => {
+    // Format the time_set correctly if present (ensure no seconds)
+    let formattedNote = { ...updatedNote };
+    if (formattedNote.time_set) {
+      // Extract just the HH:MM part if there's more
+      const timeParts = formattedNote.time_set.split(':');
+      if (timeParts.length >= 2) {
+        // Only use hours and minutes, no seconds
+        formattedNote.time_set = `${timeParts[0]}:${timeParts[1]}`;
+      }
+    }
+    
     setNotes((prevNotes) => {
       const updatedNotes = [...prevNotes];
       
       // Find the note at any level in the tree
       const updateNoteInTree = (nodes: Note[]): boolean => {
         for (let i = 0; i < nodes.length; i++) {
-          if (nodes[i].id === updatedNote.id) {
+          if (nodes[i].id === formattedNote.id) {
             // Preserve children reference if not provided
-            if (!updatedNote.children || updatedNote.children.length === 0) {
-              updatedNote.children = nodes[i].children;
+            if (!formattedNote.children || formattedNote.children.length === 0) {
+              formattedNote.children = nodes[i].children;
             }
-            nodes[i] = { ...updatedNote };
+            nodes[i] = { ...formattedNote };
             return true;
           }
           
@@ -269,7 +286,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       return updatedNotes;
     });
     
-    setSelectedNote(updatedNote);
+    setSelectedNote(formattedNote);
     toast({
       title: "Note Updated",
       description: "Your changes have been saved",
@@ -664,12 +681,88 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     }
   }, [currentProjectId, currentProjectName, notes, cleanNotePositions, toast]);
 
+  // Handle image uploads for a note
+  const uploadImage = useCallback(async (noteId: string, file: File): Promise<NoteImage | null> => {
+    try {
+      console.log(`Uploading image for note ${noteId}`);
+      const image = await addImageToNote(noteId, file);
+      
+      if (image) {
+        toast({
+          title: "Image Uploaded",
+          description: "The image has been attached to the note",
+        });
+      }
+      
+      return image;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: "Upload Failed",
+        description: error instanceof Error ? error.message : "Could not upload the image",
+        variant: "destructive",
+      });
+      return null;
+    }
+  }, [toast]);
+  
+  // Remove an image from a note
+  const removeImage = useCallback(async (imageId: string): Promise<boolean> => {
+    try {
+      console.log(`Removing image ${imageId}`);
+      const success = await removeImageFromNote(imageId);
+      
+      if (success) {
+        toast({
+          title: "Image Removed",
+          description: "The image has been removed from the note",
+        });
+      }
+      
+      return success;
+    } catch (error) {
+      console.error('Error removing image:', error);
+      toast({
+        title: "Remove Failed",
+        description: error instanceof Error ? error.message : "Could not remove the image",
+        variant: "destructive",
+      });
+      return false;
+    }
+  }, [toast]);
+  
+  // Reorder images within a note
+  const reorderImage = useCallback(async (noteId: string, imageId: string, newPosition: number): Promise<boolean> => {
+    try {
+      console.log(`Reordering image ${imageId} to position ${newPosition}`);
+      const success = await updateImagePosition(noteId, imageId, newPosition);
+      
+      if (success) {
+        toast({
+          title: "Image Reordered",
+          description: "The image position has been updated",
+        });
+      }
+      
+      return success;
+    } catch (error) {
+      console.error('Error reordering image:', error);
+      toast({
+        title: "Reorder Failed",
+        description: error instanceof Error ? error.message : "Could not reorder the image",
+        variant: "destructive",
+      });
+      return false;
+    }
+  }, [toast]);
+
   // Debug info function to examine project state
   const debugInfo = useCallback(() => {
     return {
       hasActiveProject,
       currentProjectId,
       currentProjectName,
+      currentProjectDescription,
       noteCount: notes.length,
       selectedNoteId: selectedNote?.id || null,
       firstNoteId: notes.length > 0 ? notes[0].id : null,
@@ -677,7 +770,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       expandedNodesCount: expandedNodes.size,
       breadcrumbsCount: breadcrumbs.length
     };
-  }, [hasActiveProject, currentProjectId, currentProjectName, notes, selectedNote, expandedNodes, breadcrumbs]);
+  }, [hasActiveProject, currentProjectId, currentProjectName, currentProjectDescription, notes, selectedNote, expandedNodes, breadcrumbs]);
 
   return (
     <NotesContext.Provider
