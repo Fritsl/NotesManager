@@ -416,7 +416,8 @@ export function NotesProvider({ children }: { children: ReactNode }) {
             // If parent exists, we'll need to update its children positions
             if (parent) {
               isRootLevel = false;
-              parentNote = parent;
+              // Make sure parent is properly typed as Note
+              parentNote = parent as Note;
             }
             
             return true;
@@ -443,10 +444,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         updatedNotes.forEach((note, index) => {
           note.position = index;
         });
-      } else if (parentNote) {
+      } else if (parentNote && 'children' in parentNote) {
         // If we deleted from a parent's children, reindex those children
-        // Make sure parentNote is type-safe
-        if (!parentNote) return cleanNotePositions(updatedNotes);
+        // Using property check to ensure TypeScript recognizes children exists
         const children = parentNote.children;
         if (children && children.length > 0) {
           children.forEach((child: Note, index: number) => {
