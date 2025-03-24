@@ -334,13 +334,13 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             {/* Title line - larger and more prominent */}
             <div className="flex items-center">
               <div className={`mobile-text-base font-medium ${level >= 0 && level < levelColors.length ? levelColors[level].text : levelColors[0].text} truncate flex-1`}>
-                {note.is_discussion && (
-                  <span className="inline-flex mr-1 text-blue-400" title="Discussion">
-                    <MessageCircle size={16} className="inline-block" />
-                  </span>
-                )}
                 {displayContent}
               </div>
+              {note.is_discussion && (
+                <span className="ml-2 text-blue-400 shrink-0" title="Discussion">
+                  <MessageCircle size={16} />
+                </span>
+              )}
             </div>
             
             {/* Multiple preview lines */}
