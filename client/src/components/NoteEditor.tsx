@@ -106,35 +106,83 @@ export default function NoteEditor() {
     }
   }, [selectedNote, hasChanges, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, updateNote, toast, saveProject, currentProjectId]);
   
-  // Set up change tracking with proper state updates
+  // Auto-save function to call when any field changes
+  const saveChanges = useCallback(async () => {
+    if (!selectedNote || !hasChanges) return;
+    
+    // Use a small delay to prevent saving while user is still typing
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+    
+    autoSaveTimerRef.current = setTimeout(async () => {
+      const updatedNote = {
+        ...selectedNote,
+        content,
+        youtube_url: youtubeUrl || null,
+        url: externalUrl || null,
+        url_display_text: externalUrl ? (urlDisplayText || null) : null,
+        is_discussion: isDiscussion,
+      };
+      
+      // Update the note in local state
+      updateNote(updatedNote);
+      
+      // Save the entire project if we have a project ID
+      if (currentProjectId) {
+        try {
+          await saveProject();
+          console.log("Project auto-saved after field change");
+        } catch (error) {
+          console.error("Failed to auto-save project:", error);
+        }
+      }
+      
+      // Show a subtle toast notification for auto-save
+      toast({
+        title: "Auto-saved",
+        description: "Your changes have been automatically saved",
+        variant: "default",
+      });
+      
+      setHasChanges(false);
+    }, 500);
+  }, [selectedNote, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, updateNote, saveProject, currentProjectId, toast, hasChanges]);
+
+  // Set up change tracking with auto-save
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value;
     setContent(newContent);
     setHasChanges(true);
+    saveChanges();
   };
   
   const handleYoutubeUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newUrl = e.target.value;
     setYoutubeUrl(newUrl);
     setHasChanges(true);
+    saveChanges();
   };
   
   const handleExternalUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newUrl = e.target.value;
     setExternalUrl(newUrl);
     setHasChanges(true);
+    saveChanges();
   };
   
   const handleUrlDisplayTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newText = e.target.value;
     setUrlDisplayText(newText);
     setHasChanges(true);
+    saveChanges();
   };
   
   const handleDiscussionChange = (checked: boolean | "indeterminate") => {
     const newValue = checked === true;
     setIsDiscussion(newValue);
     setHasChanges(true);
+    saveChanges();
   };
 
   const handleSave = async () => {
