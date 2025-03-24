@@ -316,6 +316,52 @@ export async function getProject(id: string): Promise<Project | null> {
     
     console.log('Current user:', userData.user.id);
     
+    // IMPORTANT: First try to load from the projects table which contains the full data with images
+    console.log('Attempting to load complete project data (with images) from projects table');
+    const { data: fullProjectData, error: fullProjectError } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', userData.user.id)
+      .single();
+      
+    if (fullProjectData && !fullProjectError) {
+      console.log('✅ Found full project data with embedded images!');
+      console.log('Project data:', fullProjectData.name);
+      console.log('Data structure:', 
+        fullProjectData.data && 
+        typeof fullProjectData.data === 'object' && 
+        Array.isArray(fullProjectData.data.notes) ? 
+        `Contains ${fullProjectData.data.notes.length} notes` : 
+        'Invalid data structure'
+      );
+      
+      // Query settings table for metadata
+      const { data: settingsData } = await supabase
+        .from('settings')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', userData.user.id)
+        .is('deleted_at', null)
+        .single();
+      
+      // Return complete project with embedded images directly from projects table
+      return {
+        id: fullProjectData.id,
+        name: fullProjectData.name || (settingsData?.title || 'Untitled Project'),
+        created_at: fullProjectData.created_at,
+        updated_at: fullProjectData.updated_at,
+        user_id: fullProjectData.user_id,
+        description: settingsData?.description || '',
+        data: fullProjectData.data || { notes: [] }
+      };
+    } else {
+      console.log('⚠️ No data found in projects table or error occurred:', fullProjectError);
+      console.log('Falling back to notes table data loading...');
+    }
+    
+    // Fallback to previous loading method if projects table doesn't have the data
+    
     // Query settings table for project belonging to current user
     const { data: projectData, error: projectError } = await supabase
       .from('settings')
