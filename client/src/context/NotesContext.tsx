@@ -172,21 +172,32 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      console.log('Saving project:', { 
+      // Clone and clean the entire tree structure
+      // This ensures positions are consistent and there's no "ghost data"
+      const currentNotes = structuredClone(notes);
+      const cleanedNotes = cleanNotePositions(currentNotes);
+      
+      console.log('Saving complete project:', { 
         id: currentProjectId, 
         name: currentProjectName,
-        notesCount: notes.length,
-        firstNote: notes.length > 0 ? notes[0].content : 'No notes'
+        notesCount: cleanedNotes.length,
+        noteStructureDepth: calculateMaxDepth(cleanedNotes),
+        totalItems: getAllNoteIds(cleanedNotes).length
       });
       
-      // Create a clean copy of the notes data to save
-      const notesData: NotesData = { notes: cleanNotePositions([...notes]) };
+      // Create a fresh notes data object with the entire tree
+      const notesData: NotesData = { notes: cleanedNotes };
       
-      // Update the project in the database
+      // Validate note structure before saving
+      if (!Array.isArray(notesData.notes)) {
+        throw new Error("Invalid notes structure: notes property is not an array");
+      }
+      
+      // Update the project in the database with complete tree
       const updatedProject = await updateProject(currentProjectId, currentProjectName, notesData);
       
       if (!updatedProject) {
-        console.error('Failed to update project');
+        console.error('Failed to update project - no project returned');
         toast({
           title: "Error Saving Project",
           description: "Could not save the project. Please try again.",
@@ -195,21 +206,42 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      console.log('Project saved successfully:', updatedProject);
+      // Verify returned data
+      if (!updatedProject.data || !updatedProject.data.notes) {
+        console.warn('Project saved but returned data structure may be incomplete', updatedProject);
+      } else {
+        console.log('Project saved successfully with', 
+          updatedProject.data.notes.length, 
+          'root notes and', 
+          getAllNoteIds(updatedProject.data.notes).length, 
+          'total notes'
+        );
+      }
       
+      // Simple success toast
       toast({
         title: "Project Saved",
         description: `"${currentProjectName}" has been saved`,
       });
     } catch (error) {
       console.error('Error saving project:', error);
+      
+      // Enhanced error logging for troubleshooting
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+      }
+      
       toast({
         title: "Error Saving Project",
         description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive",
       });
     }
-  }, [currentProjectId, currentProjectName, notes, cleanNotePositions, toast]);
+  }, [currentProjectId, currentProjectName, notes, cleanNotePositions, toast, calculateMaxDepth, getAllNoteIds]);
   
   // Import notes from JSON
   const importNotes = useCallback((data: NotesData, projectName?: string, projectId?: string | null) => {
