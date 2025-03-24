@@ -322,8 +322,8 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       removeNoteFromTree(updatedNotes);
       
       // If we deleted from a parent's children, clean those children's positions
-      if (parentWithUpdatedChildren && parentWithUpdatedChildren.children) {
-        parentWithUpdatedChildren.children = parentWithUpdatedChildren.children.map((child: Note, index: number) => ({
+      if (parentWithUpdatedChildren && parentWithUpdatedChildren.children && Array.isArray(parentWithUpdatedChildren.children)) {
+        parentWithUpdatedChildren.children = (parentWithUpdatedChildren.children as Note[]).map((child: Note, index: number) => ({
           ...child,
           position: index
         }));
@@ -645,6 +645,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       console.log('Saving project:', { 
         id: currentProjectId, 
         name: currentProjectName,
+        description: currentProjectDescription,
         notesCount: notes.length,
         firstNote: notes.length > 0 ? notes[0].content : 'No notes'
       });
@@ -653,7 +654,12 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       const notesData: NotesData = { notes: cleanNotePositions([...notes]) };
       
       // Update the project in the database
-      const updatedProject = await updateProject(currentProjectId, currentProjectName, notesData);
+      const updatedProject = await updateProject(
+        currentProjectId, 
+        currentProjectName, 
+        notesData, 
+        currentProjectDescription
+      );
       
       if (!updatedProject) {
         console.error('Failed to update project');
@@ -679,7 +685,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         variant: "destructive",
       });
     }
-  }, [currentProjectId, currentProjectName, notes, cleanNotePositions, toast]);
+  }, [currentProjectId, currentProjectName, currentProjectDescription, notes, cleanNotePositions, toast]);
 
   // Handle image uploads for a note
   const uploadImage = useCallback(async (noteId: string, file: File): Promise<NoteImage | null> => {
@@ -796,12 +802,17 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         maxDepth,
         currentProjectName,
         setCurrentProjectName,
+        currentProjectDescription,
+        setCurrentProjectDescription,
         hasActiveProject,
         setHasActiveProject,
         createNewProject,
         saveProject,
         currentProjectId,
         setCurrentProjectId,
+        uploadImage,
+        removeImage,
+        reorderImage,
         debugInfo
       }}
     >
