@@ -1063,42 +1063,38 @@ export async function addImageToNote(noteId: string, file: File): Promise<NoteIm
     
     console.log('Image uploaded to Supabase, public URL:', publicUrl);
     
-    // Use Supabase client directly for the database part instead of server API
-    console.log('Creating database record via Supabase client');
+    // Use server API for the database part due to RLS policy restrictions
+    console.log('Creating database record via server API');
     
-    // Get highest position of existing images
-    const { data: existingImages } = await supabase
-      .from('note_images')
-      .select('position')
-      .eq('note_id', noteId)
-      .order('position', { ascending: false })
-      .limit(1);
-
-    const position = existingImages && existingImages.length > 0 
-      ? existingImages[0].position + 1 
-      : 0;
+    // Create a FormData object with just the metadata (not the file)
+    const formData = new FormData();
+    formData.append('noteId', noteId);
+    formData.append('userId', userId);
+    formData.append('filePath', filePath);
+    formData.append('publicUrl', publicUrl);
     
-    // Create the image record directly in the database
-    const imageRecord = {
-      note_id: noteId,
-      storage_path: filePath,
-      url: publicUrl,
-      position: position
-    };
+    // Use the server-side API to handle the database insert
+    const response = await fetch('/api/create-image-record', {
+      method: 'POST',
+      body: formData,
+    });
     
-    const { data: imageData, error: imageError } = await supabase
-      .from('note_images')
-      .insert(imageRecord)
-      .select()
-      .single();
-    
-    if (imageError) {
-      console.error('Error creating image record:', imageError);
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        errorData = { error: 'Unknown error', status: response.status };
+      }
+      
+      console.error('Error creating image record via API:', errorData);
       // Clean up the uploaded file
       await supabase.storage.from('note-images').remove([filePath]);
       return null;
     }
     
+    // Parse the successful response
+    const imageData = await response.json();
     console.log('Image uploaded successfully:', imageData);
     
     // Return the image data

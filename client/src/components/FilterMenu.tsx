@@ -11,7 +11,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Clock, MessageSquare, Image, Link2, Video, Filter } from "lucide-react";
+import { Clock, MessageSquare, Image, Link2, Video, Filter, X } from "lucide-react";
 
 export type FilterType = "time" | "video" | "image" | "discussion" | "link" | null;
 
@@ -22,6 +22,7 @@ interface FilterMenuProps {
 export default function FilterMenu({ onFilterChange }: FilterMenuProps) {
   const { notes } = useNotes();
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   
   // Helper function to get all notes with their children flattened
   const flattenNotes = (notes: Note[]): Note[] => {
@@ -77,6 +78,20 @@ export default function FilterMenu({ onFilterChange }: FilterMenuProps) {
         applyFilter(null, () => false);
         break;
     }
+    
+    // Close menu when a filter is selected
+    setMenuOpen(false);
+  };
+  
+  const getFilterIcon = (filterType: FilterType) => {
+    switch (filterType) {
+      case "time": return <Clock className="h-4 w-4" />;
+      case "video": return <Video className="h-4 w-4" />;
+      case "image": return <Image className="h-4 w-4" />;
+      case "discussion": return <MessageSquare className="h-4 w-4" />;
+      case "link": return <Link2 className="h-4 w-4" />;
+      default: return <Filter className="h-4 w-4" />;
+    }
   };
   
   const getFilterLabel = (filterType: FilterType): string => {
@@ -96,30 +111,46 @@ export default function FilterMenu({ onFilterChange }: FilterMenuProps) {
     }
   };
   
+  const handleFilterButtonClick = () => {
+    if (activeFilter) {
+      // If filter is on, just turn it off
+      handleFilterSelect(null);
+    } else {
+      // If filter is off, open the menu
+      setMenuOpen(true);
+    }
+  };
+  
   return (
-    <DropdownMenu>
+    <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
           size="icon"
-          className={`h-8 w-8 rounded-full ${activeFilter ? 'text-primary bg-primary/10' : 'text-gray-400 hover:text-gray-300'}`}
-          title={activeFilter ? getFilterLabel(activeFilter) : "Filter notes"}
+          onClick={handleFilterButtonClick}
+          className={`h-8 w-8 rounded-full ${
+            activeFilter 
+              ? 'text-primary bg-primary/20 hover:bg-primary/30 ring-1 ring-primary/40' 
+              : 'text-gray-400 hover:text-gray-300'
+          }`}
+          title={activeFilter ? `${getFilterLabel(activeFilter)} (Click to clear)` : "Filter notes"}
         >
-          <Filter className="h-3.5 w-3.5" />
+          {activeFilter ? (
+            <div className="relative">
+              {getFilterIcon(activeFilter)}
+              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 bg-primary/90 rounded-full items-center justify-center">
+                <X className="h-2 w-2 text-white" />
+              </span>
+            </div>
+          ) : (
+            <Filter className="h-3.5 w-3.5" />
+          )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56 bg-gray-900 border-gray-800 text-gray-100">
         <DropdownMenuLabel className="text-gray-400">Filter Notes By</DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-gray-800" />
         <DropdownMenuRadioGroup value={activeFilter || ""} onValueChange={(value) => handleFilterSelect(value as FilterType || null)}>
-          <DropdownMenuRadioItem 
-            value="" 
-            className="flex items-center gap-2 focus:bg-gray-800 focus:text-white"
-          >
-            <Filter className="h-4 w-4" />
-            <span>Show all notes</span>
-          </DropdownMenuRadioItem>
-          <DropdownMenuSeparator className="bg-gray-800" />
           <DropdownMenuRadioItem 
             value="time"
             className="flex items-center gap-2 focus:bg-gray-800 focus:text-white"
