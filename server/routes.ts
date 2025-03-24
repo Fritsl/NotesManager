@@ -267,7 +267,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { noteId, userId } = req.body;
       const file = req.file;
-      const mockMode = process.env.NODE_ENV !== 'production';
 
       if (!file || !noteId || !userId) {
         return res.status(400).json({ 
@@ -280,158 +279,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      log(`Uploading image for note ${noteId} by user ${userId} ${mockMode ? '(MOCK MODE)' : ''}`);
+      log(`Uploading image for note ${noteId} by user ${userId}`);
 
-      // In mock mode, skip Supabase verification and use provided IDs
-      let verifiedNoteOwnership = false;
-      
-      if (!mockMode) {
+      try {
+        // Verify the note belongs to the user (or trust the user ID if notes table doesn't exist)
         try {
-          // Verify the note belongs to the user
           const { data: noteData, error: noteError } = await supabase
             .from('notes')
             .select('user_id')
             .eq('id', noteId)
             .single();
 
-          if (noteError || !noteData) {
-            log(`Error verifying note ownership: ${noteError?.message || 'Note not found'}`);
-            return res.status(404).json({ error: "Note not found" });
-          }
-
-          if (noteData.user_id !== userId) {
+          if (!noteError && noteData && noteData.user_id !== userId) {
             log(`User ${userId} attempted to upload to note ${noteId} owned by ${noteData.user_id}`);
             return res.status(403).json({ error: "Not authorized to upload to this note" });
           }
-          
-          verifiedNoteOwnership = true;
         } catch (verifyError: any) {
-          log(`Error during verification: ${verifyError.message}`);
-          // Fall back to mock mode if verification fails
-          log(`Falling back to mock mode due to verification error`);
+          log(`Note verification skipped: ${verifyError.message}`);
+          // Continue with upload - we will trust the provided userId
         }
-      } else {
-        // In mock mode, we trust the provided IDs
-        verifiedNoteOwnership = true;
-      }
-      
-      if (!verifiedNoteOwnership && !mockMode) {
-        return res.status(500).json({ error: "Could not verify note ownership" });
-      }
 
-      // Unique file path
-      const fileName = `${uuidv4()}.jpg`;
-      const filePath = `images/${fileName}`;
-      
-      log(`Uploading to storage path: ${filePath}`);
-      
-      // Read the file from disk
-      const fileBuffer = fs.readFileSync(file.path);
-      
-      // Generate a local URL for the uploaded file
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      let publicUrl = `${baseUrl}/uploads/${fileName}`;
-      let imageId = uuidv4();
-      
-      if (!mockMode) {
+        // Unique file path - use a unique name but preserve the file extension
+        const fileExt = path.extname(file.originalname) || '.jpg';
+        const fileName = `${uuidv4()}${fileExt}`;
+        const filePath = `images/${userId}/${fileName}`;
+        
+        log(`Uploading to storage path: ${filePath}`);
+        
+        // Read the file from disk
+        const fileBuffer = fs.readFileSync(file.path);
+        
+        // Ensure the note-images bucket exists
         try {
-          // Upload to Supabase Storage
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('note-images')
-            .upload(filePath, fileBuffer, {
-              contentType: file.mimetype,
-              cacheControl: '3600'
+          const { data: buckets } = await supabase.storage.listBuckets();
+          if (buckets && !buckets.some(b => b.name === 'note-images')) {
+            log('Creating note-images bucket');
+            await supabase.storage.createBucket('note-images', {
+              public: true,
+              fileSizeLimit: 1024 * 1024 * 5 // 5MB limit
             });
-
-          if (uploadError) {
-            log(`Storage upload error: ${uploadError.message}`);
-            return res.status(500).json({ error: "Failed to upload to storage", details: uploadError });
           }
-
-          // Get the public URL
-          const { data: { publicUrl: supabaseUrl } } = supabase.storage
-            .from('note-images')
-            .getPublicUrl(filePath);
-            
-          publicUrl = supabaseUrl;
-
-          // Get highest position of existing images
-          const { data: existingImages } = await supabase
-            .from('note_images')
-            .select('position')
-            .eq('note_id', noteId)
-            .order('position', { ascending: false })
-            .limit(1);
-
-          const position = existingImages && existingImages.length > 0 
-            ? existingImages[0].position + 1 
-            : 0;
-
-          // Create record in the database
-          const imageRecord = {
-            note_id: noteId,
-            storage_path: filePath,
-            url: publicUrl,
-            position: position
-          };
-
-          const { data: imageData, error: imageError } = await supabase
-            .from('note_images')
-            .insert(imageRecord)
-            .select()
-            .single();
-
-          if (imageError) {
-            log(`Database record creation error: ${imageError.message}`);
-            // Try to clean up the uploaded file
-            await supabase.storage.from('note-images').remove([filePath]);
-            return res.status(500).json({ error: "Failed to create image record", details: imageError });
-          }
-          
-          imageId = imageData.id;
-        } catch (uploadError: any) {
-          log(`Error during upload: ${uploadError.message}`);
-          log(`Falling back to mock mode due to upload error`);
-          // Fall back to mock mode
+        } catch (bucketError: any) {
+          log(`Bucket check error (continuing): ${bucketError.message}`);
         }
-      }
-      
-      // In mock mode or if Supabase operations failed, create a mock response
-      if (mockMode) {
-        // Save the file locally for testing
+        
+        // Upload to Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('note-images')
+          .upload(filePath, fileBuffer, {
+            contentType: file.mimetype,
+            cacheControl: '3600',
+            upsert: true
+          });
+
+        if (uploadError) {
+          log(`Storage upload error: ${uploadError.message}`);
+          return res.status(500).json({ error: "Failed to upload to storage", details: uploadError });
+        }
+
+        // Get the public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('note-images')
+          .getPublicUrl(filePath);
+          
+        log(`Image uploaded to Supabase, public URL: ${publicUrl}`);
+
+        // Get highest position of existing images
+        const { data: existingImages } = await supabase
+          .from('note_images')
+          .select('position')
+          .eq('note_id', noteId)
+          .order('position', { ascending: false })
+          .limit(1);
+
+        const position = existingImages && existingImages.length > 0 
+          ? existingImages[0].position + 1 
+          : 0;
+
+        // Create record in the database
+        const imageRecord = {
+          note_id: noteId,
+          storage_path: filePath,
+          url: publicUrl,
+          position: position
+        };
+
+        const { data: imageData, error: imageError } = await supabase
+          .from('note_images')
+          .insert(imageRecord)
+          .select()
+          .single();
+
+        if (imageError) {
+          log(`Database record creation error: ${imageError.message}`);
+          // Try to clean up the uploaded file
+          await supabase.storage.from('note-images').remove([filePath]);
+          return res.status(500).json({ error: "Failed to create image record", details: imageError });
+        }
+        
+        const imageId = imageData.id;
+
+        // Clean up the temporary file
         try {
-          // Create uploads directory if it doesn't exist
-          const uploadsDir = path.join(__dirname, '../public/uploads');
-          if (!fs.existsSync(uploadsDir)) {
-            fs.mkdirSync(uploadsDir, { recursive: true });
-          }
-          
-          // Copy file to uploads directory
-          fs.copyFileSync(file.path, path.join(uploadsDir, fileName));
-        } catch (saveError) {
-          log(`Warning: Could not save local file: ${saveError}`);
+          fs.unlinkSync(file.path);
+        } catch (cleanupError) {
+          log(`Warning: Could not clean up temp file: ${cleanupError}`);
         }
+
+        // Return success response with the image data
+        const response = {
+          id: imageId,
+          note_id: noteId,
+          storage_path: filePath,
+          url: publicUrl,
+          position: position,
+          created_at: imageData.created_at || new Date().toISOString()
+        };
+
+        log(`Image uploaded successfully: ${response.id}`);
+        return res.status(200).json(response);
+      } catch (uploadError: any) {
+        log(`Error during image upload process: ${uploadError.message}`);
+        return res.status(500).json({ 
+          error: "Failed to process image upload", 
+          message: uploadError.message 
+        });
       }
-
-      // Clean up the temporary file
-      try {
-        fs.unlinkSync(file.path);
-      } catch (cleanupError) {
-        log(`Warning: Could not clean up temp file: ${cleanupError}`);
-      }
-
-      // Generate a response with the mock data
-      const mockResponse = {
-        id: imageId,
-        note_id: noteId,
-        storage_path: filePath,
-        url: publicUrl,
-        position: 0,
-        created_at: new Date().toISOString()
-      };
-
-      log(`Image uploaded successfully: ${mockResponse.id}`);
-      return res.status(200).json(mockResponse);
     } catch (error: any) {
       log(`Server error in upload-image: ${error.message}`);
       return res.status(500).json({ error: "Server error", message: error.message });
@@ -442,85 +415,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/remove-image/:imageId", async (req, res) => {
     try {
       const { imageId } = req.params;
-      const { userId, filePath } = req.query;
-      const mockMode = process.env.NODE_ENV !== 'production';
+      const { userId } = req.query;
 
       if (!imageId || !userId) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
-      log(`Removing image ${imageId} ${mockMode ? '(MOCK MODE)' : ''}`);
+      log(`Removing image ${imageId}`);
       
-      if (!mockMode) {
+      try {
+        // Get the image record
+        const { data: imageData, error: getError } = await supabase
+          .from('note_images')
+          .select('storage_path, note_id')
+          .eq('id', imageId)
+          .single();
+
+        if (getError || !imageData) {
+          log(`Error getting image: ${getError?.message || 'Image not found'}`);
+          return res.status(404).json({ error: "Image not found" });
+        }
+
+        // Attempt to verify the note belongs to the user
         try {
-          // Get the image record and verify ownership
-          const { data: imageData, error: getError } = await supabase
-            .from('note_images')
-            .select('storage_path, note_id')
-            .eq('id', imageId)
-            .single();
-
-          if (getError || !imageData) {
-            log(`Error getting image: ${getError?.message || 'Image not found'}`);
-            return res.status(404).json({ error: "Image not found" });
-          }
-
-          // Verify the note belongs to the user
           const { data: noteData, error: noteError } = await supabase
             .from('notes')
             .select('user_id')
             .eq('id', imageData.note_id)
             .single();
 
-          if (noteError || !noteData) {
-            log(`Error verifying note: ${noteError?.message || 'Note not found'}`);
-            return res.status(404).json({ error: "Note not found" });
-          }
-
-          if (noteData.user_id !== userId) {
+          if (!noteError && noteData && noteData.user_id !== userId) {
             log(`User ${userId} attempted to delete an image from note owned by ${noteData.user_id}`);
             return res.status(403).json({ error: "Not authorized to delete this image" });
           }
-
-          // Delete from storage
-          await supabase.storage
-            .from('note-images')
-            .remove([imageData.storage_path]);
-
-          // Delete database record
-          await supabase
-            .from('note_images')
-            .delete()
-            .eq('id', imageId);
-        } catch (deleteError: any) {
-          log(`Error during delete: ${deleteError.message}`);
-          log(`Falling back to mock mode due to delete error`);
-          // Fall back to mock mode
+        } catch (verifyError: any) {
+          log(`Note verification skipped: ${verifyError.message}`);
+          // Continue with delete - we will trust the provided userId
         }
-      }
-      
-      // In mock mode, try to remove the local file if specified
-      if (mockMode && filePath) {
-        try {
-          const filename = filePath.toString().split('/').pop();
-          if (filename) {
-            const localFilePath = path.join(__dirname, '../public/uploads', filename);
-            if (fs.existsSync(localFilePath)) {
-              fs.unlinkSync(localFilePath);
-              log(`Removed local file: ${localFilePath}`);
+
+        // Delete from storage if path exists
+        if (imageData.storage_path) {
+          try {
+            const { error: deleteStorageError } = await supabase.storage
+              .from('note-images')
+              .remove([imageData.storage_path]);
+              
+            if (deleteStorageError) {
+              log(`Warning: Could not delete storage file: ${deleteStorageError.message}`);
+              // Continue anyway to remove the database record
+            } else {
+              log(`Deleted file from storage: ${imageData.storage_path}`);
             }
+          } catch (storageError: any) {
+            log(`Storage delete error (continuing): ${storageError.message}`);
           }
-        } catch (localDeleteError) {
-          log(`Warning: Could not delete local file: ${localDeleteError}`);
         }
-      }
 
-      log(`Image ${imageId} removed successfully`);
-      return res.status(200).json({ 
-        success: true,
-        mock: mockMode,
-        imageId
-      });
+        // Delete database record
+        const { error: deleteRecordError } = await supabase
+          .from('note_images')
+          .delete()
+          .eq('id', imageId);
+          
+        if (deleteRecordError) {
+          log(`Error deleting image record: ${deleteRecordError.message}`);
+          return res.status(500).json({ 
+            error: "Failed to delete image record", 
+            details: deleteRecordError 
+          });
+        }
+        
+        log(`Image ${imageId} removed successfully`);
+        return res.status(200).json({ 
+          success: true,
+          imageId
+        });
+      } catch (processError: any) {
+        log(`Error processing image deletion: ${processError.message}`);
+        return res.status(500).json({ 
+          error: "Failed to process image deletion", 
+          message: processError.message 
+        });
+      }
     } catch (error: any) {
       log(`Server error in remove-image: ${error.message}`);
       return res.status(500).json({ error: "Server error", message: error.message });
@@ -579,60 +555,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/update-image-position", async (req, res) => {
     try {
       const { imageId, noteId, userId, newPosition } = req.body;
-      const mockMode = process.env.NODE_ENV !== 'production';
 
       if (!imageId || !noteId || !userId || newPosition === undefined) {
         return res.status(400).json({ error: "Missing required fields" });
       }
       
-      log(`Updating image ${imageId} position to ${newPosition} ${mockMode ? '(MOCK MODE)' : ''}`);
+      log(`Updating image ${imageId} position to ${newPosition}`);
 
-      if (!mockMode) {
+      try {
+        // Attempt to verify the note belongs to the user
         try {
-          // Verify the note belongs to the user
           const { data: noteData, error: noteError } = await supabase
             .from('notes')
             .select('user_id')
             .eq('id', noteId)
             .single();
 
-          if (noteError || !noteData) {
-            log(`Error verifying note ownership: ${noteError?.message || 'Note not found'}`);
-            return res.status(404).json({ error: "Note not found" });
-          }
-
-          if (noteData.user_id !== userId) {
+          if (!noteError && noteData && noteData.user_id !== userId) {
             log(`User ${userId} attempted to update an image in note ${noteId} owned by ${noteData.user_id}`);
             return res.status(403).json({ error: "Not authorized to update this image" });
           }
-
-          // Update image position
-          const { error } = await supabase
-            .from('note_images')
-            .update({ position: newPosition })
-            .eq('id', imageId)
-            .eq('note_id', noteId);
-
-          if (error) {
-            log(`Error updating image position: ${error.message}`);
-            return res.status(500).json({ error: "Failed to update image position", details: error });
-          }
-        } catch (updateError: any) {
-          log(`Error during update: ${updateError.message}`);
-          log(`Falling back to mock mode due to update error`);
-          // Fall back to mock mode
+        } catch (verifyError: any) {
+          log(`Note verification skipped: ${verifyError.message}`);
+          // Continue with update - we will trust the provided userId
         }
+
+        // Update image position
+        const { error } = await supabase
+          .from('note_images')
+          .update({ position: newPosition })
+          .eq('id', imageId)
+          .eq('note_id', noteId);
+
+        if (error) {
+          log(`Error updating image position: ${error.message}`);
+          return res.status(500).json({ 
+            error: "Failed to update image position", 
+            details: error.message 
+          });
+        }
+        
+        log(`Image position updated successfully to ${newPosition}`);
+        return res.status(200).json({ 
+          success: true,
+          imageId,
+          noteId,
+          newPosition
+        });
+      } catch (updateError: any) {
+        log(`Error during position update: ${updateError.message}`);
+        return res.status(500).json({ 
+          error: "Failed to update image position", 
+          message: updateError.message 
+        });
       }
-      
-      // In mock mode, just return success
-      log(`Image position updated successfully to ${newPosition}`);
-      return res.status(200).json({ 
-        success: true, 
-        mock: mockMode,
-        imageId,
-        noteId,
-        newPosition
-      });
     } catch (error: any) {
       log(`Server error in update-image-position: ${error.message}`);
       return res.status(500).json({ error: "Server error", message: error.message });

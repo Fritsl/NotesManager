@@ -482,25 +482,41 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                       {note.images.map((image, idx) => (
                         <div key={image.id} className="relative group border border-gray-700 rounded overflow-hidden flex-shrink-0" style={{width: '80px', height: '60px'}}>
                           {/* Image with error handling fallback */}
-                          <img 
-                            src={image.url} 
-                            alt="Note attachment" 
-                            className="w-full h-full object-cover" 
-                            onError={(e) => {
-                              // Replace with a fallback UI on error
-                              const target = e.target as HTMLImageElement;
-                              target.onerror = null; // Prevent infinite error loops
-                              target.src = ''; // Clear src
-                              target.alt = 'Image unavailable';
-                              target.style.backgroundColor = '#444';
-                              target.style.display = 'flex';
-                              target.style.alignItems = 'center';
-                              target.style.justifyContent = 'center';
-                              target.style.fontSize = '9px';
-                              target.style.padding = '2px';
-                              target.style.textAlign = 'center';
-                            }}
-                          />
+                          {image.url ? (
+                            <div className="w-full h-full relative">
+                              <img 
+                                src={image.url} 
+                                alt="Note attachment" 
+                                className="w-full h-full object-cover" 
+                                onError={(e) => {
+                                  // Replace with a fallback UI on error
+                                  const target = e.target as HTMLImageElement;
+                                  target.onerror = null; // Prevent infinite error loops
+                                  target.style.display = 'none';
+                                  
+                                  // Show fallback indicator
+                                  const parent = target.parentElement;
+                                  if (parent) {
+                                    // Create fallback element with image icon
+                                    const fallback = document.createElement('div');
+                                    fallback.className = 'w-full h-full flex items-center justify-center bg-gray-800';
+                                    fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>';
+                                    parent.appendChild(fallback);
+                                  }
+                                }} 
+                              />
+                            </div>
+                          ) : (
+                            // Fallback for missing URL
+                            <div className="w-full h-full flex items-center justify-center bg-gray-800">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path>
+                                <circle cx="12" cy="13" r="3"></circle>
+                              </svg>
+                            </div>
+                          )}
+                          
+                          {/* Control buttons - always visible on hover */}
                           <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <Button 
                               variant="destructive" 
