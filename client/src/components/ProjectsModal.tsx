@@ -13,7 +13,7 @@ import {
   updateProject,
   Project 
 } from '../lib/projectService';
-import { useNotes } from '../context/NotesContext';
+import { useNotes } from '../context/useNotes';
 import { 
   AlertDialog,
   AlertDialogAction,

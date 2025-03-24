@@ -16,7 +16,7 @@ import {
   FolderOpen,
   LogOut
 } from "lucide-react";
-import { useNotes } from "@/context/NotesContext";
+import { useNotes } from "@/context/useNotes";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import ImportModal from "@/components/ImportModal";

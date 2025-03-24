@@ -5,7 +5,7 @@ import NoteEditor from "@/components/NoteEditor";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { FilePlus, Menu, Edit } from "lucide-react";
-import { useNotes } from "@/context/NotesContext";
+import { useNotes } from "@/context/useNotes";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 
 export default function NotesEditor() {

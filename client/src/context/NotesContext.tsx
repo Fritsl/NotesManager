@@ -46,7 +46,7 @@ interface NotesContextType {
   reorderImage: (noteId: string, imageId: string, newPosition: number) => Promise<boolean>;
 }
 
-const NotesContext = createContext<NotesContextType | undefined>(undefined);
+export const NotesContext = createContext<NotesContextType | undefined>(undefined);
 
 export function NotesProvider({ children }: { children: ReactNode }) {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -1166,10 +1166,4 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useNotes() {
-  const context = useContext(NotesContext);
-  if (context === undefined) {
-    throw new Error("useNotes must be used within a NotesProvider");
-  }
-  return context;
-}
+// useNotes is now exported from './useNotes.ts'

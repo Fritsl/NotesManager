@@ -7,7 +7,7 @@ import {
   DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useNotes } from "@/context/NotesContext";
+import { useNotes } from "@/context/useNotes";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ExportModalProps {
