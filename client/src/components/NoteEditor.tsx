@@ -421,9 +421,18 @@ export default function NoteEditor() {
             {/* Display images if any */}
             {selectedNote.images && selectedNote.images.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-                {selectedNote.images.sort((a, b) => a.position - b.position).map((image) => (
+                {/* Deduplicate images by converting to a Map using ID as key, then back to array */}
+                {Array.from(
+                  // Create a Map with image ID as key to eliminate duplicates
+                  new Map(
+                    selectedNote.images.map(img => [img.id, img])
+                  ).values()
+                )
+                // Sort by position after deduplication
+                .sort((a, b) => a.position - b.position)
+                .map((image) => (
                   <div 
-                    key={image.id} 
+                    key={`image-${image.id}`} 
                     className="relative group border border-gray-800 rounded-md overflow-hidden"
                   >
                     <img 
