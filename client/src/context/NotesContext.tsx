@@ -1,13 +1,8 @@
 import { createContext, useContext, useState, ReactNode, useCallback, useMemo, useRef, useEffect } from "react";
-import { Note, NotesData, NoteImage } from "@/types/notes";
+import { Note, NotesData } from "@/types/notes";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
-import { createProject, updateProject, addImageToNote, removeImageFromNote, updateImagePosition } from "@/lib/projectService";
-
-// Define a stronger type for parent notes that guarantees children property is present
-interface ParentNote extends Note {
-  children: Note[];
-}
+import { createProject, updateProject } from "@/lib/projectService";
 
 interface NotesContextType {
   notes: Note[];
@@ -31,24 +26,16 @@ interface NotesContextType {
   maxDepth: number;
   currentProjectName: string;
   setCurrentProjectName: (name: string) => void;
-  currentProjectDescription: string;
-  setCurrentProjectDescription: (description: string) => void;
   hasActiveProject: boolean;
   setHasActiveProject: (hasProject: boolean) => void;
   createNewProject: (name: string) => void;
-  saveProject: () => Promise<any>;
+  saveProject: () => Promise<void>;
   currentProjectId: string | null;
   setCurrentProjectId: (id: string | null) => void;
-  uploadImage: (noteId: string, file: File) => Promise<NoteImage | null>;
-  removeImage: (imageId: string) => Promise<boolean>;
-  reorderImage: (noteId: string, imageId: string, newPosition: number) => Promise<boolean>;
   debugInfo: () => any; // For debugging purposes
 }
 
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
-
-// Define possible save states for tracking auto-save functionality
-type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 export function NotesProvider({ children }: { children: ReactNode }) {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -57,10 +44,8 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [currentLevel, setCurrentLevel] = useState<number>(1);
   const [currentProjectName, setCurrentProjectName] = useState<string>('');
-  const [currentProjectDescription, setCurrentProjectDescription] = useState<string>('');
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [hasActiveProject, setHasActiveProject] = useState<boolean>(false);
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const { toast } = useToast();
 
   // Clean note positions to ensure sequential ordering without gaps
@@ -78,106 +63,6 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     
     return cleanedNotes;
   }, []);
-
-  // * Important: saveProject must be defined early since it's used by other functions
-  // Save the current project
-  const saveProject = useCallback(async () => {
-    try {
-      if (!currentProjectId) {
-        console.warn('Cannot save: No current project ID');
-        toast({
-          title: "Cannot Save",
-          description: "No active project. Create or load a project first.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Set save status to "saving"
-      setSaveStatus("saving");
-      
-      // Enhanced logging to debug ghost data issues
-      console.log('Saving project:', { 
-        id: currentProjectId, 
-        name: currentProjectName,
-        notesCount: notes.length,
-        firstNote: notes.length > 0 ? 
-          (notes[0].content.substring(0, 30) + (notes[0].content.length > 30 ? '...' : '')) : 
-          'No notes',
-        totalChildren: notes.reduce((sum, note) => sum + note.children.length, 0)
-      });
-      
-      // Pre-save validation check
-      if (!Array.isArray(notes)) {
-        console.error('Notes is not an array before saving:', notes);
-        throw new Error('Notes data is corrupted (not an array)');
-      }
-
-      // Run full position cleaning to ensure tree consistency
-      const cleanedNotes = cleanNotePositions([...notes]);
-      
-      // Create a complete copy of the notes data for saving
-      // This ensures we're saving the whole tree and not just references
-      const notesData: NotesData = { 
-        notes: JSON.parse(JSON.stringify(cleanedNotes)) 
-      };
-      
-      // Extra validation before sending to API
-      if (!Array.isArray(notesData.notes)) {
-        console.error('Notes is not an array after cleaning:', notesData.notes);
-        throw new Error('Failed to prepare notes data for saving');
-      }
-      
-      console.log(`Prepared ${notesData.notes.length} root notes with ${
-        notesData.notes.reduce((sum, note) => sum + note.children.length, 0)
-      } total children for saving`);
-      
-      // Update the project in the database, including the description
-      const updatedProject = await updateProject(currentProjectId, currentProjectName, notesData, currentProjectDescription);
-      
-      if (!updatedProject) {
-        console.error('Failed to update project');
-        setSaveStatus("error");
-        toast({
-          title: "Error Saving Project",
-          description: "Could not save the project. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Set save status to "saved"
-      setSaveStatus("saved");
-      
-      console.log('Project saved successfully:', {
-        id: updatedProject.id,
-        name: updatedProject.name,
-        savedNotesCount: updatedProject.data?.notes?.length || 0
-      });
-      
-      // Only show toast for manual saves, not auto-saves
-      // This prevents UI clutter during frequent auto-saves
-      if (saveStatus === "saving") {
-        toast({
-          title: "Project Saved",
-          description: `"${currentProjectName}" has been saved`,
-        });
-      }
-      
-      return updatedProject;
-    } catch (error) {
-      // Set save status to "error"
-      setSaveStatus("error");
-      
-      console.error('Error saving project:', error);
-      toast({
-        title: "Error Saving Project",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive",
-      });
-      throw error; // Re-throw to allow callers to handle the error
-    }
-  }, [currentProjectId, currentProjectName, currentProjectDescription, notes, cleanNotePositions, toast, saveStatus]);
 
   // Import notes from JSON
   const importNotes = useCallback((data: NotesData, projectName?: string, projectId?: string | null) => {
@@ -346,52 +231,27 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       });
     }
 
-    // We'll remove this auto-save block and rely on the toast-based save
-
     selectNote(newNote);
-    // First show a toast notification  
     toast({
       title: "Note Added",
       description: "A new note has been added",
     });
-    
-    // Then trigger a save - this is a simpler way to ensure saving happens
-    // after any action that triggers a toast notification
-    if (currentProjectId) {
-      try {
-        saveProject();
-        console.log("Project auto-saved after showing toast notification");
-      } catch (error) {
-        console.error("Failed to auto-save after toast notification:", error);
-      }
-    }
-  }, [findNoteAndPath, selectNote, cleanNotePositions, currentProjectId, saveProject, toast]);
+  }, [findNoteAndPath, selectNote, cleanNotePositions, toast]);
 
   // Update a note
   const updateNote = useCallback((updatedNote: Note) => {
-    // Format the time_set correctly if present (ensure no seconds)
-    let formattedNote = { ...updatedNote };
-    if (formattedNote.time_set) {
-      // Extract just the HH:MM part if there's more
-      const timeParts = formattedNote.time_set.split(':');
-      if (timeParts.length >= 2) {
-        // Only use hours and minutes, no seconds
-        formattedNote.time_set = `${timeParts[0]}:${timeParts[1]}`;
-      }
-    }
-    
     setNotes((prevNotes) => {
       const updatedNotes = [...prevNotes];
       
       // Find the note at any level in the tree
       const updateNoteInTree = (nodes: Note[]): boolean => {
         for (let i = 0; i < nodes.length; i++) {
-          if (nodes[i].id === formattedNote.id) {
+          if (nodes[i].id === updatedNote.id) {
             // Preserve children reference if not provided
-            if (!formattedNote.children || formattedNote.children.length === 0) {
-              formattedNote.children = nodes[i].children;
+            if (!updatedNote.children || updatedNote.children.length === 0) {
+              updatedNote.children = nodes[i].children;
             }
-            nodes[i] = { ...formattedNote };
+            nodes[i] = { ...updatedNote };
             return true;
           }
           
@@ -408,35 +268,22 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       updateNoteInTree(updatedNotes);
       return updatedNotes;
     });
-
-    // Don't auto-save on every keystroke for text changes
-    // Content changes are auto-saved via a debounced function in NoteEditor component
     
-    setSelectedNote(formattedNote);
+    setSelectedNote(updatedNote);
     toast({
       title: "Note Updated",
       description: "Your changes have been saved",
     });
-    
-    // Trigger a save when the toast appears
-    if (currentProjectId) {
-      try {
-        saveProject();
-        console.log("Project auto-saved after note update");
-      } catch (error) {
-        console.error("Failed to auto-save after note update:", error);
-      }
-    }
-  }, [toast, currentProjectId, saveProject]);
+  }, [toast]);
 
   // Delete a note
   const deleteNote = useCallback((noteId: string) => {
     setNotes((prevNotes) => {
       const updatedNotes = [...prevNotes];
-      let parentWithUpdatedChildren: ParentNote | null = null;
+      let parentWithUpdatedChildren: Note | null = null;
       
       // Find and remove the note at any level in the tree
-      const removeNoteFromTree = (nodes: Note[], parent: ParentNote | null = null): boolean => {
+      const removeNoteFromTree = (nodes: Note[], parent: Note | null = null): boolean => {
         for (let i = 0; i < nodes.length; i++) {
           if (nodes[i].id === noteId) {
             nodes.splice(i, 1);
@@ -445,9 +292,8 @@ export function NotesProvider({ children }: { children: ReactNode }) {
             return true;
           }
           
-          if (nodes[i].children && nodes[i].children.length > 0) {
-            // Cast the note as ParentNote since we know it has children
-            if (removeNoteFromTree(nodes[i].children, nodes[i] as ParentNote)) {
+          if (nodes[i].children.length > 0) {
+            if (removeNoteFromTree(nodes[i].children, nodes[i])) {
               return true;
             }
           }
@@ -459,15 +305,11 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       removeNoteFromTree(updatedNotes);
       
       // If we deleted from a parent's children, clean those children's positions
-      if (parentWithUpdatedChildren) {
-        // Cast to access children array properly
-        const parent = parentWithUpdatedChildren as { children: Note[] };
-        const cleanedChildren = parent.children.map((child: Note, index: number) => ({
+      if (parentWithUpdatedChildren && parentWithUpdatedChildren.children) {
+        parentWithUpdatedChildren.children = parentWithUpdatedChildren.children.map((child: Note, index: number) => ({
           ...child,
           position: index
         }));
-        // Safely assign back
-        parent.children = cleanedChildren;
       } else {
         // If we deleted from root level, clean root positions
         updatedNotes.forEach((note, index) => {
@@ -479,29 +321,16 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       return cleanNotePositions(updatedNotes);
     });
     
-    // Reset selected note if we deleted it
     if (selectedNote?.id === noteId) {
       setSelectedNote(null);
       setBreadcrumbs([]);
     }
     
-    // We'll rely on the toast-based save method consistently
-    
     toast({
       title: "Note Deleted",
       description: "The note has been removed",
     });
-    
-    // Trigger a save when the toast appears
-    if (currentProjectId) {
-      try {
-        saveProject();
-        console.log("Project saved after note deletion");
-      } catch (error) {
-        console.error("Failed to save after note deletion:", error);
-      }
-    }
-  }, [selectedNote, cleanNotePositions, currentProjectId, saveProject, toast]);
+  }, [selectedNote, cleanNotePositions, toast]);
 
   // Reference to track if a move operation is in progress to prevent multiple simultaneous moves
   const isMovingRef = useRef<boolean>(false);
@@ -625,23 +454,11 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       return cleanNotePositions(updatedNotes);
     });
     
-    // We'll rely on the toast-based save method consistently
-    
     toast({
       title: "Note Moved",
       description: "The note has been moved to a new position",
     });
-    
-    // Make sure to save manually again after the move - this is a critical operation
-    if (currentProjectId) {
-      try {
-        saveProject();
-        console.log("Project manually saved again after note movement");
-      } catch (error) {
-        console.error("Failed to manually save after note movement:", error);
-      }
-    }
-  }, [findNoteAndParent, cleanNotePositions, currentProjectId, saveProject, toast]);
+  }, [findNoteAndParent, cleanNotePositions, toast]);
 
   // Toggle expansion for a single node
   const toggleExpand = useCallback((noteId: string) => {
@@ -795,175 +612,57 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     }
   }, [toast, setCurrentProjectId, setCurrentProjectName]);
 
-  // Upload an image for a note
-  const uploadImage = useCallback(async (noteId: string, file: File): Promise<NoteImage | null> => {
+  // Save the current project
+  const saveProject = useCallback(async () => {
     try {
       if (!currentProjectId) {
-        console.warn('Cannot upload image: No current project ID');
+        console.warn('Cannot save: No current project ID');
         toast({
-          title: "Cannot Upload Image",
+          title: "Cannot Save",
           description: "No active project. Create or load a project first.",
           variant: "destructive",
         });
-        return null;
+        return;
       }
       
-      // Upload the image to the server
-      const uploadedImage = await addImageToNote(noteId, file);
-      
-      if (!uploadedImage) {
-        console.error('Failed to upload image');
-        toast({
-          title: "Image Upload Failed",
-          description: "Could not upload the image. Please try again.",
-          variant: "destructive",
-        });
-        return null;
-      }
-      
-      console.log('Image uploaded successfully:', uploadedImage);
-      
-      // We'll rely on the toast-based save only
-      
-      toast({
-        title: "Image Uploaded",
-        description: "The image has been added to your note",
+      console.log('Saving project:', { 
+        id: currentProjectId, 
+        name: currentProjectName,
+        notesCount: notes.length,
+        firstNote: notes.length > 0 ? notes[0].content : 'No notes'
       });
       
-      // Trigger a save when the toast appears
-      if (currentProjectId) {
-        try {
-          saveProject();
-          console.log("Project saved after image upload");
-        } catch (error) {
-          console.error("Failed to save after image upload:", error);
-        }
+      // Create a clean copy of the notes data to save
+      const notesData: NotesData = { notes: cleanNotePositions([...notes]) };
+      
+      // Update the project in the database
+      const updatedProject = await updateProject(currentProjectId, currentProjectName, notesData);
+      
+      if (!updatedProject) {
+        console.error('Failed to update project');
+        toast({
+          title: "Error Saving Project",
+          description: "Could not save the project. Please try again.",
+          variant: "destructive",
+        });
+        return;
       }
       
-      return uploadedImage;
-    } catch (error) {
-      console.error('Error uploading image:', error);
+      console.log('Project saved successfully:', updatedProject);
+      
       toast({
-        title: "Image Upload Error",
+        title: "Project Saved",
+        description: `"${currentProjectName}" has been saved`,
+      });
+    } catch (error) {
+      console.error('Error saving project:', error);
+      toast({
+        title: "Error Saving Project",
         description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive",
       });
-      return null;
     }
-  }, [currentProjectId, toast, saveProject]);
-  
-  // Remove an image from a note
-  const removeImage = useCallback(async (imageId: string): Promise<boolean> => {
-    try {
-      if (!currentProjectId) {
-        console.warn('Cannot remove image: No current project ID');
-        toast({
-          title: "Cannot Remove Image",
-          description: "No active project. Create or load a project first.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      // Remove the image from the server
-      const success = await removeImageFromNote(imageId);
-      
-      if (!success) {
-        console.error('Failed to remove image');
-        toast({
-          title: "Image Removal Failed",
-          description: "Could not remove the image. Please try again.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      console.log('Image removed successfully:', imageId);
-      
-      // We'll use the toast-based save method consistently
-      
-      toast({
-        title: "Image Removed",
-        description: "The image has been removed from your note",
-      });
-      
-      // Trigger a save when the toast appears
-      if (currentProjectId) {
-        try {
-          saveProject();
-          console.log("Project saved after image removal");
-        } catch (error) {
-          console.error("Failed to save after image removal:", error);
-        }
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Error removing image:', error);
-      toast({
-        title: "Image Removal Error",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive",
-      });
-      return false;
-    }
-  }, [currentProjectId, toast, saveProject]);
-  
-  // Reorder an image within a note
-  const reorderImage = useCallback(async (noteId: string, imageId: string, newPosition: number): Promise<boolean> => {
-    try {
-      if (!currentProjectId) {
-        console.warn('Cannot reorder image: No current project ID');
-        toast({
-          title: "Cannot Reorder Image",
-          description: "No active project. Create or load a project first.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      // Update the image position on the server
-      const success = await updateImagePosition(noteId, imageId, newPosition);
-      
-      if (!success) {
-        console.error('Failed to reorder image');
-        toast({
-          title: "Image Reordering Failed",
-          description: "Could not reorder the image. Please try again.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      console.log('Image reordered successfully:', { noteId, imageId, newPosition });
-      
-      // Add toast notification for image reordering
-      toast({
-        title: "Image Reordered",
-        description: "The image position has been updated",
-      });
-      
-      // Trigger a save when the toast appears
-      if (currentProjectId) {
-        try {
-          saveProject();
-          console.log("Project saved after image reordering");
-        } catch (error) {
-          console.error("Failed to save after image reordering:", error);
-        }
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Error reordering image:', error);
-      toast({
-        title: "Image Reordering Error",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive",
-      });
-      return false;
-    }
-  }, [currentProjectId, toast, saveProject]);
+  }, [currentProjectId, currentProjectName, notes, cleanNotePositions, toast]);
 
   // Debug info function to examine project state
   const debugInfo = useCallback(() => {
@@ -976,19 +675,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       firstNoteId: notes.length > 0 ? notes[0].id : null,
       firstNoteContent: notes.length > 0 ? notes[0].content : null,
       expandedNodesCount: expandedNodes.size,
-      breadcrumbsCount: breadcrumbs.length,
-      saveStatus
+      breadcrumbsCount: breadcrumbs.length
     };
-  }, [
-    hasActiveProject,
-    currentProjectId,
-    currentProjectName,
-    notes,
-    selectedNote,
-    expandedNodes,
-    breadcrumbs,
-    saveStatus
-  ]);
+  }, [hasActiveProject, currentProjectId, currentProjectName, notes, selectedNote, expandedNodes, breadcrumbs]);
 
   return (
     <NotesContext.Provider
@@ -1014,17 +703,12 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         maxDepth,
         currentProjectName,
         setCurrentProjectName,
-        currentProjectDescription,
-        setCurrentProjectDescription,
         hasActiveProject,
         setHasActiveProject,
         createNewProject,
         saveProject,
         currentProjectId,
         setCurrentProjectId,
-        uploadImage,
-        removeImage,
-        reorderImage,
         debugInfo
       }}
     >
