@@ -127,8 +127,8 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         notesData.notes.reduce((sum, note) => sum + note.children.length, 0)
       } total children for saving`);
       
-      // Update the project in the database
-      const updatedProject = await updateProject(currentProjectId, currentProjectName, notesData);
+      // Update the project in the database, including the description
+      const updatedProject = await updateProject(currentProjectId, currentProjectName, notesData, currentProjectDescription);
       
       if (!updatedProject) {
         console.error('Failed to update project');
@@ -172,7 +172,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       });
       throw error; // Re-throw to allow callers to handle the error
     }
-  }, [currentProjectId, currentProjectName, notes, cleanNotePositions, toast, saveStatus]);
+  }, [currentProjectId, currentProjectName, currentProjectDescription, notes, cleanNotePositions, toast, saveStatus]);
 
   // Import notes from JSON
   const importNotes = useCallback((data: NotesData, projectName?: string, projectId?: string | null) => {

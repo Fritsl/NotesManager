@@ -561,7 +561,7 @@ export async function createProject(name: string, notesData: NotesData): Promise
   }
 }
 
-export async function updateProject(id: string, name: string, notesData: NotesData): Promise<Project | null> {
+export async function updateProject(id: string, name: string, notesData: NotesData, description: string = ''): Promise<Project | null> {
   try {
     console.log('--- updateProject: Starting to update project ---');
     console.log('Project ID:', id);
@@ -595,10 +595,12 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
     
     // First update the project name
     console.log('Updating project in settings table...');
+    console.log('Updating project with description:', description);
     const { data: projectData, error: projectError } = await supabase
       .from('settings')
       .update({
         title: name,
+        description: description,
         updated_at: now,
         last_modified_at: now,
         note_count: validNotesData.notes.length,

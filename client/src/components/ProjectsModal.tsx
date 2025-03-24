@@ -43,7 +43,9 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
     importNotes,
     exportNotes,
     setCurrentProjectId,
-    setHasActiveProject
+    setHasActiveProject,
+    setCurrentProjectName,
+    setCurrentProjectDescription
   } = useNotes();
 
   useEffect(() => {
