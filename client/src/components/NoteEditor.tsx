@@ -9,7 +9,7 @@ import { Save, Youtube, Link, CheckCircle2, FileEdit, ImagePlus, X, ArrowUp, Arr
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { NoteImage } from "@/types/notes";
-import TimePicker from 'react-time-picker';
+import * as Popover from '@radix-ui/react-popover';
 
 export default function NoteEditor() {
   const { 
@@ -206,7 +206,9 @@ export default function NoteEditor() {
   };
   
   const handleTimeChange = (value: string | null) => {
-    setTimeSet(value);
+    // Format time to ensure it's stored with seconds (HH:MM:00) for database compatibility
+    const formattedTime = value ? `${value}:00` : null;
+    setTimeSet(formattedTime);
     setHasChanges(true);
   };
 
@@ -385,7 +387,7 @@ export default function NoteEditor() {
                 </div>
               )}
               
-              {/* Time Picker - more compact */}
+              {/* Time Picker - simple standard input */}
               <div className="flex flex-col space-y-1">
                 <div className="flex items-center space-x-2">
                   <div className="flex-shrink-0">
@@ -396,28 +398,44 @@ export default function NoteEditor() {
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="timepicker-container">
-                    <TimePicker
-                      onChange={handleTimeChange}
-                      value={timeSet}
-                      format="HH:mm"
-                      disableClock={true}
-                      clearIcon={null}
-                      className="time-picker-input bg-gray-850 border border-gray-700 rounded-md px-2 py-1"
-                      hourPlaceholder="HH"
-                      minutePlaceholder="MM"
-                    />
-                  </div>
-                  {timeSet && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-gray-400 hover:text-gray-200"
-                      onClick={() => handleTimeChange(null)}
+                  <Popover.Root>
+                    <Popover.Trigger asChild>
+                      <Button 
+                        variant="outline"
+                        className="h-9 px-4 flex items-center justify-between bg-gray-850 border-gray-700 hover:bg-gray-800 hover:border-gray-600 w-32"
+                      >
+                        <span className="text-sm">
+                          {timeSet ? timeSet.substring(0, 5) : "Set time"}
+                        </span>
+                        <Clock size={14} className="ml-2 text-gray-400" />
+                      </Button>
+                    </Popover.Trigger>
+                    <Popover.Content 
+                      className="bg-gray-850 border border-gray-700 p-4 rounded-md shadow-lg z-50"
+                      sideOffset={5}
                     >
-                      <X size={14} />
-                    </Button>
-                  )}
+                      <div className="flex flex-col space-y-4">
+                        <Input 
+                          type="time"
+                          value={timeSet?.substring(0, 5) || ""}
+                          onChange={(e) => handleTimeChange(e.target.value)}
+                          className="text-lg px-3 py-2 h-10 bg-gray-800 border-gray-600 focus:border-primary"
+                        />
+                        <div className="flex justify-between">
+                          <Button
+                            variant="outline"
+                            className="border-gray-700 hover:bg-gray-800"
+                            onClick={() => handleTimeChange(null)}
+                          >
+                            Clear
+                          </Button>
+                          <Popover.Close asChild>
+                            <Button>Apply</Button>
+                          </Popover.Close>
+                        </div>
+                      </div>
+                    </Popover.Content>
+                  </Popover.Root>
                 </div>
               </div>
               
