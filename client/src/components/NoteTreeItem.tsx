@@ -332,25 +332,6 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
 
   return (
     <div className="note-tree-item">
-      {/* Completely separate Edit button above the note card */}
-      {!isEditing && (
-        <div className="edit-button-container mb-1 flex justify-start pl-8">
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-gray-500 hover:text-green-500 hover:border-green-500 hover:bg-green-50 px-4 py-1 touch-target"
-            title="Edit Note"
-            onClick={(e) => {
-              e.stopPropagation();
-              startEditing(e);
-            }}
-          >
-            <Edit size={14} className="mr-2" />
-            Edit Note
-          </Button>
-        </div>
-      )}
-      
       <div className="relative">
         {/* Main note card */}
         <div 
@@ -875,7 +856,23 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             </AlertDialog>
           </div>
           
-          {/* Edit button has been moved above the note card */}
+          {/* Edit button in separate row for better mobile access */}
+          <div className="mt-2 flex justify-start">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-gray-400 hover:text-green-500 hover:border-green-500 px-3 py-1 touch-target"
+              title="Edit Note"
+              onClick={(e) => {
+                e.stopPropagation();
+                startEditing(e);
+              }}
+              disabled={isEditing}
+            >
+              <Edit size={14} className="mr-1" />
+              Edit
+            </Button>
+          </div>
         </div>
       </div>
       
