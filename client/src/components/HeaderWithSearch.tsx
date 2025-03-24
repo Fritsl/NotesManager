@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import ImportModal from "@/components/ImportModal";
 import ExportModal from "@/components/ExportModal";
 import ProjectsModal from "@/components/ProjectsModal";
+import PayoffModal from "@/components/PayoffModal";
 import SearchBar from "@/components/SearchBar";
 import {
   DropdownMenu,
@@ -81,6 +82,7 @@ export default function Header() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showProjectsModal, setShowProjectsModal] = useState(false);
+  const [showPayoffModal, setShowPayoffModal] = useState(false);
   const [isEditingProjectName, setIsEditingProjectName] = useState(false);
   const [editedProjectName, setEditedProjectName] = useState(currentProjectName || '');
   const projectNameInputRef = useRef<HTMLInputElement>(null);
@@ -424,6 +426,10 @@ export default function Header() {
                   
                   <DropdownMenuSeparator />
                   {/* User Options - Incorporating UserMenu items here */}
+                  <DropdownMenuItem onClick={() => setShowPayoffModal(true)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    <span>Edit Profile Payoff</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="h-4 w-4 mr-2" />
                     <span>Sign Out</span>
@@ -480,6 +486,10 @@ export default function Header() {
                   
                   <DropdownMenuSeparator />
                   {/* User Options */}
+                  <DropdownMenuItem onClick={() => setShowPayoffModal(true)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    <span>Edit Profile Payoff</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="h-4 w-4 mr-2" />
                     <span>Sign Out</span>
@@ -495,6 +505,7 @@ export default function Header() {
       {showImportModal && <ImportModal onClose={() => setShowImportModal(false)} />}
       {showExportModal && <ExportModal onClose={() => setShowExportModal(false)} />}
       {showProjectsModal && <ProjectsModal isOpen={showProjectsModal} onClose={() => setShowProjectsModal(false)} />}
+      {showPayoffModal && <PayoffModal isOpen={showPayoffModal} onClose={() => setShowPayoffModal(false)} />}
     </header>
   );
 }
