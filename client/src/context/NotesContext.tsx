@@ -127,12 +127,17 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     const sortedNotes = [...noteList].sort((a, b) => a.position - b.position);
     
     // Reassign positions sequentially starting from 0
-    const cleanedNotes = sortedNotes.map((note, index) => ({
-      ...note,
-      position: index,
-      // Recursively clean child positions
-      children: note.children.length > 0 ? cleanNotePositions(note.children) : []
-    }));
+    const cleanedNotes = sortedNotes.map((note, index) => {
+      // Preserve all original note properties including images
+      return {
+        ...note,
+        position: index,
+        // Recursively clean child positions while preserving other properties
+        children: note.children.length > 0 ? cleanNotePositions(note.children) : [],
+        // CRITICAL: Explicitly preserve images array if it exists
+        images: note.images || [],
+      };
+    });
     
     return cleanedNotes;
   }, []);
@@ -331,11 +336,23 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       const updateNoteInTree = (nodes: Note[]): boolean => {
         for (let i = 0; i < nodes.length; i++) {
           if (nodes[i].id === formattedNote.id) {
-            // Preserve children reference if not provided
+            // Preserve critical properties if not provided in the update
             if (!formattedNote.children || formattedNote.children.length === 0) {
               formattedNote.children = nodes[i].children;
             }
-            nodes[i] = { ...formattedNote };
+            
+            // CRITICAL: Preserve the images array if not explicitly provided
+            // This ensures images don't get lost during regular note updates
+            if (!formattedNote.images || !Array.isArray(formattedNote.images)) {
+              formattedNote.images = nodes[i].images || [];
+            }
+            
+            // Update the node with the formatted note that preserves images
+            nodes[i] = { 
+              ...formattedNote,
+              // Double ensure images are preserved by explicitly setting them
+              images: formattedNote.images
+            };
             return true;
           }
           
@@ -353,7 +370,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       return updatedNotes;
     });
     
+    // Make sure the selected note also has the images preserved
     setSelectedNote(formattedNote);
+    
     toast({
       title: "Note Updated",
       description: "Your changes have been saved",
