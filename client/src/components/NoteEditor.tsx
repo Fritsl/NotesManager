@@ -63,18 +63,9 @@ export default function NoteEditor() {
     }
   }, [selectedNote]);
   
-  // Auto-save when form loses focus if there are changes
-  const handleBlur = useCallback((e: React.FocusEvent) => {
-    // Check if we're still in the editor component (to another input in the same form)
-    // This prevents saves when just moving between fields in the same form
-    const relatedTarget = e.relatedTarget as HTMLElement;
-    const isStillInEditor = relatedTarget && 
-      (relatedTarget.closest('.note-editor-form') !== null);
-    
-    if (isStillInEditor) {
-      return; // Don't auto-save when just moving between fields in the same form
-    }
-    
+  // Auto-save when any field loses focus if there are changes
+  const handleBlur = useCallback(async (e: React.FocusEvent) => {
+    // Always save on blur for any field
     if (selectedNote && hasChanges) {
       // Use a small delay to prevent saving while user is still interacting with the form
       if (autoSaveTimerRef.current) {
@@ -111,7 +102,7 @@ export default function NoteEditor() {
           description: "Your changes have been automatically saved",
           variant: "default",
         });
-      }, 500);
+      }, 100); // Reduced delay for faster saving
     }
   }, [selectedNote, hasChanges, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, updateNote, toast, saveProject, currentProjectId]);
   
@@ -248,19 +239,17 @@ export default function NoteEditor() {
           )}
         </div>
         
-        {/* Only show save button when there are unsaved changes */}
-        {hasChanges && (
-          <Button
-            onClick={handleSave}
-            className={`
-              flex items-center space-x-1
-              ${saveStatus === "saved" ? "bg-green-500 hover:bg-green-600" : ""}
-            `}
-            disabled={saveStatus === "saving"}
-          >
-            <Save size={16} />
-            <span>{saveStatus === "saving" ? "Saving..." : "Save"}</span>
-          </Button>
+        {/* Save status indicator */}
+        {saveStatus === "saving" && (
+          <div className="flex items-center space-x-1 text-gray-400 text-sm">
+            <span>Saving...</span>
+          </div>
+        )}
+        {saveStatus === "saved" && (
+          <div className="flex items-center space-x-1 text-green-500 text-sm">
+            <CheckCircle2 size={14} className="mr-1" />
+            <span>Saved</span>
+          </div>
         )}
       </div>
 
