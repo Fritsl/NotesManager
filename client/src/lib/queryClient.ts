@@ -7,20 +7,26 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-export async function apiRequest(
-  method: string,
+export async function apiRequest<T = any>(
   url: string,
-  data?: unknown | undefined,
-): Promise<Response> {
+  options?: RequestInit,
+): Promise<T> {
   const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
+    ...options,
     credentials: "include",
   });
 
-  await throwIfResNotOk(res);
-  return res;
+  // Always attempt to parse JSON
+  try {
+    const data = await res.json();
+    if (!res.ok) {
+      console.error(`API request failed: ${res.status}`, data);
+    }
+    return data as T;
+  } catch (error) {
+    console.error('Failed to parse JSON response', error);
+    throw new Error(`Failed to parse API response: ${error}`);
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

@@ -11,6 +11,8 @@ import os from "os";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import express from 'express';
+import pkg from 'pg';
+const { Pool } = pkg;
 
 // Get current file's directory path (ES modules replacement for __dirname)
 const __filename = fileURLToPath(import.meta.url);
@@ -20,6 +22,11 @@ const __dirname = dirname(__filename);
 const supabaseUrl = process.env.SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_ANON_KEY || ""; // Using the anon key here
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Initialize PostgreSQL connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL
+});
 
 // Configure multer for file uploads
 const upload = multer({
@@ -629,6 +636,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       log(`Server error in update-image-position: ${error.message}`);
       return res.status(500).json({ error: "Server error", message: error.message });
+    }
+  });
+
+  // Profile API Routes
+  // Get user profile
+  app.get("/api/profile/:userId", async (req: Request, res: Response) => {
+    try {
+      const userId = req.params.userId;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+      
+      log(`Getting profile for user ${userId}`);
+      
+      // Query the database for the profile
+      const { rows } = await pool.query(
+        'SELECT * FROM profiles WHERE user_id = $1',
+        [userId]
+      );
+      
+      if (rows.length === 0) {
+        return res.status(404).json({ 
+          error: "Profile not found",
+          code: "PROFILE_NOT_FOUND"
+        });
+      }
+      
+      return res.status(200).json(rows[0]);
+    } catch (error: any) {
+      log(`Error getting profile: ${error.message}`);
+      return res.status(500).json({
+        error: "Failed to get profile",
+        details: error.message
+      });
+    }
+  });
+  
+  // Create or update user profile
+  app.post("/api/profile", async (req: Request, res: Response) => {
+    try {
+      const { userId, payoff } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+      
+      log(`Saving profile for user ${userId}`);
+      
+      // Check if profile exists
+      const { rows: existingRows } = await pool.query(
+        'SELECT id FROM profiles WHERE user_id = $1',
+        [userId]
+      );
+      
+      let result;
+      
+      if (existingRows.length === 0) {
+        // Create new profile
+        log(`Creating new profile for user ${userId}`);
+        const { rows } = await pool.query(
+          'INSERT INTO profiles (user_id, payoff) VALUES ($1, $2) RETURNING *',
+          [userId, payoff || '']
+        );
+        result = rows[0];
+      } else {
+        // Update existing profile
+        log(`Updating existing profile for user ${userId}`);
+        const { rows } = await pool.query(
+          'UPDATE profiles SET payoff = $1, updated_at = NOW() WHERE user_id = $2 RETURNING *',
+          [payoff || '', userId]
+        );
+        result = rows[0];
+      }
+      
+      return res.status(200).json({
+        success: true,
+        profile: result
+      });
+    } catch (error: any) {
+      log(`Error saving profile: ${error.message}`);
+      return res.status(500).json({
+        error: "Failed to save profile",
+        details: error.message
+      });
     }
   });
 

@@ -4,8 +4,19 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useToast } from '../hooks/use-toast';
-import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { apiRequest } from '../lib/queryClient';
+
+// Profile response type
+interface ProfileResponse {
+  id?: string;
+  user_id?: string;
+  payoff?: string;
+  created_at?: string;
+  updated_at?: string;
+  error?: string;
+  code?: string;
+}
 
 interface PayoffModalProps {
   isOpen: boolean;
@@ -29,31 +40,37 @@ export default function PayoffModal({ isOpen, onClose }: PayoffModalProps) {
     
     setIsLoading(true);
     try {
-      // First check if the user profile exists
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('payoff')
-        .eq('user_id', user.id)
-        .single();
+      // Get user profile from our API
+      const response = await apiRequest<ProfileResponse>(`/api/profile/${user.id}`);
       
-      if (error) {
-        // If the error is "no rows returned" it means the profile doesn't exist yet
-        if (error.code === 'PGRST116') {
+      if (response.error) {
+        // If the error code is PROFILE_NOT_FOUND it means the profile doesn't exist yet
+        if (response.code === 'PROFILE_NOT_FOUND') {
           // This is ok - it just means we need to create the profile
           console.log('No profile found, will create on save');
           setPayoff('');
-        } else {
-          console.error('Error fetching payoff:', error);
           toast({
             title: 'Notice',
             description: 'Creating new profile, you can now add your payoff.',
           });
+        } else {
+          console.error('Error fetching payoff:', response.error);
+          toast({
+            title: 'Notice',
+            description: 'Failed to load profile, please try again.',
+          });
         }
-      } else if (data) {
-        setPayoff(data.payoff || '');
+      } else {
+        // Profile exists, set the payoff
+        setPayoff(response.payoff || '');
       }
     } catch (error) {
       console.error('Error:', error);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred while loading your profile.',
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -64,39 +81,20 @@ export default function PayoffModal({ isOpen, onClose }: PayoffModalProps) {
     
     setIsLoading(true);
     try {
-      // First check if the profile exists
-      const { data: existingProfile, error: checkError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
+      // Create or update profile using our API
+      const response = await apiRequest<{success?: boolean; error?: string}>('/api/profile', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: user.id,
+          payoff
+        }),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       
-      let saveError;
-      
-      if (checkError && checkError.code === 'PGRST116') {
-        // No profile exists, create a new one
-        console.log('Creating new profile for user:', user.id);
-        const { error } = await supabase
-          .from('profiles')
-          .insert([{ 
-            user_id: user.id,
-            payoff 
-          }]);
-        
-        saveError = error;
-      } else {
-        // Profile exists, update it
-        console.log('Updating existing profile for user:', user.id);
-        const { error } = await supabase
-          .from('profiles')
-          .update({ payoff })
-          .eq('user_id', user.id);
-        
-        saveError = error;
-      }
-      
-      if (saveError) {
-        console.error('Error saving payoff:', saveError);
+      if (response.error) {
+        console.error('Error saving payoff:', response.error);
         toast({
           title: 'Error',
           description: 'Failed to save payoff',
