@@ -29,7 +29,7 @@ interface NotesContextType {
   hasActiveProject: boolean;
   setHasActiveProject: (hasProject: boolean) => void;
   createNewProject: (name: string) => void;
-  saveProject: () => Promise<void>;
+  saveProject: () => Promise<any>;
   currentProjectId: string | null;
   setCurrentProjectId: (id: string | null) => void;
   uploadImage: (noteId: string, file: File) => Promise<NoteImage | null>;
@@ -445,9 +445,11 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         });
       } else if (parentNote) {
         // If we deleted from a parent's children, reindex those children
+        // Make sure parentNote is type-safe
+        if (!parentNote) return cleanNotePositions(updatedNotes);
         const children = parentNote.children;
         if (children && children.length > 0) {
-          children.forEach((child, index) => {
+          children.forEach((child: Note, index: number) => {
             child.position = index;
           });
         }

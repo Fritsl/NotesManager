@@ -17,11 +17,11 @@ export default function NoteEditor() {
     breadcrumbs, 
     hasActiveProject, 
     saveProject, 
-    currentProjectId,
-    uploadImage,
-    removeImage,
-    reorderImage
+    currentProjectId
   } = useNotes();
+  
+  // Get the Notes context to access its methods
+  const notesContext = useNotes();
   const { toast } = useToast();
   
   const [content, setContent] = useState<string>("");
@@ -431,8 +431,8 @@ export default function NoteEditor() {
                     }
                     
                     try {
-                      // Upload the image
-                      const image = await uploadImage(selectedNote.id, file);
+                      // Upload the image using context
+                      const image = await notesContext.uploadImage?.(selectedNote.id, file);
                       
                       if (image) {
                         toast({
@@ -487,7 +487,7 @@ export default function NoteEditor() {
                         className="h-6 w-6 bg-gray-900/80 hover:bg-gray-800 rounded-full"
                         onClick={async () => {
                           if (image.position > 0) {
-                            await reorderImage(selectedNote.id, image.id, image.position - 1);
+                            await notesContext.reorderImage?.(selectedNote.id, image.id, image.position - 1);
                           }
                         }}
                         disabled={image.position === 0}
@@ -503,7 +503,7 @@ export default function NoteEditor() {
                         onClick={async () => {
                           const maxPosition = (selectedNote.images?.length || 1) - 1;
                           if (image.position < maxPosition) {
-                            await reorderImage(selectedNote.id, image.id, image.position + 1);
+                            await notesContext.reorderImage?.(selectedNote.id, image.id, image.position + 1);
                           }
                         }}
                         disabled={image.position === (selectedNote.images?.length || 1) - 1}
@@ -518,7 +518,7 @@ export default function NoteEditor() {
                         className="h-6 w-6 bg-gray-900/80 hover:bg-red-900/80 text-gray-400 hover:text-red-300 rounded-full"
                         onClick={async () => {
                           if (confirm('Are you sure you want to remove this image?')) {
-                            await removeImage(image.id);
+                            await notesContext.removeImage?.(image.id);
                           }
                         }}
                       >
