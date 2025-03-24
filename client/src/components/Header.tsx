@@ -4,7 +4,6 @@ import {
   Menu, 
   FileUp, 
   FileDown, 
-  PlusCircle, 
   ChevronUp, 
   ChevronDown,
   Info,
@@ -42,7 +41,6 @@ import { levelColors } from "@/lib/level-colors";
 export default function Header() {
   const { 
     notes,
-    addNote, 
     expandAll, 
     collapseAll, 
     expandToLevel, 
@@ -285,17 +283,6 @@ export default function Header() {
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </div>
-            
-            {/* Add New Root Note Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => addNote(null)}
-              className="h-7 mr-2 px-2 sm:px-3"
-            >
-              <PlusCircle className="h-3.5 w-3.5 sm:mr-1" />
-              <span className="hidden sm:inline">Add Note</span>
-            </Button>
             
             {/* Consolidated Hamburger Menu */}
             <DropdownMenu>
