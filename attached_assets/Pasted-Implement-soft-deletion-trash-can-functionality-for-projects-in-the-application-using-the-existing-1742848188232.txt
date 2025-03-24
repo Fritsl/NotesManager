@@ -1,0 +1,71 @@
+Implement soft deletion (trash can) functionality for projects in the application using the existing database structure.
+
+Database Structure
+
+The settings table (which already stores projects) includes a deleted_at timestamp column.
+
+When deleted_at is NULL, the project is active.
+
+When deleted_at is set, it represents the timestamp when the project was moved to trash.
+
+Soft Delete Operation
+
+When a user deletes a project, update the existing deleted_at field like this:
+
+pgsql
+Copy
+Edit
+UPDATE settings 
+SET deleted_at = now() 
+WHERE id = [project_id];
+Viewing Trash
+
+To load trashed projects, use the existing settings table with the following query:
+
+pgsql
+Copy
+Edit
+SELECT * FROM settings
+WHERE 
+  deleted_at IS NOT NULL AND
+  user_id = [current_user_id]
+ORDER BY deleted_at DESC;
+Restore Operation
+
+When restoring a project from trash, set deleted_at back to NULL:
+
+sql
+Copy
+Edit
+UPDATE settings
+SET deleted_at = NULL
+WHERE id = [project_id];
+Permanent Deletion
+
+When permanently deleting a project:
+
+First, delete associated notes using existing foreign key relationships (cascade delete is already enforced).
+
+Then delete all related images from storage (external to DB).
+
+Finally, delete the project record itself from the settings table.
+
+Key Features
+
+Deleted projects remain fully intact (including all notes) while in trash.
+
+Cascade delete constraints already in place ensure referential integrity.
+
+Row Level Security (RLS) is already configured to ensure users can only access their own data.
+
+The regular project listing excludes trashed items by filtering on deleted_at IS NULL.
+
+UI Integration
+
+The UI must include a separate "Trash" view showing only trashed projects.
+
+Users can either restore or permanently delete from this view.
+
+Note counts and timestamps should be displayed even for trashed projects.
+
+This setup ensures safe recovery from accidental deletions, while allowing secure, permanent removal when intended — using only existing database tables and constraints.
