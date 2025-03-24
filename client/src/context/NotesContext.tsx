@@ -142,7 +142,34 @@ export function NotesProvider({ children }: { children: ReactNode }) {
 
   // Export notes to JSON
   const exportNotes = useCallback((): NotesData => {
-    return { notes };
+    // Clone notes and deduplicate images in each note
+    const dedupedNotes = JSON.parse(JSON.stringify(notes)).map((note: any) => {
+      // Process this note and its children recursively
+      const processNote = (noteToProcess: any): any => {
+        // Deduplicate images if they exist
+        if (noteToProcess.images && Array.isArray(noteToProcess.images) && noteToProcess.images.length > 0) {
+          // Use a Map with image ID as key to eliminate duplicates
+          noteToProcess.images = Array.from(
+            new Map(
+              noteToProcess.images.map((img: any) => [img.id, img])
+            ).values()
+          );
+          // Sort by position after deduplication
+          noteToProcess.images.sort((a: any, b: any) => a.position - b.position);
+        }
+        
+        // Process children recursively
+        if (noteToProcess.children && Array.isArray(noteToProcess.children)) {
+          noteToProcess.children = noteToProcess.children.map(processNote);
+        }
+        
+        return noteToProcess;
+      };
+      
+      return processNote(note);
+    });
+    
+    return { notes: dedupedNotes };
   }, [notes]);
 
   // Find a note and its path by ID
@@ -652,8 +679,35 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         firstNote: notes.length > 0 ? notes[0].content : 'No notes'
       });
       
+      // Process notes to clean positions and deduplicate images
+      const processedNotes = cleanNotePositions([...notes]).map((note: Note) => {
+        // Process this note and its children recursively to deduplicate images
+        const processNote = (noteToProcess: Note): Note => {
+          // Deduplicate images if they exist
+          if (noteToProcess.images && Array.isArray(noteToProcess.images) && noteToProcess.images.length > 0) {
+            // Use a Map with image ID as key to eliminate duplicates
+            noteToProcess.images = Array.from(
+              new Map(
+                noteToProcess.images.map((img) => [img.id, img])
+              ).values()
+            );
+            // Sort by position after deduplication
+            noteToProcess.images.sort((a, b) => a.position - b.position);
+          }
+          
+          // Process children recursively
+          if (noteToProcess.children && Array.isArray(noteToProcess.children)) {
+            noteToProcess.children = noteToProcess.children.map(processNote);
+          }
+          
+          return noteToProcess;
+        };
+        
+        return processNote(note);
+      });
+      
       // Create a clean copy of the notes data to save
-      const notesData: NotesData = { notes: cleanNotePositions([...notes]) };
+      const notesData: NotesData = { notes: processedNotes };
       
       // Update the project in the database
       const updatedProject = await updateProject(currentProjectId, currentProjectName, notesData);
