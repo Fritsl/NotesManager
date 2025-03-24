@@ -1,12 +1,12 @@
 {
   "id": "71599133-a873-4e80-a38d-6efb7496f716",
-  "name": "New Project",
+  "name": "New Project With a single image",
   "user_id": "2df0798b-b535-4015-8c5e-15ed98a09481",
   "data": {
     "notes": [
       {
         "id": "07838c1e-53f8-4f9d-a6d0-7cfe6f91b02f",
-        "content": "New note",
+        "content": "New note with a an image",
         "position": 0,
         "is_discussion": false,
         "time_set": null,
@@ -19,6 +19,6 @@
     ]
   },
   "description": "",
-  "updated_at": "2025-03-24T21:13:04.837Z",
-  "created_at": "2025-03-24T21:13:04.837Z"
+  "updated_at": "2025-03-24T21:16:33.764Z",
+  "created_at": "2025-03-24T21:16:33.764Z"
 }

@@ -37,7 +37,6 @@ interface NotesContextType {
   uploadImage: (noteId: string, file: File) => Promise<NoteImage | null>;
   removeImage: (imageId: string) => Promise<boolean>;
   reorderImage: (noteId: string, imageId: string, newPosition: number) => Promise<boolean>;
-  debugInfo: () => any; // For debugging purposes
 }
 
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
@@ -855,21 +854,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     }
   }, [toast]);
 
-  // Debug info function to examine project state
-  const debugInfo = useCallback(() => {
-    return {
-      hasActiveProject,
-      currentProjectId,
-      currentProjectName,
-      currentProjectDescription,
-      noteCount: notes.length,
-      selectedNoteId: selectedNote?.id || null,
-      firstNoteId: notes.length > 0 ? notes[0].id : null,
-      firstNoteContent: notes.length > 0 ? notes[0].content : null,
-      expandedNodesCount: expandedNodes.size,
-      breadcrumbsCount: breadcrumbs.length
-    };
-  }, [hasActiveProject, currentProjectId, currentProjectName, currentProjectDescription, notes, selectedNote, expandedNodes, breadcrumbs]);
+  // Debug info function removed
 
   return (
     <NotesContext.Provider
@@ -905,8 +890,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         setCurrentProjectId,
         uploadImage,
         removeImage,
-        reorderImage,
-        debugInfo
+        reorderImage
       }}
     >
       {children}
