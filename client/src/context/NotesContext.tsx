@@ -212,6 +212,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       url: null,
       url_display_text: null,
       children: [],
+      images: [], // Initialize with empty images array
     };
 
     if (!parent) {
@@ -261,6 +262,11 @@ export function NotesProvider({ children }: { children: ReactNode }) {
             // Preserve children reference if not provided
             if (!updatedNote.children || updatedNote.children.length === 0) {
               updatedNote.children = nodes[i].children;
+            }
+            
+            // Preserve images reference if not provided
+            if (!updatedNote.images || !Array.isArray(updatedNote.images)) {
+              updatedNote.images = nodes[i].images || [];
             }
             nodes[i] = { ...updatedNote };
             return true;
