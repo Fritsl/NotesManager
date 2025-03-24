@@ -13,7 +13,9 @@ import {
   Save,
   FileText,
   FolderOpen,
-  LogOut
+  LogOut,
+  Image,
+  UploadCloud
 } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { useAuth } from "@/context/AuthContext";
