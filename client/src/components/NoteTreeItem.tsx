@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { Note } from "@/types/notes";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, Link, Youtube, ArrowDownRightFromCircle } from "lucide-react";
+import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, Link, Youtube, ArrowDownRightFromCircle, MessageCircle } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { cn } from "@/lib/utils";
 import DropZone from "./DropZone";
@@ -333,7 +333,14 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           <div className="flex-1 overflow-hidden">
             {/* Title line - larger and more prominent */}
             <div className="flex items-center">
-              <div className={`mobile-text-base font-medium ${level >= 0 && level < levelColors.length ? levelColors[level].text : levelColors[0].text} truncate flex-1`}>{displayContent}</div>
+              <div className={`mobile-text-base font-medium ${level >= 0 && level < levelColors.length ? levelColors[level].text : levelColors[0].text} truncate flex-1`}>
+                {note.is_discussion && (
+                  <span className="inline-flex mr-1 text-blue-400" title="Discussion">
+                    <MessageCircle size={16} className="inline-block" />
+                  </span>
+                )}
+                {displayContent}
+              </div>
             </div>
             
             {/* Multiple preview lines */}
