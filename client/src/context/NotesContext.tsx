@@ -364,18 +364,29 @@ export function NotesProvider({ children }: { children: ReactNode }) {
 
   // Update a note
   const updateNote = useCallback((updatedNote: Note) => {
+    // Format the time_set correctly if present (ensure no seconds)
+    let formattedNote = { ...updatedNote };
+    if (formattedNote.time_set) {
+      // Extract just the HH:MM part if there's more
+      const timeParts = formattedNote.time_set.split(':');
+      if (timeParts.length >= 2) {
+        // Only use hours and minutes, no seconds
+        formattedNote.time_set = `${timeParts[0]}:${timeParts[1]}`;
+      }
+    }
+    
     setNotes((prevNotes) => {
       const updatedNotes = [...prevNotes];
       
       // Find the note at any level in the tree
       const updateNoteInTree = (nodes: Note[]): boolean => {
         for (let i = 0; i < nodes.length; i++) {
-          if (nodes[i].id === updatedNote.id) {
+          if (nodes[i].id === formattedNote.id) {
             // Preserve children reference if not provided
-            if (!updatedNote.children || updatedNote.children.length === 0) {
-              updatedNote.children = nodes[i].children;
+            if (!formattedNote.children || formattedNote.children.length === 0) {
+              formattedNote.children = nodes[i].children;
             }
-            nodes[i] = { ...updatedNote };
+            nodes[i] = { ...formattedNote };
             return true;
           }
           
@@ -396,7 +407,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     // Don't auto-save on every keystroke for text changes
     // Content changes are auto-saved via a debounced function in NoteEditor component
     
-    setSelectedNote(updatedNote);
+    setSelectedNote(formattedNote);
     toast({
       title: "Note Updated",
       description: "Your changes have been saved",
@@ -411,7 +422,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         console.error("Failed to auto-save after note update:", error);
       }
     }
-  }, [toast]);
+  }, [toast, currentProjectId, saveProject]);
 
   // Delete a note
   const deleteNote = useCallback((noteId: string) => {
