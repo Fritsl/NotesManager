@@ -20,6 +20,7 @@ export default function TestImage() {
   const [imageId, setImageId] = useState<string>('');
   const [newPosition, setNewPosition] = useState<number>(0);
   const [updateResponse, setUpdateResponse] = useState<any>(null);
+  const [userNotes, setUserNotes] = useState<{id: string, content: string}[]>([]);
 
   useEffect(() => {
     // Get current user ID on component mount
@@ -27,12 +28,111 @@ export default function TestImage() {
       const { data } = await supabase.auth.getUser();
       if (data?.user) {
         setUserId(data.user.id);
+        // Once we have user ID, fetch their notes
+        fetchUserNotes(data.user.id);
       }
     };
 
     getUserId();
     fetchDiagnostics();
   }, []);
+  
+  // Fetch user's notes to provide valid note IDs for testing
+  const fetchUserNotes = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('notes')
+        .select('id, content')
+        .eq('user_id', userId)
+        .limit(5);
+        
+      if (error) {
+        console.error('Error fetching notes:', error);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        setUserNotes(data);
+        // Auto-select the first note ID to make testing easier
+        setNoteId(data[0].id);
+      } else {
+        console.log('No notes found, will create a test note');
+        createTestNote(userId);
+      }
+    } catch (error) {
+      console.error('Error in fetchUserNotes:', error);
+    }
+  };
+  
+  // Create a test note if user doesn't have any
+  const createTestNote = async (userId: string) => {
+    try {
+      // First check if the user has any projects
+      const { data: projects, error: projectsError } = await supabase
+        .from('settings')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('deleted_at', null)
+        .limit(1);
+        
+      if (projectsError) {
+        console.error('Error fetching projects:', projectsError);
+        return;
+      }
+      
+      let projectId: string;
+      
+      // If no projects exist, create one
+      if (!projects || projects.length === 0) {
+        const { data: newProject, error: newProjectError } = await supabase
+          .from('settings')
+          .insert({
+            user_id: userId,
+            title: 'Test Project',
+            last_modified_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+          
+        if (newProjectError || !newProject) {
+          console.error('Error creating test project:', newProjectError);
+          return;
+        }
+        
+        projectId = newProject.id;
+      } else {
+        projectId = projects[0].id;
+      }
+      
+      // Now create a test note in this project
+      const { data: newNote, error: newNoteError } = await supabase
+        .from('notes')
+        .insert({
+          user_id: userId,
+          project_id: projectId,
+          content: 'Test note for image uploads',
+          position: 0
+        })
+        .select()
+        .single();
+        
+      if (newNoteError || !newNote) {
+        console.error('Error creating test note:', newNoteError);
+        return;
+      }
+      
+      // Update state with the new note
+      setUserNotes([newNote]);
+      setNoteId(newNote.id);
+      
+      toast({
+        title: 'Test Note Created',
+        description: 'Created a note for testing image uploads'
+      });
+    } catch (error) {
+      console.error('Error in createTestNote:', error);
+    }
+  };
 
   const fetchDiagnostics = async () => {
     try {
@@ -229,21 +329,51 @@ export default function TestImage() {
       
       <Card>
         <CardHeader>
+          <CardTitle>Your Notes</CardTitle>
+          <CardDescription>Select a note to use for image tests</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {userNotes.length > 0 ? (
+              <div className="grid gap-2">
+                {userNotes.map(note => (
+                  <div 
+                    key={note.id} 
+                    className={`p-3 border rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 ${noteId === note.id ? 'bg-blue-100 dark:bg-blue-900 border-blue-500' : ''}`}
+                    onClick={() => setNoteId(note.id)}
+                  >
+                    <p className="font-medium">{note.content.substring(0, 50)}{note.content.length > 50 ? '...' : ''}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">ID: {note.id}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center p-4 border rounded bg-gray-50 dark:bg-gray-800">
+                <p>No notes found. A test note will be created automatically when you sign in.</p>
+              </div>
+            )}
+            
+            <div>
+              <Label htmlFor="note-id">Note ID</Label>
+              <Input
+                id="note-id"
+                value={noteId}
+                onChange={(e) => setNoteId(e.target.value)}
+                placeholder="Selected note ID will appear here"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
           <CardTitle>RLS Policy Test</CardTitle>
           <CardDescription>Test Row Level Security policies on note_images table</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div>
-              <Label htmlFor="note-id">Note ID (optional)</Label>
-              <Input
-                id="note-id"
-                value={noteId}
-                onChange={(e) => setNoteId(e.target.value)}
-                placeholder="Enter note ID for RLS test"
-              />
-            </div>
-            <Button onClick={testRls}>Test RLS Policies</Button>
+            <Button onClick={testRls} disabled={!noteId}>Test RLS Policies</Button>
             {rlsTest && (
               <div className="mt-4 p-4 bg-slate-800 text-white rounded-md overflow-auto max-h-64">
                 <pre>{JSON.stringify(rlsTest, null, 2)}</pre>
