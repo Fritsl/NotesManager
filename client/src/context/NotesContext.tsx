@@ -467,6 +467,16 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       title: "Note Deleted",
       description: "The note has been removed",
     });
+    
+    // Trigger a save when the toast appears
+    if (currentProjectId) {
+      try {
+        saveProject();
+        console.log("Project saved after note deletion");
+      } catch (error) {
+        console.error("Failed to save after note deletion:", error);
+      }
+    }
   }, [selectedNote, cleanNotePositions, currentProjectId, saveProject, toast]);
 
   // Reference to track if a move operation is in progress to prevent multiple simultaneous moves
@@ -846,20 +856,22 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       
       console.log('Image removed successfully:', imageId);
       
-      // Auto-save the project after image removal
-      setTimeout(async () => {
-        try {
-          await saveProject();
-          console.log("Project auto-saved after image removal");
-        } catch (error) {
-          console.error("Failed to auto-save after image removal:", error);
-        }
-      }, 0);
+      // We'll use the toast-based save method consistently
       
       toast({
         title: "Image Removed",
         description: "The image has been removed from your note",
       });
+      
+      // Trigger a save when the toast appears
+      if (currentProjectId) {
+        try {
+          saveProject();
+          console.log("Project saved after image removal");
+        } catch (error) {
+          console.error("Failed to save after image removal:", error);
+        }
+      }
       
       return true;
     } catch (error) {
@@ -901,15 +913,21 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       
       console.log('Image reordered successfully:', { noteId, imageId, newPosition });
       
-      // Auto-save the project after image reordering
-      setTimeout(async () => {
+      // Add toast notification for image reordering
+      toast({
+        title: "Image Reordered",
+        description: "The image position has been updated",
+      });
+      
+      // Trigger a save when the toast appears
+      if (currentProjectId) {
         try {
-          await saveProject();
-          console.log("Project auto-saved after image reordering");
+          saveProject();
+          console.log("Project saved after image reordering");
         } catch (error) {
-          console.error("Failed to auto-save after image reordering:", error);
+          console.error("Failed to save after image reordering:", error);
         }
-      }, 0);
+      }
       
       return true;
     } catch (error) {
