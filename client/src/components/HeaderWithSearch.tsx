@@ -15,7 +15,9 @@ import {
   FolderOpen,
   LogOut,
   Edit,
-  FileEdit
+  FileEdit,
+  Trash2,
+  AlertTriangle
 } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { useAuth } from "@/context/AuthContext";
