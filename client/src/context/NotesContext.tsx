@@ -2,7 +2,7 @@ import { createContext, useContext, useState, ReactNode, useCallback, useMemo, u
 import { Note, NotesData, NoteImage } from "@/types/notes";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
-import { createProject, updateProject, addImageToNote, removeImageFromNote, updateImagePosition } from "@/lib/projectService";
+import { createProject, updateProject, addImageToNote, removeImageFromNote, updateImagePosition, getProject } from "@/lib/projectService";
 
 interface NotesContextType {
   notes: Note[];
@@ -52,7 +52,74 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const [currentProjectDescription, setCurrentProjectDescription] = useState<string>('');
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [hasActiveProject, setHasActiveProject] = useState<boolean>(false);
+  const [isInitialLoad, setIsInitialLoad] = useState<boolean>(true);
+  const [isAutoLoading, setIsAutoLoading] = useState<boolean>(false);
   const { toast } = useToast();
+
+  // Auto-load the last accessed project on initial mount
+  useEffect(() => {
+    const loadLastProject = async () => {
+      // Only attempt to load if this is the initial load
+      if (!isInitialLoad) return;
+      
+      try {
+        // Get the last project ID from localStorage
+        const lastProjectId = localStorage.getItem('lastProjectId');
+        
+        // If we have a last project ID, try to load it
+        if (lastProjectId) {
+          console.log('Auto-loading last project ID:', lastProjectId);
+          setIsAutoLoading(true);
+          
+          // Fetch the project from the database
+          const project = await getProject(lastProjectId);
+          
+          if (project) {
+            console.log('Auto-loaded project:', project.name);
+            
+            // Import the notes from the project
+            importNotes(project.data, project.name, project.id);
+            
+            // Set project description if available
+            if (project.description) {
+              setCurrentProjectDescription(project.description);
+            }
+            
+            // Mark as having an active project
+            setHasActiveProject(true);
+            
+            toast({
+              title: 'Project Loaded',
+              description: `Automatically loaded "${project.name}"`,
+            });
+          } else {
+            console.log('Auto-load failed: Project not found');
+            // Clear the invalid project ID from localStorage
+            localStorage.removeItem('lastProjectId');
+          }
+        } else {
+          console.log('No last project ID found in localStorage');
+        }
+      } catch (error) {
+        console.error('Error auto-loading last project:', error);
+      } finally {
+        setIsInitialLoad(false);
+        setIsAutoLoading(false);
+      }
+    };
+    
+    // Execute the auto-load function
+    loadLastProject();
+  }, []);
+
+  // Update localStorage whenever currentProjectId changes
+  useEffect(() => {
+    if (currentProjectId) {
+      // Store the current project ID in localStorage
+      localStorage.setItem('lastProjectId', currentProjectId);
+      console.log('Saved last project ID to localStorage:', currentProjectId);
+    }
+  }, [currentProjectId]);
 
   // Clean note positions to ensure sequential ordering without gaps
   const cleanNotePositions = useCallback((noteList: Note[]): Note[] => {
@@ -297,7 +364,8 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const deleteNote = useCallback((noteId: string) => {
     setNotes((prevNotes) => {
       const updatedNotes = [...prevNotes];
-      let parentWithUpdatedChildren: Note | null = null;
+      // Create a variable to keep track of the parent note that had a child removed
+      let parentNote: Note | null = null;
       
       // Find and remove the note at any level in the tree
       const removeNoteFromTree = (nodes: Note[], parent: Note | null = null): boolean => {
@@ -305,7 +373,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
           if (nodes[i].id === noteId) {
             nodes.splice(i, 1);
             // Keep track of parent that had a child removed
-            parentWithUpdatedChildren = parent;
+            parentNote = parent;
             return true;
           }
           
@@ -322,11 +390,14 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       removeNoteFromTree(updatedNotes);
       
       // If we deleted from a parent's children, clean those children's positions
-      if (parentWithUpdatedChildren) {
-        parentWithUpdatedChildren.children = parentWithUpdatedChildren.children.map((child: Note, index: number) => ({
-          ...child,
-          position: index
-        }));
+      if (parentNote) {
+        // Update the positions of the remaining children
+        if (parentNote.children && parentNote.children.length > 0) {
+          parentNote.children = parentNote.children.map((child: Note, index: number) => ({
+            ...child,
+            position: index
+          }));
+        }
       } else {
         // If we deleted from root level, clean root positions
         updatedNotes.forEach((note, index) => {
