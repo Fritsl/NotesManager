@@ -153,6 +153,7 @@ export function buildNoteHierarchy(flatNotes: DbNote[], imagesData?: any[] | nul
 // Function to flatten hierarchical notes to DB records
 export function flattenNoteHierarchy(notes: Note[], projectId: string, userId: string): any[] {
   const flatNotes: any[] = [];
+  const noteImages: any[] = []; // To collect all images that need to be preserved
   
   // Recursive function to process each note
   const processNote = (note: Note, parentId: string | null, level: number) => {
@@ -189,6 +190,21 @@ export function flattenNoteHierarchy(notes: Note[], projectId: string, userId: s
     // Add to flat list
     flatNotes.push(dbNote);
     
+    // Collect images if the note has any
+    if (note.images && note.images.length > 0) {
+      // Add each image to the noteImages array for insertion/preservation
+      note.images.forEach(image => {
+        noteImages.push({
+          id: image.id,
+          note_id: note.id,
+          storage_path: image.storage_path,
+          url: image.url,
+          position: image.position,
+          created_at: image.created_at || now
+        });
+      });
+    }
+    
     // Process children recursively
     if (note.children && note.children.length > 0) {
       note.children.forEach(child => {
@@ -202,7 +218,8 @@ export function flattenNoteHierarchy(notes: Note[], projectId: string, userId: s
     processNote(note, null, 0);
   });
   
-  return flatNotes;
+  // Return both the flat notes and the collected images
+  return { notes: flatNotes, images: noteImages };
 }
 
 export async function getProjects(): Promise<Project[]> {
