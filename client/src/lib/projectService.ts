@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { Note, NotesData, NoteImage } from '../types/notes';
 import { v4 as uuidv4 } from 'uuid';
+import { isValidUrl, isValidYoutubeUrl } from './utils';
 
 export interface Project {
   id: string;
@@ -177,6 +178,20 @@ export function flattenNoteHierarchy(notes: Note[], projectId: string, userId: s
       // Content is already plain text, no conversion needed
     }
     
+    // Validate URL to ensure it meets database constraints
+    let validUrl = note.url;
+    if (validUrl && !isValidUrl(validUrl)) {
+      console.warn(`Invalid URL in note ${note.id}: ${validUrl}, removing to prevent database errors`);
+      validUrl = null;
+    }
+    
+    // Validate YouTube URL
+    let validYoutubeUrl = note.youtube_url;
+    if (validYoutubeUrl && !isValidYoutubeUrl(validYoutubeUrl)) {
+      console.warn(`Invalid YouTube URL in note ${note.id}: ${validYoutubeUrl}, removing to prevent database errors`);
+      validYoutubeUrl = null;
+    }
+    
     // Use the correct field names based on the Supabase schema
     const dbNote = {
       id: note.id,
@@ -190,9 +205,9 @@ export function flattenNoteHierarchy(notes: Note[], projectId: string, userId: s
       // Also store these properties directly on the note for compatibility with the original system
       is_discussion: note.is_discussion || false,
       time_set: note.time_set,
-      youtube_url: note.youtube_url,
-      url: note.url,
-      url_display_text: note.url_display_text,
+      youtube_url: validYoutubeUrl,
+      url: validUrl,
+      url_display_text: validUrl ? note.url_display_text : null, // Only include display text if URL is valid
       created_at: now,
       updated_at: now
     };
