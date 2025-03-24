@@ -63,18 +63,9 @@ export default function NoteEditor() {
     }
   }, [selectedNote]);
   
-  // Auto-save when form loses focus if there are changes
+  // Auto-save when any field loses focus if there are changes (similar to Google Docs)
   const handleBlur = useCallback((e: React.FocusEvent) => {
-    // Check if we're still in the editor component (to another input in the same form)
-    // This prevents saves when just moving between fields in the same form
-    const relatedTarget = e.relatedTarget as HTMLElement;
-    const isStillInEditor = relatedTarget && 
-      (relatedTarget.closest('.note-editor-form') !== null);
-    
-    if (isStillInEditor) {
-      return; // Don't auto-save when just moving between fields in the same form
-    }
-    
+    // Only check if we have a note and changes to save
     if (selectedNote && hasChanges) {
       // Use a small delay to prevent saving while user is still interacting with the form
       if (autoSaveTimerRef.current) {
