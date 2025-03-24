@@ -4,6 +4,11 @@ import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import { createProject, updateProject, addImageToNote, removeImageFromNote, updateImagePosition } from "@/lib/projectService";
 
+// Define a stronger type for parent notes that guarantees children property is present
+interface ParentNote extends Note {
+  children: Note[];
+}
+
 interface NotesContextType {
   notes: Note[];
   setNotes: (notes: Note[]) => void;
@@ -428,26 +433,21 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const deleteNote = useCallback((noteId: string) => {
     setNotes((prevNotes) => {
       const updatedNotes = [...prevNotes];
-      // Adding explicit type annotation to ensure children is recognized
-      let parentWithUpdatedChildren: (Note & { children: Note[] }) | null = null;
+      let parentWithUpdatedChildren: ParentNote | null = null;
       
       // Find and remove the note at any level in the tree
-      // Explicitly type parent to include children array
-      const removeNoteFromTree = (nodes: Note[], parent: (Note & { children: Note[] }) | null = null): boolean => {
+      const removeNoteFromTree = (nodes: Note[], parent: ParentNote | null = null): boolean => {
         for (let i = 0; i < nodes.length; i++) {
           if (nodes[i].id === noteId) {
             nodes.splice(i, 1);
             // Keep track of parent that had a child removed
-            // Ensure proper type cast when assigning parent to parentWithUpdatedChildren
-            if (parent) {
-              parentWithUpdatedChildren = parent as (Note & { children: Note[] });
-            }
+            parentWithUpdatedChildren = parent;
             return true;
           }
           
-          if (nodes[i].children.length > 0) {
-            // Type cast nodes[i] to ensure it has the proper type for children property
-            if (removeNoteFromTree(nodes[i].children, nodes[i] as (Note & { children: Note[] }))) {
+          if (nodes[i].children && nodes[i].children.length > 0) {
+            // Cast the note as ParentNote since we know it has children
+            if (removeNoteFromTree(nodes[i].children, nodes[i] as ParentNote)) {
               return true;
             }
           }
@@ -459,12 +459,15 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       removeNoteFromTree(updatedNotes);
       
       // If we deleted from a parent's children, clean those children's positions
-      if (parentWithUpdatedChildren && Array.isArray(parentWithUpdatedChildren.children)) {
-        // Safely access and update the children with proper type checking
-        parentWithUpdatedChildren.children = parentWithUpdatedChildren.children.map((child: Note, index: number) => ({
+      if (parentWithUpdatedChildren) {
+        // Cast to access children array properly
+        const parent = parentWithUpdatedChildren as { children: Note[] };
+        const cleanedChildren = parent.children.map((child: Note, index: number) => ({
           ...child,
           position: index
         }));
+        // Safely assign back
+        parent.children = cleanedChildren;
       } else {
         // If we deleted from root level, clean root positions
         updatedNotes.forEach((note, index) => {
