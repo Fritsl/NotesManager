@@ -29,19 +29,26 @@ export default function PayoffModal({ isOpen, onClose }: PayoffModalProps) {
     
     setIsLoading(true);
     try {
+      // First check if the user profile exists
       const { data, error } = await supabase
         .from('profiles')
         .select('payoff')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .single();
       
       if (error) {
-        console.error('Error fetching payoff:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to fetch current payoff',
-          variant: 'destructive',
-        });
+        // If the error is "no rows returned" it means the profile doesn't exist yet
+        if (error.code === 'PGRST116') {
+          // This is ok - it just means we need to create the profile
+          console.log('No profile found, will create on save');
+          setPayoff('');
+        } else {
+          console.error('Error fetching payoff:', error);
+          toast({
+            title: 'Notice',
+            description: 'Creating new profile, you can now add your payoff.',
+          });
+        }
       } else if (data) {
         setPayoff(data.payoff || '');
       }
@@ -57,22 +64,48 @@ export default function PayoffModal({ isOpen, onClose }: PayoffModalProps) {
     
     setIsLoading(true);
     try {
-      const { error } = await supabase
+      // First check if the profile exists
+      const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
-        .update({ payoff })
-        .eq('id', user.id);
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
       
-      if (error) {
-        console.error('Error updating payoff:', error);
+      let saveError;
+      
+      if (checkError && checkError.code === 'PGRST116') {
+        // No profile exists, create a new one
+        console.log('Creating new profile for user:', user.id);
+        const { error } = await supabase
+          .from('profiles')
+          .insert([{ 
+            user_id: user.id,
+            payoff 
+          }]);
+        
+        saveError = error;
+      } else {
+        // Profile exists, update it
+        console.log('Updating existing profile for user:', user.id);
+        const { error } = await supabase
+          .from('profiles')
+          .update({ payoff })
+          .eq('user_id', user.id);
+        
+        saveError = error;
+      }
+      
+      if (saveError) {
+        console.error('Error saving payoff:', saveError);
         toast({
           title: 'Error',
-          description: 'Failed to update payoff',
+          description: 'Failed to save payoff',
           variant: 'destructive',
         });
       } else {
         toast({
           title: 'Success',
-          description: 'Payoff updated successfully',
+          description: 'Payoff saved successfully',
         });
         onClose();
       }
