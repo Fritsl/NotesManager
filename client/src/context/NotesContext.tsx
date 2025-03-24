@@ -338,17 +338,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       });
     }
 
-    // Auto-save immediately when a note is added
-    if (currentProjectId) {
-      setTimeout(async () => {
-        try {
-          await saveProject();
-          console.log("Project auto-saved after note addition");
-        } catch (error) {
-          console.error("Failed to auto-save after note addition:", error);
-        }
-      }, 0);
-    }
+    // We'll remove this auto-save block and rely on the toast-based save
 
     selectNote(newNote);
     // First show a toast notification  
@@ -471,17 +461,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       setBreadcrumbs([]);
     }
     
-    // Auto-save immediately when a note is deleted
-    if (currentProjectId) {
-      setTimeout(async () => {
-        try {
-          await saveProject();
-          console.log("Project auto-saved after note deletion");
-        } catch (error) {
-          console.error("Failed to auto-save after note deletion:", error);
-        }
-      }, 0);
-    }
+    // We'll rely on the toast-based save method consistently
     
     toast({
       title: "Note Deleted",
@@ -611,17 +591,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       return cleanNotePositions(updatedNotes);
     });
     
-    // Auto-save immediately when a note is moved
-    if (currentProjectId) {
-      setTimeout(async () => {
-        try {
-          await saveProject();
-          console.log("Project auto-saved after note movement");
-        } catch (error) {
-          console.error("Failed to auto-save after note movement:", error);
-        }
-      }, 0);
-    }
+    // We'll rely on the toast-based save method consistently
     
     toast({
       title: "Note Moved",
@@ -819,20 +789,22 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       
       console.log('Image uploaded successfully:', uploadedImage);
       
-      // Auto-save the project after image upload
-      setTimeout(async () => {
-        try {
-          await saveProject();
-          console.log("Project auto-saved after image upload");
-        } catch (error) {
-          console.error("Failed to auto-save after image upload:", error);
-        }
-      }, 0);
+      // We'll rely on the toast-based save only
       
       toast({
         title: "Image Uploaded",
         description: "The image has been added to your note",
       });
+      
+      // Trigger a save when the toast appears
+      if (currentProjectId) {
+        try {
+          saveProject();
+          console.log("Project saved after image upload");
+        } catch (error) {
+          console.error("Failed to save after image upload:", error);
+        }
+      }
       
       return uploadedImage;
     } catch (error) {
