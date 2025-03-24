@@ -9,10 +9,11 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { Avatar, AvatarFallback } from './ui/avatar';
-import { User, LogIn, LogOut, FolderOpen, Save } from 'lucide-react';
+import { User, LogIn, LogOut, FolderOpen, Save, Edit } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import AuthModal from './AuthModal';
 import ProjectsModal from './ProjectsModal';
+import PayoffModal from './PayoffModal';
 import { useToast } from '../hooks/use-toast';
 import { useNotes } from '../context/NotesContext';
 import { createProject, updateProject } from '../lib/projectService';
@@ -20,6 +21,7 @@ import { createProject, updateProject } from '../lib/projectService';
 export default function UserMenu() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showProjectsModal, setShowProjectsModal] = useState(false);
+  const [showPayoffModal, setShowPayoffModal] = useState(false);
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const { exportNotes } = useNotes();
@@ -113,6 +115,10 @@ export default function UserMenu() {
                 <Save className="h-4 w-4 mr-2" />
                 Quick Save
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowPayoffModal(true)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Profile Payoff
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
@@ -136,6 +142,11 @@ export default function UserMenu() {
       <ProjectsModal 
         isOpen={showProjectsModal} 
         onClose={() => setShowProjectsModal(false)} 
+      />
+      
+      <PayoffModal
+        isOpen={showPayoffModal}
+        onClose={() => setShowPayoffModal(false)}
       />
     </>
   );

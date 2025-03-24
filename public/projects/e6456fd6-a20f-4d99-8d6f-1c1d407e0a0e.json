@@ -1,0 +1,33 @@
+{
+  "id": "e6456fd6-a20f-4d99-8d6f-1c1d407e0a0e",
+  "name": "Dette er ombeskrevet",
+  "user_id": "2df0798b-b535-4015-8c5e-15ed98a09481",
+  "data": {
+    "notes": [
+      {
+        "id": "89a99412-bc5e-481b-8956-11b2367e99f4",
+        "content": "New note",
+        "position": 0,
+        "is_discussion": false,
+        "time_set": null,
+        "youtube_url": null,
+        "url": null,
+        "url_display_text": null,
+        "children": [],
+        "images": [
+          {
+            "id": "ab415f63-1a52-46ac-9150-7d9407005afe",
+            "note_id": "89a99412-bc5e-481b-8956-11b2367e99f4",
+            "storage_path": "images/ae42ce0c-2b58-4fe4-a86f-ede9c3586232.jpg",
+            "url": "http://3243e722-ac0b-41a9-9cda-5c6989309426-00-5cj9stwfo8t8.janeway.replit.dev/uploads/ae42ce0c-2b58-4fe4-a86f-ede9c3586232.jpg",
+            "position": 0,
+            "created_at": "2025-03-24T18:27:10.183Z"
+          }
+        ]
+      }
+    ]
+  },
+  "description": "her er beskrveilsern",
+  "updated_at": "2025-03-24T18:27:14.382Z",
+  "created_at": "2025-03-24T18:27:14.382Z"
+}
