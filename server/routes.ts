@@ -48,22 +48,23 @@ const upload = multer({
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create necessary directories
   const uploadsDir = path.join(__dirname, '../public/uploads');
-  const projectsDir = path.join(__dirname, '../public/projects');
   
-  // Ensure directories exist
+  // Ensure uploads directory exists
   if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
+    log(`Created uploads directory: ${uploadsDir}`);
   }
   
+  // Setup static file serving for uploads directory
+  app.use('/uploads', express.static(uploadsDir));
+  
+  // Setup projects directory
+  const projectsDir = path.join(__dirname, '../public/projects');
+  
+  // Ensure projects directory exists
   if (!fs.existsSync(projectsDir)) {
     fs.mkdirSync(projectsDir, { recursive: true });
   }
-  
-  // Serve static files from the public/uploads directory for test/mock images
-  app.use('/uploads', fs.existsSync(uploadsDir) 
-    ? express.static(uploadsDir)
-    : (_, __, next) => next()
-  );
   
   // put application routes here
   // prefix all routes with /api
@@ -496,30 +497,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
           log(`Bucket check error (continuing): ${bucketError.message}`);
         }
         
-        // Upload to Supabase Storage
+        // Try uploading to Supabase first, then fall back to local storage if needed
         let publicUrl = '';
+        let storageType = 'supabase'; // Track whether we're using Supabase or local storage
         
-        // Try to upload the file
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('note-images')
-          .upload(filePath, fileBuffer, {
-            contentType: file.mimetype,
-            cacheControl: '3600',
-            upsert: true
-          });
+        try {
+          // First try Supabase Storage
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('note-images')
+            .upload(filePath, fileBuffer, {
+              contentType: file.mimetype,
+              cacheControl: '3600',
+              upsert: true
+            });
 
-        if (uploadError) {
-          log(`Storage upload error: ${uploadError.message}`);
-          return res.status(500).json({ error: "Failed to upload to storage", details: uploadError });
+          if (uploadError) {
+            log(`Supabase storage upload error: ${uploadError.message}, using local storage instead`);
+            storageType = 'local';
+          } else {
+            // Get the public URL from Supabase
+            const { data: { publicUrl: supabaseUrl } } = supabase.storage
+              .from('note-images')
+              .getPublicUrl(filePath);
+              
+            publicUrl = supabaseUrl;
+            log(`Image uploaded to Supabase, public URL: ${publicUrl}`);
+          }
+        } catch (error: any) {
+          log(`Supabase connection failed: ${error.message}, using local storage instead`);
+          storageType = 'local';
         }
-
-        // Get the public URL
-        const { data: { publicUrl: supabaseUrl } } = supabase.storage
-          .from('note-images')
-          .getPublicUrl(filePath);
-          
-        publicUrl = supabaseUrl;
-        log(`Image uploaded to Supabase, public URL: ${publicUrl}`);
+        
+        // If Supabase failed, use local storage
+        if (storageType === 'local') {
+          try {
+            // Make sure uploads directory exists
+            if (!fs.existsSync(uploadsDir)) {
+              fs.mkdirSync(uploadsDir, { recursive: true });
+              log(`Created uploads directory: ${uploadsDir}`);
+            }
+            
+            // Save the file to local storage
+            const localFilePath = path.join(uploadsDir, fileName);
+            fs.writeFileSync(localFilePath, fileBuffer);
+            
+            // Generate a URL for the local file
+            const baseUrl = req.protocol + '://' + req.get('host');
+            publicUrl = `${baseUrl}/uploads/${fileName}`;
+            
+            log(`Image saved to local storage, URL: ${publicUrl}`);
+          } catch (localError: any) {
+            log(`Local storage fallback also failed: ${localError.message}`);
+            return res.status(500).json({ 
+              error: "Failed to upload image", 
+              message: "Both cloud and local storage attempts failed" 
+            });
+          }
+        }
 
         // Get highest position of existing images
         const { data: existingImages } = await supabase
@@ -632,6 +666,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Delete from storage if path exists
         if (imageData.storage_path) {
+          // Try to delete from Supabase storage
           try {
             const { error: deleteStorageError } = await supabase.storage
               .from('note-images')
@@ -639,12 +674,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
             if (deleteStorageError) {
               log(`Warning: Could not delete storage file: ${deleteStorageError.message}`);
-              // Continue anyway to remove the database record
+              // Continue anyway, will try local storage next
             } else {
-              log(`Deleted file from storage: ${imageData.storage_path}`);
+              log(`Deleted file from Supabase storage: ${imageData.storage_path}`);
             }
           } catch (storageError: any) {
-            log(`Storage delete error (continuing): ${storageError.message}`);
+            log(`Supabase storage delete error (continuing): ${storageError.message}`);
+          }
+          
+          // Also check for a local copy and delete if found
+          try {
+            // Get the filename from the path
+            const fileName = path.basename(imageData.storage_path);
+            const localFilePath = path.join(uploadsDir, fileName);
+            
+            // Check if the file exists locally
+            if (fs.existsSync(localFilePath)) {
+              fs.unlinkSync(localFilePath);
+              log(`Deleted local file: ${localFilePath}`);
+            }
+          } catch (localError: any) {
+            log(`Local file deletion error (continuing): ${localError.message}`);
           }
         }
 
