@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import ImportModal from "@/components/ImportModal";
 import ExportModal from "@/components/ExportModal";
 import ProjectsModal from "@/components/ProjectsModal";
+import SearchBar from "@/components/SearchBar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -154,81 +155,83 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-gray-950 border-b border-gray-800 py-2 px-2 sm:px-4 flex justify-between items-center">
+    <header className="bg-gray-950 border-b border-gray-800 py-2 px-2 sm:px-4">
       {hasActiveProject ? (
-        <>
-          <div className="flex items-center space-x-1 sm:space-x-2">
-            <div className="flex items-center">
-              {!isEditingProjectName ? (
-                <div 
-                  className="flex items-center cursor-pointer group"
-                  onClick={startEditing}
-                >
-                  <h1 className="mobile-text-base font-semibold text-gray-100 flex items-center">
-                    <span className="text-gray-400 hidden sm:inline">Project:</span>
-                    <span className="ml-0 sm:ml-1 max-w-[120px] sm:max-w-[250px] truncate group-hover:text-primary transition-colors">
-                      {currentProjectName}
-                    </span>
-                    <Edit2 className="h-3.5 w-3.5 ml-1 opacity-0 group-hover:opacity-100 text-gray-400 transition-opacity" />
-                  </h1>
-                </div>
-              ) : (
-                <div className="flex items-center">
-                  <span className="text-gray-400 text-sm sm:text-base mr-1 hidden sm:inline">Project:</span>
+        <div className="flex flex-col space-y-2">
+          {/* Top row with project name and controls */}
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-1 sm:space-x-2">
+              <div className="flex items-center">
+                {!isEditingProjectName ? (
+                  <div 
+                    className="flex items-center cursor-pointer group"
+                    onClick={startEditing}
+                  >
+                    <h1 className="mobile-text-base font-semibold text-gray-100 flex items-center">
+                      <span className="text-gray-400 hidden sm:inline">Project:</span>
+                      <span className="ml-0 sm:ml-1 max-w-[120px] sm:max-w-[250px] truncate group-hover:text-primary transition-colors">
+                        {currentProjectName}
+                      </span>
+                      <Edit2 className="h-3.5 w-3.5 ml-1 opacity-0 group-hover:opacity-100 text-gray-400 transition-opacity" />
+                    </h1>
+                  </div>
+                ) : (
                   <div className="flex items-center">
-                    <Input
-                      ref={projectNameInputRef}
-                      value={editedProjectName}
-                      onChange={(e) => setEditedProjectName(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      className="h-7 py-0 w-28 sm:w-auto text-sm sm:text-base font-semibold bg-gray-800 border-gray-700 focus-visible:ring-primary text-gray-100"
-                      maxLength={50}
-                    />
-                    <div className="flex ml-1">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6 p-0 text-green-500 hover:text-green-400 hover:bg-gray-800 touch-target"
-                        onClick={saveProjectName}
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6 p-0 text-red-500 hover:text-red-400 hover:bg-gray-800 touch-target"
-                        onClick={cancelEditing}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                    <span className="text-gray-400 text-sm sm:text-base mr-1 hidden sm:inline">Project:</span>
+                    <div className="flex items-center">
+                      <Input
+                        ref={projectNameInputRef}
+                        value={editedProjectName}
+                        onChange={(e) => setEditedProjectName(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        className="h-7 py-0 w-28 sm:w-auto text-sm sm:text-base font-semibold bg-gray-800 border-gray-700 focus-visible:ring-primary text-gray-100"
+                        maxLength={50}
+                      />
+                      <div className="flex ml-1">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6 p-0 text-green-500 hover:text-green-400 hover:bg-gray-800 touch-target"
+                          onClick={saveProjectName}
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6 p-0 text-red-500 hover:text-red-400 hover:bg-gray-800 touch-target"
+                          onClick={cancelEditing}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 p-0 ml-1 hidden sm:flex">
+                      <Info className="h-4 w-4 text-gray-400 hover:text-primary" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs text-xs bg-gray-900 border-gray-700">
+                    <p className="font-medium mb-1">Keyboard Shortcuts:</p>
+                    <ul className="list-disc ml-3 space-y-0.5">
+                      <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Z</kbd> Collapse one level</li>
+                      <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">X</kbd> Expand one more level</li>
+                      <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Ctrl+0</kbd> Collapse all (L0)</li>
+                      <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Ctrl+1-5</kbd> Jump to levels L1-L5</li>
+                      <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Ctrl+E</kbd> Expand all</li>
+                      <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Ctrl+C</kbd> Collapse all</li>
+                    </ul>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 p-0 ml-1 hidden sm:flex">
-                    <Info className="h-4 w-4 text-gray-400 hover:text-primary" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-xs text-xs bg-gray-900 border-gray-700">
-                  <p className="font-medium mb-1">Keyboard Shortcuts:</p>
-                  <ul className="list-disc ml-3 space-y-0.5">
-                    <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Z</kbd> Collapse one level</li>
-                    <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">X</kbd> Expand one more level</li>
-                    <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Ctrl+0</kbd> Collapse all (L0)</li>
-                    <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Ctrl+1-5</kbd> Jump to levels L1-L5</li>
-                    <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Ctrl+E</kbd> Expand all</li>
-                    <li><kbd className="px-1 bg-gray-800 rounded text-[9px] text-gray-200">Ctrl+C</kbd> Collapse all</li>
-                  </ul>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <div className="flex items-center">
-            {/* Level Controls */}
+            <div className="flex items-center">
+              {/* Level Controls */}
             <div className="hidden sm:flex items-center mr-2 border-r pr-3 border-gray-700 flex-wrap">
               {/* Create buttons for L0 through maxDepth */}
               {Array.from({ length: Math.min(maxDepth + 1, 9) }, (_, i) => i).map(level => {

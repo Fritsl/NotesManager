@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Header from "@/components/Header";
+import Header from "@/components/HeaderWithSearch";
 import NoteTree from "@/components/NoteTree";
 import NoteEditor from "@/components/NoteEditor";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
