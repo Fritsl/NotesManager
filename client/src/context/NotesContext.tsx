@@ -281,6 +281,19 @@ export function NotesProvider({ children }: { children: ReactNode }) {
 
   // Update a note
   const updateNote = useCallback((updatedNote: Note) => {
+    // Log the updated note to help with debugging
+    console.log('Updating note:', {
+      id: updatedNote.id,
+      content: updatedNote.content,
+      contentLength: updatedNote.content ? updatedNote.content.length : 0
+    });
+    
+    // Ensure content is a string
+    if (typeof updatedNote.content !== 'string') {
+      console.warn('Note content is not a string, converting to string:', updatedNote.id);
+      updatedNote.content = String(updatedNote.content || '');
+    }
+    
     setNotes((prevNotes) => {
       const updatedNotes = [...prevNotes];
       
@@ -297,11 +310,18 @@ export function NotesProvider({ children }: { children: ReactNode }) {
             if (!updatedNote.images || !Array.isArray(updatedNote.images)) {
               updatedNote.images = nodes[i].images || [];
             }
-            nodes[i] = { ...updatedNote };
+            
+            // Create a copy of the updated note
+            const updatedNoteCopy = { ...updatedNote };
+            
+            // Assign to the nodes array
+            nodes[i] = updatedNoteCopy;
+            
+            console.log('Note updated in tree, new content:', nodes[i].content);
             return true;
           }
           
-          if (nodes[i].children.length > 0) {
+          if (nodes[i].children && nodes[i].children.length > 0) {
             if (updateNoteInTree(nodes[i].children)) {
               return true;
             }
@@ -315,7 +335,12 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       return updatedNotes;
     });
     
-    setSelectedNote(updatedNote);
+    // Make a copy of the note to avoid reference issues
+    const updatedNoteCopy = { ...updatedNote };
+    
+    // Update the selected note state
+    setSelectedNote(updatedNoteCopy);
+    
     toast({
       title: "Note Updated",
       description: "Your changes have been saved",
@@ -679,10 +704,19 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         firstNote: notes.length > 0 ? notes[0].content : 'No notes'
       });
       
+      // Make a deep copy of the notes to avoid mutation issues
+      const notesCopy = JSON.parse(JSON.stringify(notes));
+      
       // Process notes to clean positions and deduplicate images
-      const processedNotes = cleanNotePositions([...notes]).map((note: Note) => {
+      const processedNotes = cleanNotePositions(notesCopy).map((note: Note) => {
         // Process this note and its children recursively to deduplicate images
         const processNote = (noteToProcess: Note): Note => {
+          // Ensure note content is a string
+          if (typeof noteToProcess.content !== 'string') {
+            console.warn(`Note ${noteToProcess.id} has non-string content, converting to string`);
+            noteToProcess.content = String(noteToProcess.content || '');
+          }
+          
           // Deduplicate images if they exist
           if (noteToProcess.images && Array.isArray(noteToProcess.images) && noteToProcess.images.length > 0) {
             // Use a Map with image ID as key to eliminate duplicates
@@ -705,6 +739,15 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         
         return processNote(note);
       });
+      
+      // Log first note to verify content is being saved properly
+      if (processedNotes.length > 0) {
+        console.log('First note being saved:', {
+          id: processedNotes[0].id,
+          content: processedNotes[0].content,
+          contentLength: processedNotes[0].content.length
+        });
+      }
       
       // Create a clean copy of the notes data to save
       const notesData: NotesData = { notes: processedNotes };
