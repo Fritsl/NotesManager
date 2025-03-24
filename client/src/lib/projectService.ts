@@ -316,47 +316,93 @@ export async function getProject(id: string): Promise<Project | null> {
     
     console.log('Current user:', userData.user.id);
     
-    // IMPORTANT: First try to load from the projects table which contains the full data with images
-    console.log('Attempting to load complete project data (with images) from projects table');
-    const { data: fullProjectData, error: fullProjectError } = await supabase
-      .from('projects')
-      .select('*')
-      .eq('id', id)
-      .eq('user_id', userData.user.id)
-      .single();
+    // IMPORTANT: First try to load from the server API which contains the full data with images
+    console.log('Attempting to load complete project data (with images) from server API');
+    try {
+      const response = await fetch(`/api/get-project-data/${id}?userId=${userData.user.id}`);
       
-    if (fullProjectData && !fullProjectError) {
-      console.log('✅ Found full project data with embedded images!');
-      console.log('Project data:', fullProjectData.name);
-      console.log('Data structure:', 
-        fullProjectData.data && 
-        typeof fullProjectData.data === 'object' && 
-        Array.isArray(fullProjectData.data.notes) ? 
-        `Contains ${fullProjectData.data.notes.length} notes` : 
-        'Invalid data structure'
-      );
-      
-      // Query settings table for metadata
-      const { data: settingsData } = await supabase
-        .from('settings')
-        .select('*')
-        .eq('id', id)
-        .eq('user_id', userData.user.id)
-        .is('deleted_at', null)
-        .single();
-      
-      // Return complete project with embedded images directly from projects table
-      return {
-        id: fullProjectData.id,
-        name: fullProjectData.name || (settingsData?.title || 'Untitled Project'),
-        created_at: fullProjectData.created_at,
-        updated_at: fullProjectData.updated_at,
-        user_id: fullProjectData.user_id,
-        description: settingsData?.description || '',
-        data: fullProjectData.data || { notes: [] }
-      };
-    } else {
-      console.log('⚠️ No data found in projects table or error occurred:', fullProjectError);
+      if (response.ok) {
+        const projectData = await response.json();
+        console.log('✅ Found full project data with embedded images from API!');
+        console.log('Project data:', projectData.name);
+        console.log('Data structure:', 
+          projectData.data && 
+          typeof projectData.data === 'object' && 
+          Array.isArray(projectData.data.notes) ? 
+          `Contains ${projectData.data.notes.length} notes` : 
+          'Invalid data structure'
+        );
+        
+        // Count images in the project data
+        let imageCount = 0;
+        const countImages = (notes: any[]) => {
+          for (const note of notes) {
+            if (note.images && Array.isArray(note.images)) {
+              imageCount += note.images.length;
+            }
+            if (note.children && Array.isArray(note.children)) {
+              countImages(note.children);
+            }
+          }
+        };
+        
+        if (projectData.data?.notes && Array.isArray(projectData.data.notes)) {
+          countImages(projectData.data.notes);
+        }
+        
+        console.log(`Project contains ${imageCount} images`);
+        
+        // Return complete project with embedded images directly from the API
+        return {
+          id: projectData.id,
+          name: projectData.name || 'Untitled Project',
+          created_at: projectData.created_at,
+          updated_at: projectData.updated_at,
+          user_id: projectData.user_id,
+          description: projectData.description || '',
+          data: projectData.data || { notes: [] }
+        };
+      } else {
+        console.log('⚠️ API returned error:', response.status, response.statusText);
+        console.log('Trying fallback to Supabase projects table...');
+        
+        // Try loading from projects table as a fallback
+        const { data: fullProjectData, error: fullProjectError } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('id', id)
+          .eq('user_id', userData.user.id)
+          .single();
+          
+        if (fullProjectData && !fullProjectError) {
+          console.log('✅ Found full project data with embedded images from Supabase!');
+          
+          // Query settings table for metadata
+          const { data: settingsData } = await supabase
+            .from('settings')
+            .select('*')
+            .eq('id', id)
+            .eq('user_id', userData.user.id)
+            .is('deleted_at', null)
+            .single();
+          
+          // Return complete project with embedded images from projects table
+          return {
+            id: fullProjectData.id,
+            name: fullProjectData.name || (settingsData?.title || 'Untitled Project'),
+            created_at: fullProjectData.created_at,
+            updated_at: fullProjectData.updated_at,
+            user_id: fullProjectData.user_id,
+            description: settingsData?.description || '',
+            data: fullProjectData.data || { notes: [] }
+          };
+        }
+        
+        console.log('⚠️ No data found in projects table or error occurred:', fullProjectError);
+        console.log('Falling back to notes table data loading...');
+      }
+    } catch (apiError) {
+      console.error('Error fetching project data from API:', apiError);
       console.log('Falling back to notes table data loading...');
     }
     
@@ -669,28 +715,36 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
     
     console.log('Validated notes data for update, count:', validNotesData.notes.length);
     
-    // Store the entire project data including images in the projects table
-    // This approach stores images as part of the notes structure directly
-    console.log('Storing full project data with embedded images in projects table');
+    // Store the entire project data including images using the server API endpoint
+    // This will avoid RLS issues with the projects table
+    console.log('Storing full project data with embedded images via API endpoint');
     
-    const { data: projectStoreData, error: projectStoreError } = await supabase
-      .from('projects')
-      .upsert({
-        id: id,
-        name: name,
-        user_id: userData.user.id,
-        data: validNotesData, // Store the complete notes data with images
-        updated_at: now,
-        created_at: now
-      })
-      .select()
-      .single();
+    try {
+      // Use server API to store project with images
+      const response = await fetch('/api/store-project-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          id: id,
+          name: name,
+          userId: userData.user.id,
+          data: validNotesData,
+          description: description
+        })
+      });
       
-    if (projectStoreError) {
-      console.error('Error storing project data with images:', projectStoreError);
+      if (!response.ok) {
+        console.error('Error storing project data with images via API:', 
+          response.status, response.statusText);
+        // Continue with regular update anyway
+      } else {
+        console.log('Successfully stored project data with embedded images via API');
+      }
+    } catch (storeError) {
+      console.error('Exception storing project data with images:', storeError);
       // Continue with regular update anyway
-    } else {
-      console.log('Successfully stored project data with embedded images');
     }
     
     // First update the project name
