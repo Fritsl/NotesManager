@@ -1,13 +1,15 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { Note } from "@/types/notes";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, Link, Youtube, ArrowDownRightFromCircle, MessageCircle, Clock, MoveHorizontal } from "lucide-react";
+import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, Link, Youtube, ArrowDownRightFromCircle, MessageCircle, Clock, MoveHorizontal, Save, Check, Edit, X } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { cn } from "@/lib/utils";
 import DropZone from "./DropZone";
 import { levelColors } from "@/lib/level-colors";
 import MoveNoteModal from "./MoveNoteModal";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,10 +40,21 @@ interface DragItem {
 }
 
 export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, index = 0, isRoot = false, parentId = null }: NoteTreeItemProps) {
-  const { selectedNote, selectNote, addNote, deleteNote, moveNote, expandedNodes, notes } = useNotes();
+  const { selectedNote, selectNote, addNote, deleteNote, moveNote, expandedNodes, notes, updateNote, saveProject } = useNotes();
+  const { toast } = useToast();
+  
+  // References
   const ref = useRef<HTMLDivElement>(null);
+  const contentEditRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Dialog states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  
+  // Inline editing state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(note.content);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Set up drag
   const [{ isDragging }, drag, preview] = useDrag(() => ({
@@ -264,6 +277,26 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   
   // Check if there are more lines beyond what we're showing
   const hasMoreLines = contentLines.length > MAX_PREVIEW_LINES + 1;
+  
+  // Add handler for starting edit mode
+  const startEditing = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditing(true);
+    setEditContent(note.content);
+    selectNote(note); // Select the note when editing
+  };
+  
+  // Update the local state whenever the note changes (from other components)
+  useEffect(() => {
+    setEditContent(note.content);
+  }, [note.content]);
+  
+  // Focus the textarea when entering edit mode
+  useEffect(() => {
+    if (isEditing && contentEditRef.current) {
+      contentEditRef.current.focus();
+    }
+  }, [isEditing]);
 
   return (
     <div className="note-tree-item">
@@ -333,59 +366,173 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           )}
           
           <div className="flex-1 overflow-hidden">
-            {/* Title line - larger and more prominent */}
-            <div className="flex items-center">
-              <div className={`mobile-text-base font-medium ${level >= 0 && level < levelColors.length ? levelColors[level].text : levelColors[0].text} truncate flex-1`}>
-                {displayContent}
+            {isEditing ? (
+              /* Inline Edit Mode */
+              <div className="w-full" onClick={(e) => e.stopPropagation()}>
+                <Textarea 
+                  ref={contentEditRef}
+                  rows={Math.min(6, note.content.split('\n').length + 1)}
+                  className="w-full p-2 text-sm bg-gray-850 border-gray-700 focus:border-primary resize-none mb-2"
+                  placeholder="Enter note content..."
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  autoFocus
+                />
+                <div className="flex space-x-2 justify-end">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 px-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEditing(false);
+                      setEditContent(note.content); // Reset content
+                    }}
+                  >
+                    <X size={14} className="mr-1" />
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="h-7 px-2"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      setIsSaving(true);
+                      
+                      try {
+                        // Update the note in memory
+                        const updatedNote = {
+                          ...note,
+                          content: editContent
+                        };
+                        
+                        // First update in local state
+                        updateNote(updatedNote);
+                        
+                        // Then save to server
+                        await saveProject();
+                        
+                        toast({
+                          title: "Note Updated",
+                          description: "The note content has been saved",
+                        });
+                        
+                        setIsEditing(false);
+                      } catch (error) {
+                        console.error('Error saving note:', error);
+                        toast({
+                          title: "Save Failed",
+                          description: "Could not save your changes. Please try again.",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setIsSaving(false);
+                      }
+                    }}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <span className="animate-pulse">Saving...</span>
+                    ) : (
+                      <>
+                        <Check size={14} className="mr-1" />
+                        Save
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
-              {note.is_discussion && (
-                <span className="ml-2 text-blue-400 shrink-0" title="Discussion">
-                  <MessageCircle size={16} />
-                </span>
-              )}
-            </div>
-            
-            {/* Multiple preview lines */}
-            {previewLines.length > 0 && (
-              <div className="mt-1 space-y-0.5">
-                {previewLines.map((line, index) => (
-                  <div key={index} className="text-xs text-gray-400 truncate leading-snug">{line}</div>
-                ))}
-                {hasMoreLines && (
-                  <div className="text-xs text-gray-500 italic">more...</div>
-                )}
-              </div>
-            )}
-            
-            {/* Badges for special attributes */}
-            {(note.youtube_url || note.url || note.time_set) && (
-              <div className="flex flex-wrap gap-2 mt-1">
-                {note.youtube_url && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-950 text-white border border-red-700 shadow-sm">
-                    <Youtube size={12} className="mr-1" />
-                    YouTube
-                  </span>
+            ) : (
+              /* Normal Display Mode */
+              <>
+                {/* Title line - larger and more prominent */}
+                <div className="flex items-center">
+                  <div 
+                    className={`mobile-text-base font-medium ${level >= 0 && level < levelColors.length ? levelColors[level].text : levelColors[0].text} truncate flex-1`}
+                    onDoubleClick={(e) => {
+                      e.stopPropagation();
+                      setIsEditing(true);
+                      setEditContent(note.content);
+                      // Select the note as well
+                      selectNote(note);
+                    }}
+                  >
+                    {displayContent}
+                  </div>
+                  {note.is_discussion && (
+                    <span className="ml-2 text-blue-400 shrink-0" title="Discussion">
+                      <MessageCircle size={16} />
+                    </span>
+                  )}
+                </div>
+                
+                {/* Multiple preview lines */}
+                {previewLines.length > 0 && (
+                  <div className="mt-1 space-y-0.5">
+                    {previewLines.map((line, index) => (
+                      <div 
+                        key={index} 
+                        className="text-xs text-gray-400 truncate leading-snug"
+                        onDoubleClick={(e) => {
+                          e.stopPropagation();
+                          setIsEditing(true);
+                          setEditContent(note.content);
+                          // Select the note as well
+                          selectNote(note);
+                        }}
+                      >
+                        {line}
+                      </div>
+                    ))}
+                    {hasMoreLines && (
+                      <div className="text-xs text-gray-500 italic">more...</div>
+                    )}
+                  </div>
                 )}
                 
-                {note.url && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-950 text-white border border-blue-700 shadow-sm">
-                    <Link size={12} className="mr-1" />
-                    {note.url_display_text || "Link"}
-                  </span>
+                {/* Badges for special attributes */}
+                {(note.youtube_url || note.url || note.time_set) && (
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {note.youtube_url && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-950 text-white border border-red-700 shadow-sm">
+                        <Youtube size={12} className="mr-1" />
+                        YouTube
+                      </span>
+                    )}
+                    
+                    {note.url && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-950 text-white border border-blue-700 shadow-sm">
+                        <Link size={12} className="mr-1" />
+                        {note.url_display_text || "Link"}
+                      </span>
+                    )}
+                    
+                    {note.time_set && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-950 text-white border border-purple-700 shadow-sm">
+                        <Clock size={12} className="mr-1" />
+                        {note.time_set.includes(':') ? note.time_set.split(':').slice(0, 2).join(':') : note.time_set}
+                      </span>
+                    )}
+                  </div>
                 )}
-                
-                {note.time_set && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-950 text-white border border-purple-700 shadow-sm">
-                    <Clock size={12} className="mr-1" />
-                    {note.time_set.includes(':') ? note.time_set.split(':').slice(0, 2).join(':') : note.time_set}
-                  </span>
-                )}
-              </div>
+              </>
             )}
           </div>
           
           {/* Action buttons - always visible on mobile, larger touch targets */}
           <div className="flex space-x-1 sm:opacity-0 sm:group-hover:opacity-100 transition">
+            {/* Edit Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-gray-400 hover:text-green-500 p-1 touch-target"
+              title="Edit Note"
+              onClick={startEditing}
+              disabled={isEditing}
+            >
+              <Edit size={16} />
+            </Button>
+            
             {/* Add Sibling Button */}
             <Button
               variant="ghost"
@@ -399,7 +546,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                   addNote(null);
                 } else {
                   // Create a sibling by using parent as the parent
-                  addNote(parentId ? { id: parentId, children: [] } as any : null);
+                  addNote(parentId ? { id: parentId, children: [] } as Note : null);
                 }
               }}
             >
