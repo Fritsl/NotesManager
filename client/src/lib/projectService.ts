@@ -10,6 +10,7 @@ export interface Project {
   updated_at: string;
   user_id: string;
   data: NotesData;
+  description?: string; // Optional field for project description
 }
 
 // Interface for database note records
@@ -394,6 +395,7 @@ export async function getProject(id: string): Promise<Project | null> {
       created_at: projectData.created_at,
       updated_at: projectData.updated_at,
       user_id: projectData.user_id,
+      description: projectData.description || '',
       data: { 
         notes: hierarchicalNotes 
       }
@@ -553,6 +555,7 @@ export async function createProject(name: string, notesData: NotesData): Promise
       created_at: projectInsertResponse.data.created_at,
       updated_at: projectInsertResponse.data.updated_at,
       user_id: projectInsertResponse.data.user_id,
+      description: projectInsertResponse.data.description || '',
       data: validNotesData
     };
   } catch (error) {
@@ -829,6 +832,7 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
       created_at: projectData.created_at,
       updated_at: projectData.updated_at,
       user_id: projectData.user_id,
+      description: projectData.description || '',
       data: validNotesData
     };
   } catch (error) {

@@ -37,6 +37,9 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
   const [savingNew, setSavingNew] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
   const { toast } = useToast();
   const { 
     notes, 
@@ -117,10 +120,13 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
     }
   };
 
-  const handleUpdateProject = async (project: Project) => {
+  const handleUpdateProject = async (project: Project, newName?: string, newDescription?: string) => {
     try {
       const notesData = exportNotes();
-      const updated = await updateProject(project.id, project.name, notesData);
+      const projectName = newName || project.name;
+      const projectDescription = newDescription !== undefined ? newDescription : (project.description || '');
+      
+      const updated = await updateProject(project.id, projectName, notesData, projectDescription);
       
       if (updated) {
         toast({
@@ -218,6 +224,15 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
       // Mark as having an active project
       setHasActiveProject(true);
       
+      // Set project description if available in the project data
+      if (fullProject.description) {
+        setCurrentProjectDescription(fullProject.description);
+        console.log('Set project description:', fullProject.description);
+      } else {
+        setCurrentProjectDescription('');
+        console.log('No project description found, setting empty description');
+      }
+      
       console.log('Set current project ID:', fullProject.id);
       
       toast({
@@ -239,6 +254,26 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+  };
+  
+  const startEditingProject = (e: React.MouseEvent, project: Project) => {
+    e.stopPropagation(); // Prevent loading the project
+    setEditingProject(project);
+    setEditName(project.name);
+    setEditDescription(project.description || '');
+  };
+  
+  const cancelEditing = () => {
+    setEditingProject(null);
+    setEditName('');
+    setEditDescription('');
+  };
+  
+  const saveProjectChanges = async () => {
+    if (!editingProject) return;
+    
+    await handleUpdateProject(editingProject, editName, editDescription);
+    cancelEditing();
   };
 
   return (
