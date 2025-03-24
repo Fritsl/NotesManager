@@ -163,11 +163,25 @@ export function flattenNoteHierarchy(notes: Note[], projectId: string, userId: s
     // Create a DB record for this note
     const now = new Date().toISOString();
     
+    // Extract plain text content if it's in JSON format
+    let plainContent = note.content;
+    try {
+      // Check if content is already in JSON format with text property
+      const contentObj = JSON.parse(note.content);
+      if (contentObj && typeof contentObj === 'object' && contentObj.text) {
+        // If content is in JSON format, extract the text property
+        plainContent = contentObj.text;
+        console.log('Extracted plain text from JSON content for note:', note.id);
+      }
+    } catch (e) {
+      // Content is already plain text, no conversion needed
+    }
+    
     // Use the correct field names based on the Supabase schema
     const dbNote = {
       id: note.id,
-      // Store content directly without wrapping in JSON object
-      content: note.content,
+      // Store content as plain text without JSON wrapping for compatibility
+      content: plainContent,
       user_id: userId,
       project_id: projectId,
       parent_id: parentId,
