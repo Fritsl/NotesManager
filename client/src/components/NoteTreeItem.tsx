@@ -615,8 +615,20 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             {isEditing && !isMobile ? (
               /* Inline Edit Mode - Only shown on desktop; mobile uses fullscreen dialog */
               <div className="w-full" onClick={(e) => e.stopPropagation()}>
-                {/* Use the shared form rendering function */}
-                {renderEditForm()}
+                {/* Content editor with more height */}
+                <Textarea 
+                  ref={contentEditRef}
+                  rows={Math.min(isMobile ? 10 : 6, note.content.split('\n').length + 1)}
+                  className={`w-full p-2 text-sm bg-gray-850 border border-gray-700 focus:border-primary focus:ring-1 focus:ring-primary resize-none mb-3 ${
+                    isMobile && "h-48 min-h-[8rem]" // Taller textarea on mobile
+                  }`}
+                  placeholder="Enter note content..."
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  autoFocus
+                />
 
                 {/* Properties section (compact, single-line items) */}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-3">
@@ -824,17 +836,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                     size="sm"
                     variant="outline"
                     className="h-7 px-2"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsEditing(false);
-                      // Reset all edit states
-                      setEditContent(note.content);
-                      setEditTimeSet(note.time_set);
-                      setEditIsDiscussion(note.is_discussion);
-                      setEditYoutubeUrl(note.youtube_url);
-                      setEditUrl(note.url);
-                      setEditUrlDisplayText(note.url_display_text);
-                    }}
+                    onClick={handleCancelEdit}
                   >
                     <X size={14} className="mr-1" />
                     Cancel
@@ -842,45 +844,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                   <Button
                     size="sm"
                     className="h-7 px-2"
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      setIsSaving(true);
-                      
-                      try {
-                        // Update the note in memory with all properties
-                        const updatedNote = {
-                          ...note,
-                          content: editContent,
-                          time_set: editTimeSet,
-                          is_discussion: editIsDiscussion,
-                          youtube_url: editYoutubeUrl,
-                          url: editUrl,
-                          url_display_text: editUrlDisplayText
-                        };
-                        
-                        // First update in local state
-                        updateNote(updatedNote);
-                        
-                        // Then save to server
-                        await saveProject();
-                        
-                        toast({
-                          title: "Note Updated",
-                          description: "Changes have been saved",
-                        });
-                        
-                        setIsEditing(false);
-                      } catch (error) {
-                        console.error('Error saving note:', error);
-                        toast({
-                          title: "Save Failed",
-                          description: "Could not save your changes. Please try again.",
-                          variant: "destructive",
-                        });
-                      } finally {
-                        setIsSaving(false);
-                      }
-                    }}
+                    onClick={handleSaveNote}
                     disabled={isSaving}
                   >
                     {isSaving ? (
