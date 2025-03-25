@@ -6,7 +6,7 @@
     "notes": [
       {
         "id": "dfd381d7-0574-4361-8224-549765c564ef",
-        "content": "Please! from Replit",
+        "content": "ImageNewwwerfwer",
         "position": 0,
         "is_discussion": false,
         "time_set": null,
@@ -55,12 +55,20 @@
             "url": "https://wxpdstlzutwzuxstysnl.supabase.co/storage/v1/object/public/note-images/images/8d580a65-9d17-4959-9c66-c99eab8f1c7c.png",
             "position": 5,
             "created_at": "2025-03-25T09:32:13.495Z"
+          },
+          {
+            "id": "6114f31d-79dc-4f75-8caa-da0f4c37a24a",
+            "note_id": "dfd381d7-0574-4361-8224-549765c564ef",
+            "storage_path": "images/0daedb6d-22b3-40a4-a2a9-1e9db724e334.jpg",
+            "url": "https://wxpdstlzutwzuxstysnl.supabase.co/storage/v1/object/public/note-images/images/0daedb6d-22b3-40a4-a2a9-1e9db724e334.jpg",
+            "position": 6,
+            "created_at": "2025-03-25T11:40:55.569Z"
           }
         ]
       }
     ]
   },
   "description": "",
-  "updated_at": "2025-03-25T09:34:13.957Z",
-  "created_at": "2025-03-25T09:34:13.957Z"
+  "updated_at": "2025-03-25T11:41:51.244Z",
+  "created_at": "2025-03-25T11:41:51.244Z"
 }

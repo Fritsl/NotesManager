@@ -125,8 +125,8 @@ export default function ImageDiagnostics() {
   if (!user) {
     return (
       <div className="container mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-4">Image Diagnostics</h1>
-        <p>Please log in to access this page.</p>
+        <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Image Diagnostics</h1>
+        <p className="text-gray-700 dark:text-gray-300">Please log in to access this page.</p>
       </div>
     );
   }
@@ -134,7 +134,7 @@ export default function ImageDiagnostics() {
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Image Diagnostics</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Image Diagnostics</h1>
         <div className="flex gap-2">
           <Link href="/">
             <Button variant="outline">Back to App</Button>
@@ -153,17 +153,17 @@ export default function ImageDiagnostics() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p>Loading storage data...</p>
+              <p className="text-gray-700 dark:text-gray-300">Loading storage data...</p>
             ) : (
               <ScrollArea className="h-[300px]">
                 <ul className="space-y-2">
                   {storageItems.length === 0 ? (
-                    <p>No files found in storage</p>
+                    <p className="text-gray-700 dark:text-gray-300">No files found in storage</p>
                   ) : (
                     storageItems.map((item, i) => (
-                      <li key={i} className="p-2 border rounded">
+                      <li key={i} className="p-2 border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                         <div className="font-medium">{item.name}</div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
                           {new Date(item.created_at).toLocaleString()}
                         </div>
                         <div className="text-sm">
@@ -249,11 +249,11 @@ export default function ImageDiagnostics() {
           <CardContent>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">
                   Select URL Format
                 </label>
                 <select
-                  className="w-full p-2 border rounded"
+                  className="w-full p-2 border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                   value={selectedFormat}
                   onChange={(e) => setSelectedFormat(e.target.value)}
                 >
@@ -262,7 +262,7 @@ export default function ImageDiagnostics() {
                 </select>
               </div>
               
-              <div className="bg-gray-100 p-3 rounded text-sm">
+              <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded text-sm text-gray-900 dark:text-gray-100">
                 <p className="font-medium">Format Examples:</p>
                 <p><strong>Original App:</strong> Path: images/filename.jpg</p>
                 <p><strong>Replit App:</strong> Path: images/user_id/filename.jpg</p>
@@ -289,9 +289,9 @@ export default function ImageDiagnostics() {
             </Button>
             
             {migrationResult && (
-              <div className="mt-4 p-3 bg-gray-100 rounded">
+              <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded text-gray-900 dark:text-gray-100">
                 <h3 className="font-medium mb-2">Migration Result:</h3>
-                <pre className="text-xs whitespace-pre-wrap overflow-auto max-h-[200px]">
+                <pre className="text-xs whitespace-pre-wrap overflow-auto max-h-[200px] bg-gray-50 dark:bg-gray-900 p-2 rounded">
                   {JSON.stringify(migrationResult, null, 2)}
                 </pre>
               </div>
