@@ -80,16 +80,22 @@ export default function NoteEditor() {
   
   // Direct save function - saves immediately without checks
   const saveDirectly = useCallback(async () => {
-    if (!selectedNote || !currentProjectId) {
-      console.log("Cannot save directly: No note selected or no project ID");
+    if (!selectedNote || !currentProjectId || !contentRef.current) {
+      console.log("Cannot save directly: No note selected, no project ID, or content reference is missing");
       return;
     }
     
     try {
+      // Get the latest content directly from the DOM reference
+      const currentContent = contentRef.current.value;
+      
+      // Update local state to keep it in sync
+      setContent(currentContent);
+      
       // First update the note in memory
       const updatedNote = {
         ...selectedNote,
-        content,
+        content: currentContent, // Use the latest content from DOM reference
         youtube_url: youtubeUrl || null,
         url: externalUrl || null,
         url_display_text: externalUrl ? (urlDisplayText || null) : null,
@@ -130,7 +136,7 @@ export default function NoteEditor() {
   
   // Auto-save when a field loses focus and there are changes
   const handleBlur = useCallback(async (e: React.FocusEvent) => {
-    if (selectedNote && hasChanges) {
+    if (selectedNote && hasChanges && contentRef.current) {
       // Clear any existing blur timer
       if (blurSaveTimerRef.current) {
         clearTimeout(blurSaveTimerRef.current);
@@ -139,10 +145,16 @@ export default function NoteEditor() {
       // Set a short delay to prevent saving while moving between fields
       blurSaveTimerRef.current = setTimeout(async () => {
         try {
+          // Get the latest content directly from the DOM reference
+          const currentContent = contentRef.current.value;
+          
+          // Update local state to keep it in sync
+          setContent(currentContent);
+          
           // First update the note in memory
           const updatedNote = {
             ...selectedNote,
-            content,
+            content: currentContent, // Use the latest content from DOM reference
             youtube_url: youtubeUrl || null,
             url: externalUrl || null,
             url_display_text: externalUrl ? (urlDisplayText || null) : null,
@@ -176,7 +188,7 @@ export default function NoteEditor() {
   // Auto-save after 5 seconds of inactivity in text fields
   useEffect(() => {
     // Only start inactivity timer if there are unsaved changes
-    if (selectedNote && hasChanges) {
+    if (selectedNote && hasChanges && contentRef.current) {
       // Clear any existing inactivity timer
       if (inactivitySaveTimerRef.current) {
         clearTimeout(inactivitySaveTimerRef.current);
@@ -187,10 +199,16 @@ export default function NoteEditor() {
         try {
           console.log("Inactivity auto-save triggered after 5 seconds");
           
+          // Get the latest content directly from the DOM reference
+          const currentContent = contentRef.current.value;
+          
+          // Update local state to keep it in sync
+          setContent(currentContent);
+          
           // First update the note in memory
           const updatedNote = {
             ...selectedNote,
-            content,
+            content: currentContent, // Use the latest content from DOM reference
             youtube_url: youtubeUrl || null,
             url: externalUrl || null,
             url_display_text: externalUrl ? (urlDisplayText || null) : null,
@@ -275,10 +293,16 @@ export default function NoteEditor() {
     }
     
     const timeout = setTimeout(() => {
-      if (selectedNote) {
+      if (selectedNote && contentRef.current) {
+        // Get the latest content directly from the DOM reference
+        const currentContent = contentRef.current.value;
+        
+        // Update local state to keep it in sync
+        setContent(currentContent);
+        
         const updatedNote = {
           ...selectedNote,
-          content, // Preserve current content
+          content: currentContent, // Use the latest content from DOM reference
           youtube_url: newUrl || null,
           url: externalUrl || null,
           url_display_text: externalUrl ? (urlDisplayText || null) : null,
@@ -308,10 +332,16 @@ export default function NoteEditor() {
     }
     
     const timeout = setTimeout(() => {
-      if (selectedNote) {
+      if (selectedNote && contentRef.current) {
+        // Get the latest content directly from the DOM reference
+        const currentContent = contentRef.current.value;
+        
+        // Update local state to keep it in sync
+        setContent(currentContent);
+        
         const updatedNote = {
           ...selectedNote,
-          content, // Preserve current content
+          content: currentContent, // Use the latest content from DOM reference
           youtube_url: youtubeUrl || null,
           url: newUrl || null,
           url_display_text: newUrl ? (urlDisplayText || null) : null,
@@ -341,10 +371,16 @@ export default function NoteEditor() {
     }
     
     const timeout = setTimeout(() => {
-      if (selectedNote && externalUrl) {
+      if (selectedNote && externalUrl && contentRef.current) {
+        // Get the latest content directly from the DOM reference
+        const currentContent = contentRef.current.value;
+        
+        // Update local state to keep it in sync
+        setContent(currentContent);
+        
         const updatedNote = {
           ...selectedNote,
-          content, // Preserve current content
+          content: currentContent, // Use the latest content from DOM reference
           youtube_url: youtubeUrl || null,
           url: externalUrl || null,
           url_display_text: newText || null,
