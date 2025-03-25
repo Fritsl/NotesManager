@@ -119,6 +119,32 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       console.log('Saved last project ID to localStorage:', currentProjectId);
     }
   }, [currentProjectId]);
+  
+  // Effect to handle saving after note moves
+  useEffect(() => {
+    // This effect runs after the saveProject function is defined
+    if (pendingNoteMoves && currentProjectId) {
+      const handleSave = async () => {
+        try {
+          console.log('Auto-saving project after note movement');
+          await saveProject();
+          console.log('Project auto-saved after note movement');
+          
+          // Clear the pending flag
+          setPendingNoteMoves(false);
+        } catch (error) {
+          console.error('Failed to auto-save after note movement:', error);
+        }
+      };
+      
+      // Save with a slight delay to ensure state has updated
+      const saveTimeout = setTimeout(handleSave, 300);
+      
+      return () => {
+        clearTimeout(saveTimeout);
+      };
+    }
+  }, [pendingNoteMoves, currentProjectId, saveProject]);
 
   // Clean note positions to ensure sequential ordering without gaps
   const cleanNotePositions = useCallback((noteList: Note[]): Note[] => {
@@ -510,6 +536,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   // Reference to track if a move operation is in progress to prevent multiple simultaneous moves
   const isMovingRef = useRef<boolean>(false);
   
+  // Create a state to track pending note movements that need to be saved
+  const [pendingNoteMoves, setPendingNoteMoves] = useState<boolean>(false);
+  
   // Move a note in the tree
   const moveNote = useCallback(async (noteId: string, targetParentId: string | null, position: number) => {
     // Prevent multiple drop handlers from triggering simultaneously
@@ -527,9 +556,6 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     }, 200); // 200ms should be enough to block duplicate events
     
     console.log(`📌 MOVING note ${noteId} to parent: ${targetParentId}, position: ${position}`);
-    
-    // Create a variable to store the result for saving to database
-    let finalNotes: Note[] = [];
     
     setNotes((prevNotes) => {
       const updatedNotes = [...prevNotes];
@@ -631,27 +657,12 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       // use the full cleanNotePositions function to ensure consistency
       const resultNotes = cleanNotePositions(updatedNotes);
       
-      // Store the final notes for saving to database
-      finalNotes = resultNotes;
+      // Set flag to trigger saving in an effect
+      setPendingNoteMoves(true);
       
       return resultNotes;
     });
-    
-    // After updating the local state, save to the online database
-    if (currentProjectId && finalNotes.length > 0) {
-      try {
-        console.log('Auto-saving project after note movement');
-        
-        // Store a new update to avoid waiting for state to update
-        setTimeout(async () => {
-          await saveProject();
-          console.log('Project auto-saved after note movement');
-        }, 100);
-      } catch (error) {
-        console.error('Failed to auto-save after note movement:', error);
-      }
-    }
-  }, [findNoteAndParent, cleanNotePositions, currentProjectId, saveProject]);
+  }, [findNoteAndParent, cleanNotePositions]);
 
   // Toggle expansion for a single node
   const toggleExpand = useCallback((noteId: string) => {
