@@ -216,9 +216,11 @@ export default function ImportModal({ onClose }: ImportModalProps) {
                       const content = e.target?.result as string;
                       const parsedData = JSON.parse(content) as NotesData;
                       
-                      // Import with project name and set active
+                      // Generate a new UUID for the imported project
+                      const newProjectId = crypto.randomUUID();
+                      // Import with project name and new ID
                       setHasActiveProject(true);
-                      importNotes(parsedData, projectName, null);
+                      importNotes(parsedData, projectName, newProjectId);
                       onClose();
                     } catch (error) {
                       // Error handling is already done in the initial read
