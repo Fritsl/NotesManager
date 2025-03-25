@@ -781,7 +781,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                             // First update the note in the state
                             updateNote(updatedNote);
 
-                            // Then save the project to ensure images are synced with server
+                            //                            // Then save the project to ensure images are synced with server
                             await saveProject();
                           }
                           // Clear the input afterupload
@@ -852,9 +852,19 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                   </div>
                   {/* Discussion icon and unfold button */}
                   <div className="flex items-center gap-1">
-                    {note.is_discussion && (
-                      <MessageCircle size={16} className="text-gray-500" />
-                    )}
+                    <div className="flex items-center gap-2 ml-2">
+                      {note.is_discussion && (
+                        <span className="text-blue-400 shrink-0" title="Discussion">
+                          <MessageCircle size={16} />
+                        </span>
+                      )}
+                      {note.youtube_url && (
+                        <span className="text-xs bg-red-900/50 text-red-300 px-2 py-0.5 rounded-full">YouTube</span>
+                      )}
+                      {note.url && (
+                        <span className="text-xs bg-green-900/50 text-green-300 px-2 py-0.5 rounded-full">Link</span>
+                      )}
+                    </div>
                     {hasChildren && (
                       <Button
                         variant="ghost" 
@@ -903,31 +913,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                   </div>
                 )}
 
-                {/* Badges for special attributes */}
-                {(note.youtube_url || note.url || note.time_set) && (
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {note.youtube_url && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-950 text-white border border-red-700 shadow-sm">
-                        <Youtube size={12} className="mr-1" />
-                        YouTube
-                      </span>
-                    )}
 
-                    {note.url && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-950 text-white border border-blue-700 shadow-sm">
-                        <Link size={12} className="mr-1" />
-                        {note.url_display_text || "Link"}
-                      </span>
-                    )}
-
-                    {note.time_set && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-950 text-white border border-purple-700 shadow-sm">
-                        <Clock size={12} className="mr-1" />
-                        {note.time_set.includes(':') ? note.time_set.split(':').slice(0, 2).join(':') : note.time_set}
-                      </span>
-                    )}
-                  </div>
-                )}
               </>
             )}
           </div>
@@ -1081,7 +1067,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             </div>
           ))}
 
-          
+
         </div>
       )}
 
