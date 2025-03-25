@@ -20,7 +20,9 @@ import {
   FileEdit,
   Trash2,
   AlertTriangle,
-  HelpCircle
+  HelpCircle,
+  Presentation, // Adding Presentation icon for Viewer button
+  Play         // Alternative icon if needed
 } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { useAuth } from "@/context/AuthContext";
@@ -147,6 +149,28 @@ export default function Header() {
       projectNameInputRef.current.select();
     }
   }, [isEditingProjectName]);
+  
+  // Add global keyboard shortcut for Viewer (I key)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if we're in a text input or textarea field
+      const target = e.target as HTMLElement;
+      const isEditingText = 
+        target.tagName === 'INPUT' || 
+        target.tagName === 'TEXTAREA' || 
+        target.isContentEditable;
+      
+      // Only trigger if 'I' key is pressed and we're not editing text
+      if (!isEditingText && e.key.toLowerCase() === 'i') {
+        window.open("https://fastpresenterviwer.netlify.app", "_self");
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const startEditing = () => {
     setIsEditingProjectName(true);
@@ -294,7 +318,27 @@ export default function Header() {
                 })}
               </div>
               
-
+              {/* Viewer Button */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mr-2 text-primary-500 hover:text-primary-400"
+                      onClick={() => {
+                        window.open("https://fastpresenterviwer.netlify.app", "_self");
+                      }}
+                    >
+                      <Presentation className="h-4 w-4 mr-1" />
+                      <span className="hidden sm:inline">Viewer</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Open Presenter Viewer (Shortcut: I)</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               
               {/* Consolidated Hamburger Menu */}
               <DropdownMenu>
@@ -477,6 +521,28 @@ export default function Header() {
               Notes Editor
             </h1>
             <div className="flex items-center space-x-2">
+              {/* Viewer Button */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mr-1 text-primary-500 hover:text-primary-400"
+                      onClick={() => {
+                        window.open("https://fastpresenterviwer.netlify.app", "_self");
+                      }}
+                    >
+                      <Presentation className="h-4 w-4 mr-1" />
+                      <span className="hidden sm:inline">Viewer</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Open Presenter Viewer (Shortcut: I)</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
               {/* Consolidated Hamburger Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
