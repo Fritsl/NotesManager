@@ -775,8 +775,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                             // Create updated note with the new image properly integrated
                             const updatedNote = {
                               ...note,
-                              images: [...existingImages, result]
-                            };
+                              images: [...existingImages, result]                            };
 
                             // First update the note in the state
                             updateNote(updatedNote);
@@ -837,22 +836,22 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               /* Normal Display Mode */
               <>
                 {/* Title line - larger and more prominent */}
-                <div className="flex items-center">
+                <div className="flex flex-col gap-2">
                   <div 
-                    className={`mobile-text-base font-medium ${level >= 0 && level < levelColors.length ? levelColors[level].text : levelColors[0].text} truncate flex-1`}
+                    className={`mobile-text-base font-medium ${level >= 0 && level < levelColors.length ? levelColors[level].text : levelColors[0].text} truncate`}
                     onDoubleClick={(e) => {
                       e.stopPropagation();
                       setIsEditing(true);
-                      // No need to set editContent anymore, using uncontrolled component
                       // Select the note as well
                       selectNote(note);
                     }}
                   >
                     {displayContent}
                   </div>
-                  {/* Discussion icon and unfold button */}
-                  <div className="flex items-center gap-1">
-                    <div className="flex items-center gap-2 ml-2">
+                  {/* All tools aligned right */}
+                  <div className="flex items-center gap-2 justify-end">
+                    {/* Discussion icon and unfold button */}
+                    <div className="flex items-center gap-2">
                       {note.is_discussion && (
                         <span className="text-blue-400 shrink-0" title="Discussion">
                           <MessageCircle size={16} />
@@ -899,7 +898,6 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                         onDoubleClick={(e) => {
                           e.stopPropagation();
                           setIsEditing(true);
-                          // No need to set editContent anymore, using uncontrolled component
                           // Select the note as well 
                           selectNote(note);
                         }}
@@ -919,7 +917,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           </div>
 
           {/* Action buttons - below text on mobile, hover on desktop */}
-          <div className="flex space-x-1 sm:opacity-0 sm:group-hover:opacity-100 transition">
+          <div className="flex space-x-1 sm:opacity-0 sm:group-hover:opacity-100 transition justify-end">
             {/* Edit Button */}
             <Button
               variant="ghost"
