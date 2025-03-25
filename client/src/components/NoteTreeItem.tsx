@@ -320,20 +320,27 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   const startEditing = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsEditing(true);
-    setEditContent(note.content);
+    // No need to set content state as we're using uncontrolled components
+    // Initialize other form fields
+    setEditTimeSet(note.time_set);
+    setEditIsDiscussion(note.is_discussion);
+    setEditYoutubeUrl(note.youtube_url);
+    setEditUrl(note.url);
+    setEditUrlDisplayText(note.url_display_text);
     selectNote(note); // Select the note when editing
   };
   
   // Update the local state whenever the note changes (from other components)
+  // Only update other fields, but not content since we're using uncontrolled component for textarea
   useEffect(() => {
-    setEditContent(note.content);
+    // Note: don't update editContent as it would conflict with our uncontrolled textarea
     setEditTimeSet(note.time_set);
     setEditIsDiscussion(note.is_discussion);
     setEditYoutubeUrl(note.youtube_url);
     setEditUrl(note.url);
     setEditUrlDisplayText(note.url_display_text);
   }, [
-    note.content, 
+    // note.content, - removed to prevent controlled/uncontrolled conflict
     note.time_set,
     note.is_discussion,
     note.youtube_url, 
@@ -395,8 +402,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   const handleCancelEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsEditing(false);
-    // Reset all edit states
-    setEditContent(note.content);
+    // Reset all edit states, except for content which is handled by the uncontrolled component
+    // No need to update editContent since we'll reset the defaultValue when we reopen the editor
     setEditTimeSet(note.time_set);
     setEditIsDiscussion(note.is_discussion);
     setEditYoutubeUrl(note.youtube_url);
