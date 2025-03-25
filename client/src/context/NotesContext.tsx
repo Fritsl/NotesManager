@@ -395,6 +395,15 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
 
   // Update a note
   const updateNote = useCallback((updatedNote: Note) => {
+    console.log("🔷 UPDATE NOTE - START", { 
+      noteId: updatedNote.id,
+      contentLength: updatedNote.content.length,
+      preview: updatedNote.content.substring(0, 50),
+      isDiscussion: updatedNote.is_discussion,
+      hasChildren: updatedNote.children?.length > 0,
+      hasImages: updatedNote.images?.length > 0
+    });
+    
     // Format the time_set correctly if present (ensure no seconds)
     let formattedNote = { ...updatedNote };
     if (formattedNote.time_set) {
@@ -406,23 +415,44 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       }
     }
     
+    console.log("🔷 UPDATE NOTE - Before setNotes", {
+      formattedIsDiscussion: formattedNote.is_discussion,
+      formattedContentLength: formattedNote.content.length
+    });
+    
     setNotes((prevNotes) => {
+      console.log("🔷 UPDATE NOTE - Inside setNotes callback");
       const updatedNotes = [...prevNotes];
       
       // Find the note at any level in the tree
       const updateNoteInTree = (nodes: Note[]): boolean => {
         for (let i = 0; i < nodes.length; i++) {
           if (nodes[i].id === formattedNote.id) {
+            console.log("🔷 UPDATE NOTE - Found note in tree", {
+              existingContent: nodes[i].content.substring(0, 50),
+              existingIsDiscussion: nodes[i].is_discussion,
+              newContent: formattedNote.content.substring(0, 50),
+              newIsDiscussion: formattedNote.is_discussion
+            });
+            
             // Preserve critical properties if not provided in the update
             if (!formattedNote.children || formattedNote.children.length === 0) {
               formattedNote.children = nodes[i].children;
+              console.log("🔷 UPDATE NOTE - Preserved children");
             }
             
             // CRITICAL: Preserve the images array if not explicitly provided
             // This ensures images don't get lost during regular note updates
             if (!formattedNote.images || !Array.isArray(formattedNote.images)) {
               formattedNote.images = nodes[i].images || [];
+              console.log("🔷 UPDATE NOTE - Preserved images", {
+                imageCount: formattedNote.images.length
+              });
             }
+            
+            console.log("🔷 UPDATE NOTE - Before node update", {
+              finalIsDiscussion: formattedNote.is_discussion
+            });
             
             // Update the node with the formatted note that preserves images
             nodes[i] = { 
@@ -430,6 +460,11 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
               // Double ensure images are preserved by explicitly setting them
               images: formattedNote.images
             };
+            
+            console.log("🔷 UPDATE NOTE - After node update", {
+              resultIsDiscussion: nodes[i].is_discussion
+            });
+            
             return true;
           }
           
@@ -443,17 +478,26 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         return false;
       };
       
-      updateNoteInTree(updatedNotes);
+      const updateResult = updateNoteInTree(updatedNotes);
+      console.log("🔷 UPDATE NOTE - Update result:", updateResult);
       return updatedNotes;
+    });
+    
+    console.log("🔷 UPDATE NOTE - Before setSelectedNote", {
+      formattedNoteIsDiscussion: formattedNote.is_discussion
     });
     
     // Make sure the selected note also has the images preserved
     setSelectedNote(formattedNote);
     
+    console.log("🔷 UPDATE NOTE - After setSelectedNote");
+    
     toast({
       title: "Note Updated",
       description: "Your changes have been saved",
     });
+    
+    console.log("🔷 UPDATE NOTE - COMPLETE");
   }, [toast]);
 
   // Delete a note

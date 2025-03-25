@@ -80,18 +80,31 @@ export default function NoteEditor() {
   
   // Direct save function - saves immediately without checks
   const saveDirectly = useCallback(async () => {
+    console.log("🔵 SAVE DIRECTLY - START", {
+      hasSelectedNote: !!selectedNote,
+      selectedNoteId: selectedNote?.id,
+      hasProjectId: !!currentProjectId,
+      hasContentRef: !!contentRef.current,
+      isDiscussionValue: isDiscussion
+    });
+    
     if (!selectedNote || !currentProjectId || !contentRef.current) {
-      console.log("Cannot save directly: No note selected, no project ID, or content reference is missing");
+      console.log("🔵 SAVE DIRECTLY - EARLY RETURN: No note selected, no project ID, or content reference is missing");
       return;
     }
     
     try {
+      console.log("🔵 SAVE DIRECTLY - Getting content from DOM reference");
       // Get the latest content directly from the DOM reference
       const currentContent = contentRef.current.value;
+      console.log("🔵 SAVE DIRECTLY - Current content:", { contentLength: currentContent.length, preview: currentContent.substring(0, 50) });
       
+      console.log("🔵 SAVE DIRECTLY - Before setContent");
       // Update local state to keep it in sync
       setContent(currentContent);
+      console.log("🔵 SAVE DIRECTLY - After setContent");
       
+      console.log("🔵 SAVE DIRECTLY - Creating updatedNote object");
       // First update the note in memory
       const updatedNote = {
         ...selectedNote,
@@ -102,30 +115,41 @@ export default function NoteEditor() {
         is_discussion: isDiscussion,
         time_set: timeSet,
       };
+      console.log("🔵 SAVE DIRECTLY - Updated note object:", { 
+        id: updatedNote.id,
+        contentLength: updatedNote.content.length, 
+        preview: updatedNote.content.substring(0, 50),
+        isDiscussion: updatedNote.is_discussion
+      });
       
+      console.log("🔵 SAVE DIRECTLY - Before updateNote call");
       // Update the note in local state first
       updateNote(updatedNote);
+      console.log("🔵 SAVE DIRECTLY - After updateNote call");
       
       // Now perform the same actions as the manual save
-      console.log("Direct save starting for note:", selectedNote.id);
-      console.log("Direct save - Project ID:", currentProjectId);
-      
+      console.log("🔵 SAVE DIRECTLY - Before saveProject call");
       // Ensure current note is saved to database by calling manual save function
-      console.log("Manual save for project ID:", currentProjectId);
       await saveProject();
-      console.log("Project saved directly from editor");
+      console.log("🔵 SAVE DIRECTLY - After saveProject call");
       
+      console.log("🔵 SAVE DIRECTLY - Before toast notification");
       // Show a toast notification for the save
       toast({
         title: "Changes Saved",
         description: "Your changes have been saved to the database",
         variant: "default",
       });
+      console.log("🔵 SAVE DIRECTLY - After toast notification");
       
+      console.log("🔵 SAVE DIRECTLY - Before reset hasChanges");
       // Reset changes flag after successful save
       setHasChanges(false);
+      console.log("🔵 SAVE DIRECTLY - After reset hasChanges");
+      
+      console.log("🔵 SAVE DIRECTLY - COMPLETE: Save successful");
     } catch (error) {
-      console.error("Failed to save project directly:", error);
+      console.error("🔵 SAVE DIRECTLY - ERROR during save:", error);
       toast({
         title: "Save Failed",
         description: "Could not save your changes. Please try again.",
@@ -239,15 +263,32 @@ export default function NoteEditor() {
   };
   
   const handleDiscussionChange = (checked: boolean | "indeterminate") => {
+    console.log("📌 DISCUSSION TOGGLE - START", { 
+      currentValue: isDiscussion, 
+      newValue: checked === true, 
+      selectedNoteId: selectedNote?.id,
+      currentContent: contentRef.current?.value
+    });
+    
     const newValue = checked === true;
+    console.log("📌 DISCUSSION TOGGLE - Before setIsDiscussion");
     setIsDiscussion(newValue);
+    console.log("📌 DISCUSSION TOGGLE - After setIsDiscussion");
+    
+    console.log("📌 DISCUSSION TOGGLE - Before setHasChanges");
     setHasChanges(true);
+    console.log("📌 DISCUSSION TOGGLE - After setHasChanges");
     
     // Call the direct save function to avoid circular dependency
     // This is the only reliable way to save that works
+    console.log("📌 DISCUSSION TOGGLE - Setting timeout for save");
     setTimeout(() => {
+      console.log("📌 DISCUSSION TOGGLE - Timeout triggered, about to call saveDirectly()");
+      console.log("📌 DISCUSSION TOGGLE - Current DOM content:", contentRef.current?.value);
       saveDirectly();
     }, 100);
+    
+    console.log("📌 DISCUSSION TOGGLE - END of handler");
   };
   
   const handleTimeChange = (value: string | null) => {
