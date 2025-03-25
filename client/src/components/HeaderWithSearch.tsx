@@ -443,10 +443,17 @@ export default function Header() {
                     <HelpCircle className="h-4 w-4 mr-2" />
                     <span>Help</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOut className="h-4 w-4 mr-2" />
-                    <span>Sign Out</span>
-                  </DropdownMenuItem>
+                  {user ? (
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      <LogOut className="h-4 w-4 mr-2" />
+                      <span>Sign Out</span>
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onClick={() => setShowAuthModal(true)}>
+                      <LogIn className="h-4 w-4 mr-2" />
+                      <span>Sign In</span>
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -513,10 +520,17 @@ export default function Header() {
                     disabled={!hasActiveProject}
                   >
                     <FileEdit className="h-4 w-4 mr-2" />
-                    <span>Edit Project Description</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setShowHelpModal(true)}>
+                  {user ? (
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      <LogOut className="h-4 w-4 mr-2" />
+                      <span>Sign Out</span>
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onClick={() => setShowAuthModal(true)}>
+                      <LogIn className="h-4 w-4 mr-2" />
+                      <span>Sign In</span>
+                    </DropdownMenuItem>
+                  )}
                     <HelpCircle className="h-4 w-4 mr-2" />
                     <span>Help</span>
                   </DropdownMenuItem>
