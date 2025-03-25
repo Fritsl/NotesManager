@@ -404,32 +404,11 @@ export default function NoteEditor() {
     setIsDiscussion(newValue);
     setHasChanges(true);
     
-    // Immediately update the note with current content and changed discussion status
-    if (selectedNote && contentRef.current) {
-      // Get the latest content directly from the DOM reference
-      const currentContent = contentRef.current.value;
-      
-      // Update local state to keep it in sync
-      setContent(currentContent);
-      
-      const updatedNote = {
-        ...selectedNote,
-        content: currentContent, // Use the latest content from DOM reference
-        youtube_url: youtubeUrl || null,
-        url: externalUrl || null,
-        url_display_text: externalUrl ? (urlDisplayText || null) : null,
-        is_discussion: newValue,
-        time_set: timeSet,
-      };
-      
-      // Update in context
-      updateNote(updatedNote);
-      
-      // Save to database
-      saveProject().catch(error => {
-        console.error("Failed to save note after discussion change:", error);
-      });
-    }
+    // Call the manual save function directly to ensure content is saved properly
+    // This is the only reliable way to save that works
+    setTimeout(() => {
+      handleSave();
+    }, 100);
   };
   
   const handleTimeChange = (value: string | null) => {
@@ -450,33 +429,11 @@ export default function NoteEditor() {
     setTimeSet(formattedTime);
     setHasChanges(true);
     
-    // Immediate save to prevent content loss
-    if (selectedNote && contentRef.current) {
-      // Get the latest content directly from the DOM reference
-      const currentContent = contentRef.current.value;
-      
-      // Update local state to keep it in sync
-      setContent(currentContent);
-      
-      // Update the note with both the new time and current content
-      const updatedNote = {
-        ...selectedNote,
-        content: currentContent, // Get the latest content from DOM reference
-        youtube_url: youtubeUrl || null,
-        url: externalUrl || null,
-        url_display_text: externalUrl ? (urlDisplayText || null) : null,
-        is_discussion: isDiscussion,
-        time_set: formattedTime,
-      };
-      
-      // Update in context
-      updateNote(updatedNote);
-      
-      // Save to database
-      saveProject().catch(error => {
-        console.error("Failed to save note after time change:", error);
-      });
-    }
+    // Call the manual save function directly to ensure content is saved properly
+    // This is the only reliable way to save that works
+    setTimeout(() => {
+      handleSave();
+    }, 100);
   };
   
   // Handler for Apply button in the time picker
