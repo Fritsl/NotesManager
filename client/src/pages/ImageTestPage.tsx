@@ -9,8 +9,10 @@ import { uniqueId } from '@/lib/utils';
 
 interface TestImage {
   id: string;
+  note_id: string;
   storage_path: string;
   url: string;
+  position: number;
   created_at: string;
 }
 
@@ -36,14 +38,19 @@ export default function ImageTestPage() {
     try {
       setLoading(true);
       
-      // Fetch images from the test_images collection
+      // Use note_images table instead of test_images since it exists in schema
+      console.log("Querying for existing data with Supabase client...");
       const { data, error } = await supabase
-        .from('test_images')
+        .from('note_images')
         .select('*')
         .order('created_at', { ascending: false });
       
+      console.log("Query result:", data, "Error:", error);
+      
+      // Return empty array but don't throw an error to let the page render
       if (error) {
-        throw error;
+        console.error("Error fetching data from Supabase:", error);
+        return [];
       }
       
       setImages(data || []);
@@ -94,13 +101,16 @@ export default function ImageTestPage() {
         .from('note-images')
         .getPublicUrl(filePath);
       
-      // Step 3: Create a record in the test_images table
+      // Step 3: Create a record in the note_images table (using a test note_id)
+      const testNoteId = 'test-' + uniqueId();
       const { data: imageRecord, error: dbError } = await supabase
-        .from('test_images')
+        .from('note_images')
         .insert([
           {
+            note_id: testNoteId,
             storage_path: filePath,
             url: publicUrl,
+            position: 0
           }
         ])
         .select()
@@ -147,7 +157,7 @@ export default function ImageTestPage() {
       
       // Step 1: Delete the record from the database
       const { error: dbError } = await supabase
-        .from('test_images')
+        .from('note_images')
         .delete()
         .eq('id', image.id);
       
@@ -263,7 +273,11 @@ export default function ImageTestPage() {
                         target.src = 'https://placehold.co/400x400/gray/white?text=Image+Error';
                       }}
                     />
-                    <div className="p-2 text-xs text-gray-500 truncate">{image.storage_path}</div>
+                    <div className="p-2 text-xs text-gray-500 truncate">
+                      <div>Path: {image.storage_path}</div>
+                      <div>Note ID: {image.note_id}</div>
+                      <div>Position: {image.position}</div>
+                    </div>
                     <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <Button 
                         variant="destructive" 
@@ -306,7 +320,7 @@ export default function ImageTestPage() {
                 <li>File is selected via the file input</li>
                 <li>File is uploaded directly to Supabase storage 'note-images' bucket with a unique name</li>
                 <li>Public URL is generated for the uploaded file</li>
-                <li>Image record is created in the 'test_images' table with the file path and URL</li>
+                <li>Image record is created in the 'note_images' table with note_id, storage_path, URL and position</li>
                 <li>Image list is refreshed to show the newly uploaded image</li>
               </ol>
             </div>
@@ -314,7 +328,7 @@ export default function ImageTestPage() {
             <div>
               <h3 className="font-medium mb-2">Image Deletion Process:</h3>
               <ol className="list-decimal list-inside space-y-2 text-sm">
-                <li>Image record is deleted from the 'test_images' table</li>
+                <li>Image record is deleted from the 'note_images' table</li>
                 <li>File is removed from the Supabase storage 'note-images' bucket</li>
                 <li>Image is removed from the UI without refreshing the entire list</li>
               </ol>
