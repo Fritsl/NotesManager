@@ -6,10 +6,24 @@ import NotFound from "@/pages/not-found";
 import NotesEditor from "@/pages/NotesEditor";
 import { NotesProvider } from "@/context/NotesContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
-import { useState, useEffect } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import AuthModal from "@/components/AuthModal";
+
+// Create a context for URL parameters to make them available throughout the app
+interface UrlParamsContextType {
+  projectId: string | null;
+  noteId: string | null;
+}
+
+const UrlParamsContext = createContext<UrlParamsContextType>({
+  projectId: null,
+  noteId: null
+});
+
+// Hook to easily access URL parameters
+export const useUrlParams = () => useContext(UrlParamsContext);
 
 // Authentication guard component
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -80,11 +94,36 @@ function Router() {
 }
 
 function App() {
+  // Parse URL parameters for deep linking from FastPresenter
+  // URL format: https://fastpresenterdata.netlify.app/?project=[project_uuid]&note=[note_uuid]
+  const [urlParams, setUrlParams] = useState<UrlParamsContextType>({
+    projectId: null,
+    noteId: null
+  });
+
+  useEffect(() => {
+    // Parse query parameters from URL
+    const searchParams = new URLSearchParams(window.location.search);
+    const projectId = searchParams.get('project');
+    const noteId = searchParams.get('note');
+    
+    console.log('Deep link parameters detected:', { projectId, noteId });
+    
+    if (projectId || noteId) {
+      setUrlParams({
+        projectId,
+        noteId
+      });
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router />
-        <Toaster />
+        <UrlParamsContext.Provider value={urlParams}>
+          <Router />
+          <Toaster />
+        </UrlParamsContext.Provider>
       </AuthProvider>
     </QueryClientProvider>
   );

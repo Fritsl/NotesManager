@@ -3,6 +3,7 @@ import { Note, NotesData, NoteImage } from "@/types/notes";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import { createProject, updateProject, addImageToNote, removeImageFromNote, updateImagePosition, getProject } from "@/lib/projectService";
+import { useUrlParams } from "@/App";
 
 // State to track pending note movements that need to be saved
 let pendingNoteMoves = false;
@@ -59,6 +60,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   // State to track pending note movements that need to be saved
   const [pendingNoteMoves, setPendingNoteMoves] = useState<boolean>(false);
   const { toast } = useToast();
+  
+  // Get URL parameters for deep linking from FastPresenter
+  const urlParams = useUrlParams();
 
   // Auto-load the last accessed project on initial mount
   useEffect(() => {
@@ -125,7 +129,130 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     }
   }, [currentProjectId]);
   
-
+  // Handle deep linking from URL parameters
+  useEffect(() => {
+    // Skip if no URL parameters or if we're still auto-loading a project
+    if (isAutoLoading || isInitialLoad) return;
+    
+    const handleDeepLink = async () => {
+      try {
+        const { projectId, noteId } = urlParams;
+        
+        console.log('Checking deep link parameters:', { projectId, noteId });
+        
+        // Only proceed if we have a project ID
+        if (!projectId) return;
+        
+        // Check if this project is already loaded
+        if (currentProjectId === projectId) {
+          console.log('Project already loaded, navigating to specific note if needed');
+          
+          // If we have a note ID, find and select it
+          if (noteId) {
+            const { note: foundNote } = findNoteAndPath(noteId);
+            if (foundNote) {
+              // Select the note and expand to it
+              selectNote(foundNote);
+              
+              // Expand all parent notes to make the target note visible
+              const { path } = findNoteAndPath(noteId);
+              
+              // Create a new Set with all the path note IDs
+              const newExpandedNodes = new Set(expandedNodes);
+              path.forEach(pathNote => {
+                newExpandedNodes.add(pathNote.id);
+              });
+              
+              setExpandedNodes(newExpandedNodes);
+              
+              toast({
+                title: "Note Located",
+                description: "Navigated to the requested note",
+              });
+            } else {
+              toast({
+                title: "Note Not Found",
+                description: "The requested note could not be found in this project",
+                variant: "destructive",
+              });
+            }
+          }
+        } else {
+          // Need to load a different project
+          console.log('Loading project from deep link:', projectId);
+          
+          const project = await getProject(projectId);
+          
+          if (project) {
+            console.log('Deep link loaded project:', project.name);
+            
+            // Import the notes from the project
+            importNotes(project.data, project.name, project.id);
+            
+            // Set project description if available
+            if (project.description) {
+              setCurrentProjectDescription(project.description);
+            }
+            
+            // Mark as having an active project
+            setHasActiveProject(true);
+            
+            toast({
+              title: 'Project Loaded',
+              description: `Loaded "${project.name}" from shared link`,
+            });
+            
+            // If we also have a note ID, wait a bit for the project to load then select the note
+            if (noteId) {
+              // Use setTimeout to give the project time to fully load and render
+              setTimeout(() => {
+                const { note: foundNote } = findNoteAndPath(noteId);
+                if (foundNote) {
+                  // Select the note and expand to it
+                  selectNote(foundNote);
+                  
+                  // Expand all parent notes to make the target note visible
+                  const { path } = findNoteAndPath(noteId);
+                  
+                  // Create a new Set with all the path note IDs
+                  const newExpandedNodes = new Set(expandedNodes);
+                  path.forEach(pathNote => {
+                    newExpandedNodes.add(pathNote.id);
+                  });
+                  
+                  setExpandedNodes(newExpandedNodes);
+                  
+                  toast({
+                    title: "Note Located",
+                    description: "Navigated to the requested note",
+                  });
+                }
+              }, 500); // Wait half a second for the project to load
+            }
+          } else {
+            toast({
+              title: "Project Not Found",
+              description: "The requested project could not be found",
+              variant: "destructive",
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error handling deep link:', error);
+        toast({
+          title: "Navigation Error",
+          description: "Could not navigate to the requested content",
+          variant: "destructive",
+        });
+      }
+    };
+    
+    // Only run if we have URL parameters and the app is ready
+    if (urlParams.projectId) {
+      handleDeepLink();
+    }
+  }, [urlParams, isAutoLoading, isInitialLoad, currentProjectId, findNoteAndPath, selectNote, expandedNodes, toast, importNotes]);
+  
 
   // Clean note positions to ensure sequential ordering without gaps
   const cleanNotePositions = useCallback((noteList: Note[]): Note[] => {
