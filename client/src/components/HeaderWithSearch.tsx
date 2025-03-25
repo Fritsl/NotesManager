@@ -186,6 +186,16 @@ export default function Header() {
       return;
     }
 
+    // Additional validation to ensure we have a project ID
+    if (!currentProjectId) {
+      toast({
+        title: "No Active Project",
+        description: "Please create or select a project first",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // If the project name hasn't actually changed, just exit edit mode
     if (editedProjectName === currentProjectName) {
       setIsEditingProjectName(false);

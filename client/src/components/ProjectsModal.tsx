@@ -208,7 +208,14 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
   const handleLoadProject = async (project: Project) => {
     try {
       console.log('Loading project from list:', project.name, project.id);
-
+      if (!project.id) {
+        toast({
+          title: "Invalid Project",
+          description: "Could not load project - missing ID",
+          variant: "destructive",
+        });
+        return;
+      }
       // Get full project with notes from database
       setLoading(true);
       const fullProject = await getProject(project.id);
