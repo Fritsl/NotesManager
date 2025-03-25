@@ -196,23 +196,32 @@ export default function Header() {
     setCurrentProjectName(editedProjectName);
     setIsEditingProjectName(false);
     
+    // Log the name change for debugging
+    console.log(`Project name changed from "${currentProjectName}" to "${editedProjectName}"`);
+    
     // Trigger the auto-save functionality
     if (currentProjectId) {
       setTimeout(async () => {
         try {
           await saveProject();
           console.log("Project auto-saved after name change");
+          
+          // The toast was already removed as requested
+          /*
           toast({
             title: "Project Renamed",
             description: "The project name has been updated and saved",
           });
+          */
         } catch (error) {
           console.error("Failed to auto-save after name change:", error);
+          /*
           toast({
             title: "Error Saving Project Name",
             description: "The name was changed but couldn't be saved to the database",
             variant: "destructive",
           });
+          */
         }
       }, 0);
     }

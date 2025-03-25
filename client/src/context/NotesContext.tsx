@@ -965,6 +965,13 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         return;
       }
       
+      // Dispatch a custom event to notify components that a project has been updated
+      // This will be used to refresh the projects list in ProjectsModal
+      const projectUpdatedEvent = new CustomEvent('project-updated', {
+        detail: { projectId: currentProjectId }
+      });
+      window.dispatchEvent(projectUpdatedEvent);
+      
       console.log('Project saved successfully:', updatedProject);
       
       // Only show toast when manually saved via button (not auto-saves)

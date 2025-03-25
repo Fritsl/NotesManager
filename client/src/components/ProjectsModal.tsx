@@ -53,12 +53,7 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
     setCurrentProjectDescription
   } = useNotes();
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchProjects();
-    }
-  }, [isOpen]);
-
+  // Define fetchProjects before using it in useEffect
   const fetchProjects = async () => {
     console.log('ProjectsModal: Starting to fetch projects...');
     setLoading(true);
@@ -67,6 +62,28 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
     setProjects(projectsList);
     setLoading(false);
   };
+  
+  useEffect(() => {
+    if (isOpen) {
+      fetchProjects();
+    }
+  }, [isOpen]);
+  
+  // Listen for project-updated events to refresh the projects list
+  useEffect(() => {
+    const handleProjectUpdated = () => {
+      console.log('ProjectsModal: Received project-updated event, refreshing projects list');
+      if (isOpen) {
+        fetchProjects();
+      }
+    };
+    
+    window.addEventListener('project-updated', handleProjectUpdated);
+    
+    return () => {
+      window.removeEventListener('project-updated', handleProjectUpdated);
+    };
+  }, [isOpen]);
 
   const handleCreateProject = async () => {
     if (!newProjectName.trim()) {
