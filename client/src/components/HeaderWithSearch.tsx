@@ -520,6 +520,14 @@ export default function Header() {
                     disabled={!hasActiveProject}
                   >
                     <FileEdit className="h-4 w-4 mr-2" />
+                    <span>Edit Project Description</span>
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem onClick={() => setShowHelpModal(true)}>
+                    <HelpCircle className="h-4 w-4 mr-2" />
+                    <span>Help</span>
+                  </DropdownMenuItem>
+                  
                   {user ? (
                     <DropdownMenuItem onClick={handleSignOut}>
                       <LogOut className="h-4 w-4 mr-2" />
@@ -531,13 +539,6 @@ export default function Header() {
                       <span>Sign In</span>
                     </DropdownMenuItem>
                   )}
-                    <HelpCircle className="h-4 w-4 mr-2" />
-                    <span>Help</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOut className="h-4 w-4 mr-2" />
-                    <span>Sign Out</span>
-                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
