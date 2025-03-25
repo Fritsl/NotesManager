@@ -56,9 +56,9 @@ export default function ImportModal({ onClose }: ImportModalProps) {
           fileInputRef.current.value = "";
         }
         
-        // Import the notes with project name and set active
+        // Import notes into the current project (don't create a new one)
         setHasActiveProject(true); // Set project as active
-        importNotes(parsedData, projectName, null);
+        importNotes(parsedData);
         onClose();
       } catch (error) {
         setError(error instanceof Error ? error.message : "Invalid JSON format");
@@ -112,9 +112,9 @@ export default function ImportModal({ onClose }: ImportModalProps) {
           throw new Error("Invalid notes format. Expected { notes: [] }");
         }
         
-        // Import the notes with project name and set active
+        // Import notes into the current project (don't create a new one)
         setHasActiveProject(true); // Set project as active
-        importNotes(parsedData, projectName, null);
+        importNotes(parsedData);
         onClose();
       } catch (error) {
         setError(error instanceof Error ? error.message : "Invalid JSON format");
@@ -216,11 +216,9 @@ export default function ImportModal({ onClose }: ImportModalProps) {
                       const content = e.target?.result as string;
                       const parsedData = JSON.parse(content) as NotesData;
                       
-                      // Generate a new UUID for the imported project
-                      const newProjectId = crypto.randomUUID();
-                      // Import with project name and new ID
+                      // Import notes into existing project instead of creating a new one
                       setHasActiveProject(true);
-                      importNotes(parsedData, projectName, newProjectId);
+                      importNotes(parsedData);
                       onClose();
                     } catch (error) {
                       // Error handling is already done in the initial read
