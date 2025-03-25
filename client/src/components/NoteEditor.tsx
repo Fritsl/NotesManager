@@ -451,17 +451,54 @@ export default function NoteEditor() {
 
           {/* Mobile footer */}
           <div className="bg-gray-900 border-t border-gray-800 p-2 flex justify-around">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            {/* Image upload button */}
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => {
-                const fileInput = document.getElementById('image-upload-mobile') as HTMLInputElement;
-                if (fileInput) fileInput.click();
+                const fileInput = document.getElementById(`image-upload-${selectedNote?.id}`) as HTMLInputElement;
+                fileInput?.click();
               }}
               className="text-primary"
             >
               <ImagePlus size={16} />
             </Button>
+
+            {/* Hidden file input for mobile */}
+            <input
+              id={`image-upload-${selectedNote?.id}`}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const files = e.target.files;
+                if (!files || files.length === 0 || !selectedNote) return;
+
+                const file = files[0];
+                if (!file.type.startsWith('image/')) {
+                  console.log("Invalid file type:", file.type);
+                  return;
+                }
+
+                // Check file size (limit to 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                  console.log("File too large:", file.size);
+                  return;
+                }
+
+                try {
+                  // Upload the image using context
+                  const image = await notesContext.uploadImage?.(selectedNote.id, file);
+
+                  if (image) {
+                    // Reset the file input
+                    e.target.value = '';
+                  }
+                } catch (error) {
+                  console.error('Error uploading image:', error);
+                }
+              }}
+            />
 
             <Button 
               variant="ghost" 
@@ -603,42 +640,6 @@ export default function NoteEditor() {
               <Youtube size={16} />
             </Button>
           </div>
-
-          {/* Hidden file input for mobile */}
-          <input
-            id="image-upload-mobile"
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={async (e) => {
-              const files = e.target.files;
-              if (!files || files.length === 0 || !selectedNote) return;
-
-              const file = files[0];
-              if (!file.type.startsWith('image/')) {
-                console.log("Invalid file type:", file.type);
-                return;
-              }
-
-              // Check file size (limit to 5MB)
-              if (file.size > 5 * 1024 * 1024) {
-                console.log("File too large:", file.size);
-                return;
-              }
-
-              try {
-                // Upload the image using context
-                const image = await notesContext.uploadImage?.(selectedNote.id, file);
-
-                if (image) {
-                  // Reset the file input
-                  e.target.value = '';
-                }
-              } catch (error) {
-                console.error('Error uploading image:', error);
-              }
-            }}
-          />
         </div>
       ) : (
         /* DESKTOP REGULAR EDIT MODE */
