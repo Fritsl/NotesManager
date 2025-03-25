@@ -588,14 +588,6 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             isOver && isOverRight && "bg-primary opacity-80 w-4"
           )}></div>
           
-          {/* Drag handle - larger touch target on mobile */}
-          <div className={cn(
-            "drag-handle mr-1 sm:mr-2 text-gray-400 touch-target flex items-center justify-center",
-            isEditing ? "opacity-30 cursor-not-allowed" : "hover:text-gray-600 cursor-grab"
-          )}>
-            <GripVertical size={16} />
-          </div>
-          
           {hasChildren ? (
             <Button
               variant="ghost" 
