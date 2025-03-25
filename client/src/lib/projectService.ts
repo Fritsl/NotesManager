@@ -863,46 +863,67 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
     // Instead, we'll preserve all image records
     console.log('Skipping image deletion to maintain compatibility with other apps');
     
-    // Now delete all existing notes for this project
-    console.log('Deleting existing notes for project:', id);
-    const { error: deleteError } = await supabase
+    // Instead of deleting and recreating notes, we'll use upsert to update existing notes and add new ones
+    console.log('Preparing to update notes for project:', id);
+    
+    // Get existing note IDs for this project to determine which ones to keep/delete
+    const { data: existingNotes, error: getError } = await supabase
       .from('notes')
-      .delete()
+      .select('id')
       .eq('project_id', id)
       .eq('user_id', userData.user.id);
       
-    if (deleteError) {
-      console.error('Error deleting existing notes:', deleteError);
+    if (getError) {
+      console.error('Error getting existing notes:', getError);
       return null;
     }
     
-    // Add a small delay to ensure deletion is complete before insertion
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    console.log('Successfully deleted existing notes, now inserting new notes');
-    
-    // Then create new notes from the hierarchical structure
+    // Flatten the hierarchical structure to database format while preserving original IDs
     const { notes: flatNotes, images: flatImages } = flattenNoteHierarchy(validNotesData.notes, id, userData.user.id);
-    console.log('Flattened notes for DB insertion:', flatNotes.length, 'notes', 'and', flatImages.length, 'images');
+    console.log('Flattened notes for DB update:', flatNotes.length, 'notes', 'and', flatImages.length, 'images');
     
-    // Define batch size once
+    // Define batch size for operations
     const BATCH_SIZE = 50;
     
     if (flatNotes.length > 0) {
       console.log('First flattened note sample:', JSON.stringify(flatNotes[0]));
       
       try {
-        // We need to make sure we don't have any duplicated IDs in the database
-        // The safest approach is to completely recreate the notes with new IDs
-        // First, create a mapping from old IDs to new IDs
+        // Create a set of IDs from the current notes for quick lookup
+        const currentNoteIds = new Set(flatNotes.map(note => note.id));
+        
+        // Find notes that no longer exist in the hierarchy and should be deleted
+        const notesToDelete = existingNotes?.filter(note => !currentNoteIds.has(note.id)) || [];
+        
+        if (notesToDelete.length > 0) {
+          console.log(`Found ${notesToDelete.length} notes to delete that are no longer in the hierarchy`);
+          
+          // Delete notes that are no longer in the hierarchy
+          // This will trigger the RLS policies to clean up associated images
+          const { error: deleteError } = await supabase
+            .from('notes')
+            .delete()
+            .in('id', notesToDelete.map(note => note.id));
+            
+          if (deleteError) {
+            console.error('Error deleting obsolete notes:', deleteError);
+            // Continue anyway to update the remaining notes
+          } else {
+            console.log(`Successfully deleted ${notesToDelete.length} obsolete notes`);
+          }
+        } else {
+          console.log('No obsolete notes to delete');
+        }
+        
+        // Preserve original note IDs - create a dummy mapping that maps each ID to itself
         const idMapping: Record<string, string> = {};
         
-        // Generate new UUIDs for each note
+        // Instead of generating new IDs, just map each note ID to itself
         flatNotes.forEach(note => {
-          idMapping[note.id] = crypto.randomUUID();
+          idMapping[note.id] = note.id; // Keep the same ID
         });
         
-        console.log('Created ID mapping for notes');
+        console.log('Using identity mapping to preserve original note IDs');
         
         // Sort notes by dependency - root notes first, then level by level
         // This helps ensure we don't violate foreign key constraints
