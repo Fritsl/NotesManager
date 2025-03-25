@@ -444,39 +444,74 @@ export default function ImageDiagnostics() {
       <div className="grid grid-cols-1 gap-6 mb-6">
         <Card>
           <CardHeader>
-            <CardTitle>Fix Image Formats</CardTitle>
+            <CardTitle>Image Format Summary</CardTitle>
             <CardDescription>
-              Update image records to ensure compatibility with other applications
+              Overview of image format issues and fix options
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">
-                  Select URL Format
-                </label>
-                <select
-                  className="w-full p-2 border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                  value={selectedFormat}
-                  onChange={(e) => setSelectedFormat(e.target.value)}
-                >
-                  <option value="original">Original App Format</option>
-                  <option value="replit">Replit App Format</option>
-                </select>
+              {/* Summary Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Total Images</div>
+                  <div className="text-lg font-bold">{imagePathStats.total}</div>
+                </div>
+                <div className="p-2 bg-green-50 dark:bg-green-900/30 border border-green-100 dark:border-green-800 rounded">
+                  <div className="text-xs text-green-700 dark:text-green-400">Correct Format</div>
+                  <div className="text-lg font-bold text-green-700 dark:text-green-400">{imagePathStats.correctFormat}</div>
+                </div>
+                <div className="p-2 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-100 dark:border-yellow-800 rounded">
+                  <div className="text-xs text-yellow-700 dark:text-yellow-400">Duplicate Paths</div>
+                  <div className="text-lg font-bold text-yellow-700 dark:text-yellow-400">{imagePathStats.duplicatePaths}</div>
+                </div>
+                <div className="p-2 bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 rounded">
+                  <div className="text-xs text-red-700 dark:text-red-400">Wrong Format</div>
+                  <div className="text-lg font-bold text-red-700 dark:text-red-400">{imagePathStats.wrongFormat}</div>
+                </div>
               </div>
-              
-              <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded text-sm text-gray-900 dark:text-gray-100">
-                <p className="font-medium">Format Examples:</p>
-                <p><strong>Original App:</strong> Path: images/filename.jpg</p>
-                <p><strong>Replit App:</strong> Path: images/user_id/filename.jpg</p>
+
+              {/* Alert about expected format */}
+              <Alert className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+                <AlertTitle className="text-blue-800 dark:text-blue-300 font-medium">Required Image Format</AlertTitle>
+                <AlertDescription className="text-blue-700 dark:text-blue-400">
+                  <p className="mb-2">All images must follow this exact format for compatibility:</p>
+                  <ul className="list-disc list-inside text-sm">
+                    <li><strong>Storage Path:</strong> <code className="bg-blue-100 dark:bg-blue-800 p-1 rounded">images/filename.ext</code></li>
+                    <li><strong>Public URL:</strong> <code className="bg-blue-100 dark:bg-blue-800 p-1 rounded">https://wxpdstlzutwzuxstysnl.supabase.co/storage/v1/object/public/note-images/images/filename.ext</code></li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
+
+              {/* Fix options */}
+              <div className="flex flex-col space-y-3">
+                {imagePathStats.duplicatePaths > 0 && (
+                  <Button onClick={fixDuplicateImagePaths} disabled={loading} variant="destructive">
+                    Fix {imagePathStats.duplicatePaths} Images with Duplicate Paths/URLs
+                  </Button>
+                )}
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">
+                    Update All Images to Format:
+                  </label>
+                  <div className="flex gap-2">
+                    <select
+                      className="flex-1 p-2 border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      value={selectedFormat}
+                      onChange={(e) => setSelectedFormat(e.target.value)}
+                    >
+                      <option value="original">Original App Format (images/filename.ext)</option>
+                      <option value="replit">Replit App Format (images/user_id/filename.ext)</option>
+                    </select>
+                    <Button onClick={updateImageFormat} disabled={loading} variant="secondary">
+                      Update All Images
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>
-          <CardFooter>
-            <Button onClick={updateImageFormat} disabled={loading}>
-              Update All Image Records
-            </Button>
-          </CardFooter>
         </Card>
 
         <Card>
