@@ -6,24 +6,10 @@ import NotFound from "@/pages/not-found";
 import NotesEditor from "@/pages/NotesEditor";
 import { NotesProvider } from "@/context/NotesContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
-import { useState, useEffect, createContext, useContext } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import AuthModal from "@/components/AuthModal";
-
-// Create a context for URL parameters to make them available throughout the app
-interface UrlParamsContextType {
-  projectId: string | null;
-  noteId: string | null;
-}
-
-const UrlParamsContext = createContext<UrlParamsContextType>({
-  projectId: null,
-  noteId: null
-});
-
-// Hook to easily access URL parameters
-export const useUrlParams = () => useContext(UrlParamsContext);
 
 // Authentication guard component
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -73,7 +59,13 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function Router() {
+// Define the interface for URL parameters
+interface UrlParams {
+  projectId: string | null;
+  noteId: string | null;
+}
+
+function Router({ urlParams }: { urlParams: UrlParams }) {
   return (
     <>
       <Switch>
@@ -81,7 +73,7 @@ function Router() {
           path="/" 
           component={() => (
             <AuthGuard>
-              <NotesProvider>
+              <NotesProvider urlParams={urlParams}>
                 <NotesEditor />
               </NotesProvider>
             </AuthGuard>
@@ -96,7 +88,7 @@ function Router() {
 function App() {
   // Parse URL parameters for deep linking from FastPresenter
   // URL format: https://fastpresenterdata.netlify.app/?project=[project_uuid]&note=[note_uuid]
-  const [urlParams, setUrlParams] = useState<UrlParamsContextType>({
+  const [urlParams, setUrlParams] = useState<UrlParams>({
     projectId: null,
     noteId: null
   });
@@ -120,10 +112,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <UrlParamsContext.Provider value={urlParams}>
-          <Router />
-          <Toaster />
-        </UrlParamsContext.Provider>
+        <Router urlParams={urlParams} />
+        <Toaster />
       </AuthProvider>
     </QueryClientProvider>
   );
