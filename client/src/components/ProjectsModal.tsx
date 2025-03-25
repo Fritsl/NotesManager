@@ -62,13 +62,13 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
     setProjects(projectsList);
     setLoading(false);
   };
-  
+
   useEffect(() => {
     if (isOpen) {
       fetchProjects();
     }
   }, [isOpen]);
-  
+
   // Listen for project-updated events to refresh the projects list
   useEffect(() => {
     const handleProjectUpdated = () => {
@@ -77,9 +77,9 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
         fetchProjects();
       }
     };
-    
+
     window.addEventListener('project-updated', handleProjectUpdated);
-    
+
     return () => {
       window.removeEventListener('project-updated', handleProjectUpdated);
     };
@@ -101,17 +101,17 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
       const notesData = exportNotes();
       console.log('Exported notes data:', notesData);
       console.log('Notes count for new project:', notesData.notes.length);
-      
+
       const newProject = await createProject(newProjectName, notesData);
       console.log('Result from createProject:', newProject);
-      
+
       if (newProject) {
         // Set the current project ID and mark as having an active project
         setCurrentProjectId(newProject.id);
         setHasActiveProject(true);
-        
+
         console.log('Set current project ID for new project:', newProject.id);
-        
+
         toast({
           title: 'Success',
           description: 'Project created successfully',
@@ -144,9 +144,9 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
       const notesData = exportNotes();
       const projectName = newName || project.name;
       const projectDescription = newDescription !== undefined ? newDescription : (project.description || '');
-      
+
       const updated = await updateProject(project.id, projectName, notesData, projectDescription);
-      
+
       if (updated) {
         toast({
           title: 'Success',
@@ -176,10 +176,10 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
 
   const handleDeleteProject = async () => {
     if (!projectToDelete) return;
-    
+
     try {
       const success = await moveProjectToTrash(projectToDelete.id);
-      
+
       if (success) {
         toast({
           title: 'Moved to Trash',
@@ -208,12 +208,12 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
   const handleLoadProject = async (project: Project) => {
     try {
       console.log('Loading project from list:', project.name, project.id);
-      
+
       // Get full project with notes from database
       setLoading(true);
       const fullProject = await getProject(project.id);
       setLoading(false);
-      
+
       if (!fullProject) {
         console.error('Failed to fetch full project data');
         toast({
@@ -223,10 +223,10 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
         });
         return;
       }
-      
+
       console.log('Full project data loaded:', fullProject.data);
       console.log('Notes count:', fullProject.data.notes.length);
-      
+
       if (!fullProject.data || !fullProject.data.notes) {
         console.error('Project data is missing or malformed:', fullProject.data);
         toast({
@@ -236,13 +236,13 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
         });
         return;
       }
-      
+
       // Pass data, project name, and project ID to importNotes
       importNotes(fullProject.data, fullProject.name, fullProject.id);
-      
+
       // Mark as having an active project
       setHasActiveProject(true);
-      
+
       // Set project description if available in the project data
       if (fullProject.description) {
         setCurrentProjectDescription(fullProject.description);
@@ -251,9 +251,9 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
         setCurrentProjectDescription('');
         console.log('No project description found, setting empty description');
       }
-      
+
       console.log('Set current project ID:', fullProject.id);
-      
+
       toast({
         title: 'Success',
         description: `Project "${fullProject.name}" loaded successfully`,
@@ -274,23 +274,23 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
   };
-  
+
   const startEditingProject = (e: React.MouseEvent, project: Project) => {
     e.stopPropagation(); // Prevent loading the project
     setEditingProject(project);
     setEditName(project.name);
     setEditDescription(project.description || '');
   };
-  
+
   const cancelEditing = () => {
     setEditingProject(null);
     setEditName('');
     setEditDescription('');
   };
-  
+
   const saveProjectChanges = async () => {
     if (!editingProject) return;
-    
+
     await handleUpdateProject(editingProject, editName, editDescription);
     cancelEditing();
   };
@@ -305,7 +305,7 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
               Click on a project to load it. Projects are auto-saved as you work. Use Delete to remove unwanted projects.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div className="flex items-end gap-2">
               <div className="flex-1 space-y-2">
@@ -327,7 +327,7 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                 Create
               </Button>
             </div>
-            
+
             <div className="border border-gray-800 rounded-md p-4 bg-gray-900">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-medium text-gray-300">Your Projects</h3>
@@ -344,7 +344,7 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                   <span>Trash</span>
                 </Button>
               </div>
-              
+
               {loading ? (
                 <div className="flex justify-center py-8">
                   <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
@@ -404,18 +404,18 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                       ) : (
                         // View mode
                         <>
-                          <div className="flex justify-between items-center">
-                            <div className="flex items-center">
-                              <FileDown className="h-5 w-5 mr-3 text-gray-400" />
-                              <div>
-                                <h4 className="font-medium text-gray-200 flex items-center">
+                          <div className="flex flex-col gap-2">
+                            <div>
+                              <div className="flex items-center mb-1">
+                                <FileDown className="h-5 w-5 mr-3 text-gray-400" />
+                                <h4 className="font-medium text-gray-200">
                                   {project.name}
                                   <span className="ml-2 text-xs text-gray-500 border border-gray-700 rounded px-1 py-0.5">Click to load</span>
                                 </h4>
-                                <p className="text-sm text-gray-400">
-                                  Updated: {formatDate(project.updated_at)}
-                                </p>
                               </div>
+                              <p className="text-sm text-gray-400 ml-8">
+                                Updated: {formatDate(project.updated_at)}
+                              </p>
                             </div>
                             <div className="flex gap-2">
                               <Button
