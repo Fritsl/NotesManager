@@ -280,9 +280,15 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
     }),
   });
 
-  // Connect drag and drop refs
-  drag(ref);
-  drop(preview(ref));
+  // Use useEffect to update drag-drop refs when isEditing changes
+  useEffect(() => {
+    if (!isEditing) {
+      // Apply drag-drop capabilities only when not editing
+      drag(ref);
+      drop(ref);
+      preview(ref);
+    }
+  }, [isEditing, drag, drop, preview]);
 
   const hasChildren = note.children.length > 0;
 
@@ -516,7 +522,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                               onClick={async () => {
                                 try {
                                   setIsSaving(true);
-                                  const success = await removeImage(image.id);
+                                  const success = await removeImage(image.id || '');
                                   if (success) {
                                     toast({
                                       title: "Image Removed",
