@@ -6,6 +6,8 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useToast } from '../hooks/use-toast';
 import { useAuth } from '../context/AuthContext';
+import { Separator } from './ui/separator';
+import { FaGoogle } from 'react-icons/fa';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -18,7 +20,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { signIn, signUp, resetPassword } = useAuth();
+  const { signIn, signInWithGoogle, signUp, resetPassword } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,6 +114,35 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       setLoading(false);
     }
   };
+  
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    
+    try {
+      const result = await signInWithGoogle();
+      
+      if (result.success) {
+        toast({
+          title: 'Success',
+          description: 'Redirecting to Google sign-in...',
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: result.error?.message || 'Failed to sign in with Google',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -174,6 +205,28 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 {loading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+            
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full flex items-center justify-center gap-2"
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+            >
+              <FaGoogle className="h-4 w-4" />
+              Google
+            </Button>
           </TabsContent>
           
           <TabsContent value="register" className="space-y-4 py-4">
