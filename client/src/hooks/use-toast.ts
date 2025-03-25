@@ -140,26 +140,21 @@ function dispatch(action: Action) {
 type Toast = Omit<ToasterToast, "id">
 
 function toast({ ...props }: Toast) {
+  // Create a dummy ID for API compatibility
   const id = genId()
+  
+  // Return a no-op functions for API compatibility
+  const update = (_props: ToasterToast) => {
+    // No-op: do nothing
+    return;
+  }
+  const dismiss = () => {
+    // No-op: do nothing
+    return;
+  }
 
-  const update = (props: ToasterToast) =>
-    dispatch({
-      type: "UPDATE_TOAST",
-      toast: { ...props, id },
-    })
-  const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
-
-  dispatch({
-    type: "ADD_TOAST",
-    toast: {
-      ...props,
-      id,
-      open: true,
-      onOpenChange: (open) => {
-        if (!open) dismiss()
-      },
-    },
-  })
+  // Skip dispatching to prevent toast from appearing
+  // No actual toast will be shown
 
   return {
     id: id,
