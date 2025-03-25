@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { Note } from "@/types/notes";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, Link, Youtube, ArrowDownRightFromCircle, MessageCircle, Clock, MoveHorizontal, Save, Check, Edit, X, Upload } from "lucide-react";
+import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, Link, Youtube, ArrowDownRightFromCircle, MessageCircle, Clock, MoveHorizontal, Save, Check, Edit, X, Upload, ImagePlus } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { cn } from "@/lib/utils";
 import DropZone from "./DropZone";
@@ -428,6 +428,128 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         onClick={(e) => e.stopPropagation()}
         autoFocus
       />
+
+      {/* Images Section */}
+      <div className="mt-2 mb-4 border-t border-gray-700 pt-2">
+        <div className="text-xs text-gray-400 flex justify-between items-center mb-2">
+          <span>Images</span>
+          <label 
+            htmlFor={`image-upload-${note.id}`} 
+            className="inline-flex items-center text-primary hover:text-primary-hover cursor-pointer text-xs"
+          >
+            <ImagePlus size={14} className="mr-1" />
+            <span>Add Image</span>
+            <input
+              id={`image-upload-${note.id}`}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const files = e.target.files;
+                if (!files || files.length === 0) return;
+
+                const file = files[0];
+                if (!file.type.startsWith('image/')) {
+                  console.log("Invalid file type:", file.type);
+                  return;
+                }
+
+                // Check file size (limit to 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                  console.log("File too large:", file.size);
+                  return;
+                }
+
+                try {
+                  // Show loading state
+                  setIsSaving(true);
+                  
+                  // Upload the image
+                  const image = await uploadImage(note.id, file);
+
+                  if (image) {
+                    // Reset the file input
+                    e.target.value = '';
+                    
+                    // Update the note with the new image
+                    const existingImages = note.images || [];
+                    const updatedNote = {
+                      ...note,
+                      images: [...existingImages, image]
+                    };
+                    
+                    // Update the note in state
+                    updateNote(updatedNote);
+                    
+                    // Make sure the changes are saved to the server
+                    await saveProject();
+                  }
+                } catch (error) {
+                  console.error('Error uploading image:', error);
+                } finally {
+                  setIsSaving(false);
+                }
+              }}
+            />
+          </label>
+        </div>
+
+        {/* Display images if any */}
+        {note.images && note.images.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+            {/* Deduplicate images by converting to a Map using ID as key, then back to array */}
+            {Array.from(
+              // Create a Map with image ID as key to eliminate duplicates
+              new Map(
+                note.images.map(img => [img.id, img])
+              ).values()
+            )
+            // Sort by position after deduplication
+            .sort((a, b) => a.position - b.position)
+            .map((image) => (
+              <div 
+                key={`image-${image.id}`} 
+                className="relative group border border-gray-800 rounded-md overflow-hidden"
+              >
+                <ImageWithFallback 
+                  url={image.url} 
+                  alt="Note attachment" 
+                  className="w-full h-auto object-cover cursor-pointer"
+                />
+                <div className="absolute top-0 right-0 p-1 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
+                  {/* Remove image button */}
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6 bg-red-900/80 hover:bg-red-800 rounded-full"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      try {
+                        setIsSaving(true);
+                        const success = await removeImage(image.id);
+                        if (success) {
+                          // Update the note in state to remove the image
+                          const updatedImages = note.images?.filter(img => img.id !== image.id) || [];
+                          const updatedNote = { ...note, images: updatedImages };
+                          updateNote(updatedNote);
+                          // Save to server
+                          await saveProject();
+                        }
+                      } catch (error) {
+                        console.error('Error removing image:', error);
+                      } finally {
+                        setIsSaving(false);
+                      }
+                    }}
+                  >
+                    <X size={12} />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Properties section (compact, single-line items) */}
       <div className={cn(
