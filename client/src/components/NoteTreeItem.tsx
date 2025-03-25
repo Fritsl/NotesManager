@@ -1081,15 +1081,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             </div>
           ))}
 
-          {/* Replace with a subtle persistent indicator */}
-          {note.children.length > 0 && (
-            <div className="h-2 flex items-center justify-center">
-              <div className={cn(
-                "h-[1px] w-1/3 transition-all duration-200",
-                isOverChildArea ? "bg-primary opacity-70" : "bg-gray-500 opacity-20 group-hover:opacity-40"
-              )}></div>
-            </div>
-          )}
+          
         </div>
       )}
 
