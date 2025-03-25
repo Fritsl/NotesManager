@@ -206,19 +206,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Normalize the storage path to use the original app's format (images/[filename])
+      // CRITICAL: Normalize the storage path to the exact standard format used by all apps
+      // The standard format MUST be exactly: images/filename.ext (no double paths or user IDs)
+      
       // Extract the filename from the path
       const pathParts = filePath.split('/');
       const fileName = pathParts[pathParts.length - 1];
-      // Create a normalized path in the original app's format
+      
+      // Create a normalized path in the standard format expected by all apps
       const normalizedPath = `images/${fileName}`;
       
       // Ensure the public URL matches the expected format
-      // If the URL contains duplicate "images/" paths, normalize it
+      // Remove any duplicate image path segments which can cause compatibility issues
       let normalizedUrl = publicUrl;
+      
+      // Fix URLs with duplicate /images/images/ segments
       if (normalizedUrl.includes('/images/images/')) {
         normalizedUrl = normalizedUrl.replace('/images/images/', '/images/');
         log(`Normalized URL from ${publicUrl} to ${normalizedUrl}`);
+      }
+      
+      // Additional check for other possible path issues
+      if (normalizedUrl.includes(`/note-images/note-images/`)) {
+        normalizedUrl = normalizedUrl.replace('/note-images/note-images/', '/note-images/');
+        log(`Fixed double bucket path in URL: ${normalizedUrl}`);
       }
 
       log(`Creating image record for note ${noteId} by user ${userId} using direct DB connection`);
