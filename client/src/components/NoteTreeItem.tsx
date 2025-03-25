@@ -612,21 +612,11 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           )}
           
           <div className="flex-1 overflow-hidden">
-            {isEditing ? (
-              /* Inline Edit Mode - All in one screen */
+            {isEditing && !isMobile ? (
+              /* Inline Edit Mode - Only shown on desktop; mobile uses fullscreen dialog */
               <div className="w-full" onClick={(e) => e.stopPropagation()}>
-                {/* Content editor with more height */}
-                <Textarea 
-                  ref={contentEditRef}
-                  rows={Math.min(6, note.content.split('\n').length + 1)}
-                  className="w-full p-2 text-sm bg-gray-850 border border-gray-700 focus:border-primary focus:ring-1 focus:ring-primary resize-none mb-3"
-                  placeholder="Enter note content..."
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
-                  autoFocus
-                />
+                {/* Use the shared form rendering function */}
+                {renderEditForm()}
 
                 {/* Properties section (compact, single-line items) */}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-3">
