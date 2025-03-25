@@ -1023,7 +1023,8 @@ export async function addImageToNote(noteId: string, file: File): Promise<NoteIm
     // Generate a unique filename with original extension
     const fileExt = file.name.split('.').pop() || 'jpg';
     const fileName = `${crypto.randomUUID()}.${fileExt}`;
-    const filePath = `images/${userId}/${fileName}`;
+    // Use the format expected by the original app: images/[filename]
+    const filePath = `images/${fileName}`;
     
     console.log('Uploading image directly to Supabase storage');
     
@@ -1155,13 +1156,24 @@ export async function removeImageFromNote(imageId: string): Promise<boolean> {
       }
       
       // Create minimal imageData needed for storage removal
-      const imgIdParts = imageId.split('/');
-      const fileName = imgIdParts[imgIdParts.length - 1];
-      
-      imageData = {
-        storage_path: imageId.includes('/') ? imageId : `images/${fileName}`,
-        note_id: 'unknown' // We don't need this for deletion, but it's required by our type
-      };
+      // Check if this is already a storage path
+      if (imageId.startsWith('images/')) {
+        // This is already a storage path in the original app format
+        imageData = {
+          storage_path: imageId,
+          note_id: 'unknown' // We don't need this for deletion, but it's required by our type
+        };
+      } else {
+        // This is just an ID, we need to create a storage path
+        const imgIdParts = imageId.split('/');
+        const fileName = imgIdParts[imgIdParts.length - 1];
+        
+        imageData = {
+          // Use the original app format: images/[filename]
+          storage_path: `images/${fileName}`,
+          note_id: 'unknown' // We don't need this for deletion, but it's required by our type
+        };
+      }
       
       console.log('Using fallback image data:', imageData);
     }

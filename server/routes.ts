@@ -204,9 +204,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Normalize the storage path to use the original app's format (images/[filename])
+      // Extract the filename from the path
+      const pathParts = filePath.split('/');
+      const fileName = pathParts[pathParts.length - 1];
+      // Create a normalized path in the original app's format
+      const normalizedPath = `images/${fileName}`;
+
       log(`Creating image record for note ${noteId} by user ${userId} using direct DB connection`);
       log(`Database URL: ${process.env.DATABASE_URL?.substring(0, 20)}...`);
-      log(`Storage path: ${filePath}, Public URL: ${publicUrl.substring(0, 30)}...`);
+      log(`Storage path: ${normalizedPath}, Public URL: ${publicUrl.substring(0, 30)}...`);
 
       // Use direct PostgreSQL connection to bypass RLS policies
       let client;
@@ -240,9 +247,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW())
           RETURNING id, note_id, storage_path, url, position, created_at
         `;
-        log(`Executing insert query with params: [${noteId}, ${filePath}, ${publicUrl.substring(0, 20)}..., ${position}]`);
+        log(`Executing insert query with params: [${noteId}, ${normalizedPath}, ${publicUrl.substring(0, 20)}..., ${position}]`);
         
-        const insertResult = await client.query(insertQuery, [noteId, filePath, publicUrl, position]);
+        const insertResult = await client.query(insertQuery, [noteId, normalizedPath, publicUrl, position]);
         log(`Insert query completed: ${insertResult.rowCount} rows affected`);
         
         if (insertResult.rows.length === 0) {
@@ -448,8 +455,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             continue;
           }
           
-          // Upload to Supabase Storage
-          const filePath = `images/${userId}/${fileName}`;
+          // Upload to Supabase Storage using the original app's format
+          const filePath = `images/${fileName}`;
           
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('note-images')
@@ -551,7 +558,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Unique file path - use a unique name but preserve the file extension
         const fileExt = path.extname(file.originalname) || '.jpg';
         const fileName = `${uuidv4()}${fileExt}`;
-        const filePath = `images/${userId}/${fileName}`;
+        // Use the format expected by the original app: images/[filename]
+        const filePath = `images/${fileName}`;
         
         log(`Uploading to storage path: ${filePath}`);
         
