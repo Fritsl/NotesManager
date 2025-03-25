@@ -177,9 +177,42 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       return;
     }
     
-    // Clean up the positions before setting the notes
-    console.log('Cleaning note positions for', data.notes.length, 'notes');
-    const cleanedNotes = cleanNotePositions(data.notes);
+    // Process notes to ensure compatible image format
+    const processImagesInNotes = (noteList: Note[]): Note[] => {
+      return noteList.map(note => {
+        // Create a new note to avoid mutating the original
+        const processedNote: Note = {
+          ...note,
+          children: note.children ? processImagesInNotes(note.children) : []
+        };
+        
+        // Process images if present
+        if (note.images && note.images.length > 0) {
+          processedNote.images = note.images.map((image, index) => {
+            // If the image is in the simplified format (missing id, note_id, created_at),
+            // enhance it with the required fields for this application
+            const enhancedImage: NoteImage = {
+              ...image,
+              id: image.id || uuidv4(), // Generate an ID if missing
+              note_id: image.note_id || note.id, // Use note's ID if missing
+              created_at: image.created_at || new Date().toISOString(), // Use current time if missing
+              url: image.url,
+              storage_path: image.storage_path,
+              position: image.position !== undefined ? image.position : index
+            };
+            
+            return enhancedImage;
+          });
+        }
+        
+        return processedNote;
+      });
+    };
+    
+    // Process the notes to ensure compatible image format, then clean positions
+    const processedNotes = processImagesInNotes(data.notes);
+    console.log('Cleaning note positions for', processedNotes.length, 'notes');
+    const cleanedNotes = cleanNotePositions(processedNotes);
     console.log('Cleaned notes:', cleanedNotes);
     
     setNotes(cleanedNotes);
@@ -206,7 +239,30 @@ export function NotesProvider({ children }: { children: ReactNode }) {
 
   // Export notes to JSON
   const exportNotes = useCallback((): NotesData => {
-    return { notes };
+    // Helper function to convert notes for export
+    const simplifyNotesForExport = (noteList: Note[]): Note[] => {
+      return noteList.map(note => {
+        // Create a new note object with simplified images if any
+        const exportedNote: Note = {
+          ...note,
+          children: note.children ? simplifyNotesForExport(note.children) : []
+        };
+        
+        // Simplify image format to be compatible with other applications
+        if (note.images && note.images.length > 0) {
+          exportedNote.images = note.images.map(image => ({
+            // Only include the fields expected by other applications
+            url: image.url,
+            storage_path: image.storage_path,
+            position: image.position
+          } as NoteImage)); // Cast to NoteImage to satisfy TypeScript
+        }
+        
+        return exportedNote;
+      });
+    };
+    
+    return { notes: simplifyNotesForExport(notes) };
   }, [notes]);
 
   // Find a note and its path by ID

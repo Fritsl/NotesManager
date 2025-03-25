@@ -1,10 +1,10 @@
 export interface NoteImage {
-  id: string;
-  note_id: string;
-  storage_path: string;
-  url: string;
-  position: number;
-  created_at: string;
+  id?: string;          // Optional in simplified format used by other apps
+  note_id?: string;     // Optional in simplified format used by other apps
+  storage_path: string; // Required in both formats
+  url: string;          // Required in both formats
+  position: number;     // Required in both formats 
+  created_at?: string;  // Optional in simplified format used by other apps
 }
 
 export interface Note {
