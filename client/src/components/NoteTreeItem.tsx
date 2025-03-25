@@ -80,6 +80,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   const [{ isDragging }, drag, preview] = useDrag(() => ({
     type: 'NOTE',
     item: { type: 'NOTE', id: note.id, index, isRoot },
+    canDrag: !isEditing, // Disable dragging when editing is active
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
@@ -120,6 +121,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   // Set up drop detection with position information
   const [{ isOver, isOverRight, isOverTop, isOverBottom }, drop] = useDrop<DragItem, void, { isOver: boolean, isOverRight: boolean, isOverTop: boolean, isOverBottom: boolean }>({
     accept: 'NOTE',
+    canDrop: () => !isEditing, // Disable dropping when editing is active
     hover: (item, monitor) => {
       // No action needed in hover, we'll just collect position data
     },
@@ -246,6 +248,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   // Set up child area drop
   const [{ isOverChildArea }, dropChildArea] = useDrop<DragItem, void, { isOverChildArea: boolean }>({
     accept: 'NOTE',
+    canDrop: () => !isEditing, // Disable dropping when editing is active
     drop: (item, monitor) => {
       if (item.id !== note.id) {
         const draggedItemId = item.id;
@@ -370,7 +373,10 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           )}></div>
           
           {/* Drag handle - larger touch target on mobile */}
-          <div className="drag-handle mr-1 sm:mr-2 text-gray-400 hover:text-gray-600 cursor-grab touch-target flex items-center justify-center">
+          <div className={cn(
+            "drag-handle mr-1 sm:mr-2 text-gray-400 touch-target flex items-center justify-center",
+            isEditing ? "opacity-30 cursor-not-allowed" : "hover:text-gray-600 cursor-grab"
+          )}>
             <GripVertical size={16} />
           </div>
           
