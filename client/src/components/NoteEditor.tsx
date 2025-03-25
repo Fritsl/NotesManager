@@ -144,46 +144,13 @@ export default function NoteEditor() {
       
       // Set a short delay to prevent saving while moving between fields
       blurSaveTimerRef.current = setTimeout(async () => {
-        try {
-          // Get the latest content directly from the DOM reference
-          const currentContent = contentRef.current.value;
-          
-          // Update local state to keep it in sync
-          setContent(currentContent);
-          
-          // First update the note in memory
-          const updatedNote = {
-            ...selectedNote,
-            content: currentContent, // Use the latest content from DOM reference
-            youtube_url: youtubeUrl || null,
-            url: externalUrl || null,
-            url_display_text: externalUrl ? (urlDisplayText || null) : null,
-            is_discussion: isDiscussion,
-            time_set: timeSet,
-          };
-          
-          // Update the note in local state first
-          updateNote(updatedNote);
-          
-          console.log("Blur auto-save triggered for note:", selectedNote.id);
-          
-          // Force a direct save to the online database
-          await saveProject();
-          console.log("Blur auto-save completed successfully and saved to online database");
-          
-          // Reset changes flag after successful save
-          setHasChanges(false);
-        } catch (error) {
-          console.error("Failed during blur auto-save:", error);
-          toast({
-            title: "Auto-save Failed",
-            description: "Changes were not saved automatically. Please use manual save.",
-            variant: "destructive",
-          });
-        }
+        console.log("Blur auto-save triggered for note:", selectedNote.id);
+        
+        // Set saveDirectly flag to true to trigger a save
+        saveDirectly();
       }, 500);
     }
-  }, [selectedNote, hasChanges, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, timeSet, updateNote, saveProject, toast]);
+  }, [selectedNote, hasChanges, saveDirectly]);
   
   // Auto-save after 5 seconds of inactivity in text fields
   useEffect(() => {
@@ -196,39 +163,10 @@ export default function NoteEditor() {
       
       // Set up a new inactivity timer for 5 seconds
       inactivitySaveTimerRef.current = setTimeout(async () => {
-        try {
-          console.log("Inactivity auto-save triggered after 5 seconds");
-          
-          // Get the latest content directly from the DOM reference
-          const currentContent = contentRef.current.value;
-          
-          // Update local state to keep it in sync
-          setContent(currentContent);
-          
-          // First update the note in memory
-          const updatedNote = {
-            ...selectedNote,
-            content: currentContent, // Use the latest content from DOM reference
-            youtube_url: youtubeUrl || null,
-            url: externalUrl || null,
-            url_display_text: externalUrl ? (urlDisplayText || null) : null,
-            is_discussion: isDiscussion,
-            time_set: timeSet,
-          };
-          
-          // Update the note in local state first
-          updateNote(updatedNote);
-          
-          // Force a direct save to the online database
-          await saveProject();
-          console.log("Inactivity auto-save completed successfully and saved to online database");
-          
-          // Reset changes flag after successful save
-          setHasChanges(false);
-        } catch (error) {
-          console.error("Failed during inactivity auto-save:", error);
-          // No toast here to avoid disturbing the user during typing
-        }
+        console.log("Inactivity auto-save triggered after 5 seconds");
+        
+        // Use the direct save function to avoid circular dependency
+        saveDirectly();
       }, 5000); // 5 seconds of inactivity
     }
     
@@ -256,26 +194,9 @@ export default function NoteEditor() {
     
     // Save after a short delay to avoid too many saves while typing
     const timeout = setTimeout(() => {
-      if (selectedNote) {
-        // Create updated note with all the current properties
-        const updatedNote = {
-          ...selectedNote,
-          content: newContent,
-          youtube_url: youtubeUrl || null,
-          url: externalUrl || null,
-          url_display_text: externalUrl ? (urlDisplayText || null) : null,
-          is_discussion: isDiscussion,
-          time_set: timeSet,
-        };
-        
-        // Update in context
-        updateNote(updatedNote);
-        
-        // Save to database in the background
-        saveProject().catch(error => {
-          console.error("Failed to auto-save note after content change:", error);
-        });
-      }
+      // Call the manual save function directly to ensure content is saved properly
+      // This is the only reliable way to save that works
+      handleSave();
     }, 1500); // 1.5 second debounce
     
     // Save the timeout ID so we can clear it if needed
