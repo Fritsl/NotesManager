@@ -224,16 +224,16 @@ export default function NoteEditor() {
   };
   
   const handleDiscussionChange = (checked: boolean | "indeterminate") => {
-    console.log("DESKTOP: Discussion checkbox changed");
-    console.log("DESKTOP: Current discussion state:", isDiscussion);
-    console.log("DESKTOP: Current content:", content);
+    console.log("Discussion checkbox changed");
+    console.log("Current discussion state:", isDiscussion);
+    console.log("Current content:", content);
     
     // Store current content in a variable to preserve it
     const currentContent = contentRef.current?.value || content;
-    console.log("DESKTOP: Content to preserve:", currentContent);
+    console.log("Content to preserve:", currentContent);
     
     const newValue = checked === true;
-    console.log("DESKTOP: New discussion state will be:", newValue);
+    console.log("New discussion state will be:", newValue);
     
     // Update state
     setIsDiscussion(newValue);
@@ -242,12 +242,12 @@ export default function NoteEditor() {
     // Ensure content is preserved
     setTimeout(() => {
       if (contentRef.current && contentRef.current.value !== currentContent) {
-        console.log("DESKTOP: Content was reset, restoring to:", currentContent);
+        console.log("Content was reset, restoring to:", currentContent);
         contentRef.current.value = currentContent;
         setContent(currentContent);
       }
       
-      console.log("DESKTOP: Calling saveDirectly");
+      console.log("Calling saveDirectly");
       // Call the direct save function
       saveDirectly();
     }, 50);
@@ -449,17 +449,17 @@ export default function NoteEditor() {
               variant="ghost" 
               size="sm"
               onClick={() => {
-                console.log("MOBILE: Discussion toggle button clicked");
-                console.log("MOBILE: Current discussion state:", isDiscussion);
-                console.log("MOBILE: Current content:", content);
+                console.log("Discussion toggle button clicked");
+                console.log("Current discussion state:", isDiscussion);
+                console.log("Current content:", content);
                 
                 // Toggle discussion flag
                 const newValue = !isDiscussion;
-                console.log("MOBILE: New discussion state will be:", newValue);
+                console.log("New discussion state will be:", newValue);
                 
                 // Store current content in a variable to preserve it
                 const currentContent = contentRef.current?.value || content;
-                console.log("MOBILE: Content to preserve:", currentContent);
+                console.log("Content to preserve:", currentContent);
                 
                 // Update state without losing content
                 setIsDiscussion(newValue);
@@ -469,15 +469,15 @@ export default function NoteEditor() {
                 // This prevents content from being reset during re-renders
                 setTimeout(() => {
                   if (contentRef.current && contentRef.current.value !== currentContent) {
-                    console.log("MOBILE: Content was reset, restoring to:", currentContent);
+                    console.log("Content was reset, restoring to:", currentContent);
                     // Set the value directly on the DOM element
                     contentRef.current.value = currentContent;
                     // Update React state to match
                     setContent(currentContent);
                   }
                   
-                  console.log("MOBILE: Calling saveDirectly");
-                  // Call the direct save function to avoid circular dependency
+                  console.log("Calling saveDirectly");
+                  // Call the direct save function
                   saveDirectly();
                 }, 50);
               }}
