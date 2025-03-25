@@ -101,28 +101,34 @@ export default function ImageTestPage() {
         .from('note-images')
         .getPublicUrl(filePath);
       
-      // Step 3: Create a record in the note_images table (using a test note_id)
+      // Step 3: Use server API to create a record in the note_images table (bypasses RLS)
       const testNoteId = 'test-' + uniqueId();
-      const { data: imageRecord, error: dbError } = await supabase
-        .from('note_images')
-        .insert([
-          {
-            note_id: testNoteId,
-            storage_path: filePath,
-            url: publicUrl,
-            position: 0
-          }
-        ])
-        .select()
-        .single();
       
-      if (dbError) {
-        // If database insert fails, also delete the uploaded file
+      // Use the API endpoint which has server-side permissions
+      const formData = new FormData();
+      formData.append('noteId', testNoteId);
+      formData.append('userId', 'test-user'); // A placeholder user ID for test uploads
+      formData.append('filePath', filePath);
+      formData.append('publicUrl', publicUrl);
+      
+      // Use server API to create the record
+      const response = await fetch('/api/create-image-record', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        // If API call fails, also delete the uploaded file
         await supabase.storage
           .from('note-images')
           .remove([filePath]);
-        throw dbError;
+          
+        const errorData = await response.json();
+        throw new Error(`API error: ${errorData.error || response.statusText}`);
       }
+      
+      // Parse the successful response
+      const imageRecord = await response.json();
       
       toast({
         title: 'Upload successful',
