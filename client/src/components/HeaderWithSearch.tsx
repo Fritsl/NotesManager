@@ -487,8 +487,24 @@ export default function Header() {
                     <span className="ml-auto text-xs text-muted-foreground">{currentProjectId ? "(Manual)" : "(No Project)"}</span>
                   </DropdownMenuItem>
 
-
-
+                  {/* Note Actions */}
+                  <DropdownMenuItem onClick={() => {
+                    if (hasActiveProject) {
+                      addNote(null);
+                    } else {
+                      toast({
+                        title: "No Active Project",
+                        description: "Please create or open a project first",
+                        variant: "destructive"
+                      });
+                    }
+                  }}>
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    <span>Add Note (Root level)</span>
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator />
+                  
                   {/* Import/Export */}
                   <DropdownMenuItem onClick={() => setShowImportModal(true)}>
                     <FileUp className="h-4 w-4 mr-2" />
@@ -610,6 +626,27 @@ export default function Header() {
                     <FolderOpen className="h-4 w-4 mr-2" />
                     <span>Projects</span>
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  
+                  {/* Note Actions */}
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      if (hasActiveProject) {
+                        addNote(null);
+                      } else {
+                        toast({
+                          title: "No Active Project",
+                          description: "Please create or open a project first",
+                          variant: "destructive"
+                        });
+                      }
+                    }}
+                    disabled={!hasActiveProject}
+                  >
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    <span>Add Note (Root level)</span>
+                  </DropdownMenuItem>
+                  
                   <DropdownMenuSeparator />
 
                   {/* Import/Export */}
