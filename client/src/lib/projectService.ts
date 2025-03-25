@@ -1023,10 +1023,11 @@ export async function addImageToNote(noteId: string, file: File): Promise<NoteIm
     // Generate a unique filename with original extension
     const fileExt = file.name.split('.').pop() || 'jpg';
     const fileName = `${crypto.randomUUID()}.${fileExt}`;
-    // Use the format expected by the original app: images/[filename]
+    // CRITICAL: Use the format expected by the original app: images/[filename] - not images/user_id/filename
+    // This is the exact format that must be used for compatibility with other applications
     const filePath = `images/${fileName}`;
     
-    console.log('Uploading image directly to Supabase storage');
+    console.log('Uploading image directly to Supabase storage with path:', filePath);
     
     // Ensure the note-images bucket exists (this is a best-effort, may fail due to permissions)
     try {

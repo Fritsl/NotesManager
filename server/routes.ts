@@ -210,10 +210,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fileName = pathParts[pathParts.length - 1];
       // Create a normalized path in the original app's format
       const normalizedPath = `images/${fileName}`;
+      
+      // Ensure the public URL matches the expected format
+      // If the URL contains duplicate "images/" paths, normalize it
+      let normalizedUrl = publicUrl;
+      if (normalizedUrl.includes('/images/images/')) {
+        normalizedUrl = normalizedUrl.replace('/images/images/', '/images/');
+        log(`Normalized URL from ${publicUrl} to ${normalizedUrl}`);
+      }
 
       log(`Creating image record for note ${noteId} by user ${userId} using direct DB connection`);
       log(`Database URL: ${process.env.DATABASE_URL?.substring(0, 20)}...`);
-      log(`Storage path: ${normalizedPath}, Public URL: ${publicUrl.substring(0, 30)}...`);
+      log(`Storage path: ${normalizedPath}, Public URL: ${normalizedUrl.substring(0, 30)}...`);
 
       // Use direct PostgreSQL connection to bypass RLS policies
       let client;
@@ -247,9 +255,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW())
           RETURNING id, note_id, storage_path, url, position, created_at
         `;
-        log(`Executing insert query with params: [${noteId}, ${normalizedPath}, ${publicUrl.substring(0, 20)}..., ${position}]`);
+        log(`Executing insert query with params: [${noteId}, ${normalizedPath}, ${normalizedUrl.substring(0, 20)}..., ${position}]`);
         
-        const insertResult = await client.query(insertQuery, [noteId, normalizedPath, publicUrl, position]);
+        const insertResult = await client.query(insertQuery, [noteId, normalizedPath, normalizedUrl, position]);
         log(`Insert query completed: ${insertResult.rowCount} rows affected`);
         
         if (insertResult.rows.length === 0) {
