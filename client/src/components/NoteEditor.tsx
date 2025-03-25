@@ -129,9 +129,28 @@ export default function NoteEditor() {
       // Set a short delay to prevent saving while moving between fields
       blurSaveTimerRef.current = setTimeout(async () => {
         try {
+          // First update the note in memory
+          const updatedNote = {
+            ...selectedNote,
+            content,
+            youtube_url: youtubeUrl || null,
+            url: externalUrl || null,
+            url_display_text: externalUrl ? (urlDisplayText || null) : null,
+            is_discussion: isDiscussion,
+            time_set: timeSet,
+          };
+          
+          // Update the note in local state first
+          updateNote(updatedNote);
+          
           console.log("Blur auto-save triggered for note:", selectedNote.id);
-          await saveDirectly();
-          console.log("Blur auto-save completed successfully");
+          
+          // Force a direct save to the online database
+          await saveProject();
+          console.log("Blur auto-save completed successfully and saved to online database");
+          
+          // Reset changes flag after successful save
+          setHasChanges(false);
         } catch (error) {
           console.error("Failed during blur auto-save:", error);
           toast({
@@ -142,7 +161,7 @@ export default function NoteEditor() {
         }
       }, 500);
     }
-  }, [selectedNote, hasChanges, saveDirectly, toast]);
+  }, [selectedNote, hasChanges, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, timeSet, updateNote, saveProject, toast]);
   
   // Auto-save after 5 seconds of inactivity in text fields
   useEffect(() => {
@@ -157,8 +176,27 @@ export default function NoteEditor() {
       inactivitySaveTimerRef.current = setTimeout(async () => {
         try {
           console.log("Inactivity auto-save triggered after 5 seconds");
-          await saveDirectly();
-          console.log("Inactivity auto-save completed successfully");
+          
+          // First update the note in memory
+          const updatedNote = {
+            ...selectedNote,
+            content,
+            youtube_url: youtubeUrl || null,
+            url: externalUrl || null,
+            url_display_text: externalUrl ? (urlDisplayText || null) : null,
+            is_discussion: isDiscussion,
+            time_set: timeSet,
+          };
+          
+          // Update the note in local state first
+          updateNote(updatedNote);
+          
+          // Force a direct save to the online database
+          await saveProject();
+          console.log("Inactivity auto-save completed successfully and saved to online database");
+          
+          // Reset changes flag after successful save
+          setHasChanges(false);
         } catch (error) {
           console.error("Failed during inactivity auto-save:", error);
           // No toast here to avoid disturbing the user during typing
@@ -172,7 +210,7 @@ export default function NoteEditor() {
         clearTimeout(inactivitySaveTimerRef.current);
       }
     };
-  }, [selectedNote, hasChanges, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, timeSet, saveDirectly]);
+  }, [selectedNote, hasChanges, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, timeSet, updateNote, saveProject]);
   
   // Set up change tracking with proper state updates
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -245,8 +283,24 @@ export default function NoteEditor() {
     setSaveStatus("saving");
     
     try {
-      // Use our direct save function to ensure consistent behavior
-      await saveDirectly();
+      // First update the note in memory
+      const updatedNote = {
+        ...selectedNote,
+        content,
+        youtube_url: youtubeUrl || null,
+        url: externalUrl || null,
+        url_display_text: externalUrl ? (urlDisplayText || null) : null,
+        is_discussion: isDiscussion,
+        time_set: timeSet,
+      };
+      
+      // Update the note in local state first
+      updateNote(updatedNote);
+      
+      // Force a direct save to the online database
+      console.log("Saving note directly to database");
+      await saveProject();
+      console.log("Note saved to online database successfully");
       
       setSaveStatus("saved");
       
@@ -254,6 +308,16 @@ export default function NoteEditor() {
       setTimeout(() => {
         setSaveStatus("idle");
       }, 1500);
+      
+      // Show a confirmation toast
+      toast({
+        title: "Changes Saved",
+        description: "Your changes have been saved to the online database",
+        variant: "default",
+      });
+      
+      // Reset changes flag after successful save
+      setHasChanges(false);
     } catch (error) {
       console.error("Failed to save note and project:", error);
       toast({
