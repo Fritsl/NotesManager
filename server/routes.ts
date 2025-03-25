@@ -205,9 +205,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       log(`Creating image record for note ${noteId} by user ${userId} using direct DB connection`);
+      log(`Database URL: ${process.env.DATABASE_URL?.substring(0, 20)}...`);
+      log(`Storage path: ${filePath}, Public URL: ${publicUrl.substring(0, 30)}...`);
 
       // Use direct PostgreSQL connection to bypass RLS policies
-      const client = await pool.connect();
+      let client;
+      try {
+        client = await pool.connect();
+        log(`Database connection established successfully`);
+      } catch (connError) {
+        log(`Error connecting to database: ${connError instanceof Error ? connError.message : String(connError)}`);
+        throw connError;
+      }
       
       try {
         // Get the highest position of existing images
@@ -217,8 +226,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ORDER BY position DESC 
           LIMIT 1
         `;
+        log(`Executing position query: ${positionQuery} with note_id: ${noteId}`);
+        
         const positionResult = await client.query(positionQuery, [noteId]);
+        log(`Position query result: ${JSON.stringify(positionResult.rows)}`);
+        
         const position = positionResult.rows.length > 0 ? positionResult.rows[0].position + 1 : 0;
+        log(`Calculated position: ${position}`);
         
         // Insert the new image record
         const insertQuery = `
@@ -226,7 +240,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW())
           RETURNING id, note_id, storage_path, url, position, created_at
         `;
+        log(`Executing insert query with params: [${noteId}, ${filePath}, ${publicUrl.substring(0, 20)}..., ${position}]`);
+        
         const insertResult = await client.query(insertQuery, [noteId, filePath, publicUrl, position]);
+        log(`Insert query completed: ${insertResult.rowCount} rows affected`);
         
         if (insertResult.rows.length === 0) {
           throw new Error("Failed to insert image record");
