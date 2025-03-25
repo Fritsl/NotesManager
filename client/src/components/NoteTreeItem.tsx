@@ -557,7 +557,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           id={`note-${note.id}`}
           ref={ref}
           className={cn(
-            "note-item note-card border rounded-md p-2 sm:p-2 transition flex flex-col gap-2 group shadow-sm hover:shadow-md relative",
+            "note-item note-card border rounded-md p-2 transition flex flex-col gap-1.5 group shadow-sm hover:shadow-md relative",
             // Use the level color themes for consistent styling with the header buttons - directly using level index
             level >= 0 && level < levelColors.length ? levelColors[level].bg : levelColors[0].bg,
             `border-l-[5px] ${level >= 0 && level < levelColors.length ? levelColors[level].border : levelColors[0].border}`,
@@ -944,7 +944,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           </div>
           
           {/* Action buttons - below text on mobile, hover on desktop */}
-          <div className="flex space-x-1 sm:opacity-0 sm:group-hover:opacity-100 transition mt-2 pt-2 border-t border-gray-700/30">
+          <div className="flex space-x-1 sm:opacity-0 sm:group-hover:opacity-100 transition">
             {/* Edit Button */}
             <Button
               variant="ghost"
