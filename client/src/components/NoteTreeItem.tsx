@@ -449,6 +449,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                       checked={editIsDiscussion} 
                       onCheckedChange={setEditIsDiscussion}
                       className="ml-1 data-[state=checked]:bg-blue-600"
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                     />
                   </div>
                   
@@ -475,6 +477,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                       placeholder="https://..."
                       value={editUrl || ''}
                       onChange={(e) => setEditUrl(e.target.value || null)}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                     />
                   </div>
                   
@@ -488,6 +492,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                         placeholder="Link display text"
                         value={editUrlDisplayText || ''}
                         onChange={(e) => setEditUrlDisplayText(e.target.value || null)}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
                       />
                     </div>
                   )}
