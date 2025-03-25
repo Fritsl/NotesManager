@@ -345,6 +345,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // use storage to perform CRUD operations on the storage interface
   // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
 
+  // Endpoint to update image format for compatibility with original app
+  app.post("/api/update-image-format", async (req: Request, res: Response) => {
+    try {
+      const { format } = req.body;
+      
+      if (!format || !['original', 'replit'].includes(format)) {
+        return res.status(400).json({ error: "Invalid format specified" });
+      }
+      
+      log(`Updating image records to ${format} format`);
+      
+      // Connect directly to PostgreSQL to bypass RLS policies
+      let client;
+      try {
+        client = await pool.connect();
+        log(`Database connection established for image format update`);
+      } catch (connError: any) {
+        log(`Error connecting to database: ${connError.message}`);
+        return res.status(500).json({ error: "Database connection error" });
+      }
+      
+      let updateCount = 0;
+      
+      try {
+        // First get all image records
+        const { rows: images } = await client.query(
+          'SELECT id, storage_path FROM note_images'
+        );
+        
+        log(`Found ${images.length} image records to process`);
+        
+        // Process each record
+        for (const image of images) {
+          let newPath = image.storage_path;
+          
+          if (format === 'original') {
+            // Normalize to original app format (images/[filename])
+            const segments = image.storage_path.split('/');
+            const filename = segments[segments.length - 1];
+            newPath = `images/${filename}`;
+          } else if (format === 'replit') {
+            // This format is not currently supported
+            // Add code here if needed in the future
+            continue;
+          }
+          
+          // Only update if path changed
+          if (newPath !== image.storage_path) {
+            await client.query(
+              'UPDATE note_images SET storage_path = $1 WHERE id = $2',
+              [newPath, image.id]
+            );
+            updateCount++;
+          }
+        }
+      } finally {
+        client.release();
+      }
+      
+      return res.json({ success: true, count: updateCount, format });
+    } catch (error: any) {
+      log(`Image format update error: ${error.message}`);
+      return res.status(500).json({ error: "Server error", message: error.message });
+    }
+  });
+
   // Endpoint to fix and migrate local images to Supabase
   app.post("/api/migrate-local-images", async (req: Request, res: Response) => {
     try {
