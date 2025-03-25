@@ -286,7 +286,23 @@ export default function NoteEditor() {
   // Toggle fullscreen edit mode
   const toggleFullscreenMode = () => {
     setIsFullscreenEditMode(prev => !prev);
+    console.log("Fullscreen mode toggled:", !isFullscreenEditMode);
   };
+  
+  // Listen for fullscreen toggle events from header
+  useEffect(() => {
+    const handleFullscreenToggle = () => {
+      toggleFullscreenMode();
+    };
+    
+    // Listen for the custom fullscreen toggle event
+    window.addEventListener('toggle-fullscreen', handleFullscreenToggle);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('toggle-fullscreen', handleFullscreenToggle);
+    };
+  }, [isFullscreenEditMode]);
 
   const handleSave = async () => {
     if (!selectedNote || !contentRef.current) return;

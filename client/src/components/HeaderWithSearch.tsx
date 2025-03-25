@@ -22,7 +22,9 @@ import {
   AlertTriangle,
   HelpCircle,
   Presentation, // Adding Presentation icon for Viewer button
-  Play         // Alternative icon if needed
+  Play,         // Alternative icon if needed
+  Maximize2,    // For fullscreen toggle
+  Minimize2     // For exiting fullscreen
 } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { useAuth } from "@/context/AuthContext";
@@ -340,6 +342,29 @@ export default function Header() {
                 </Tooltip>
               </TooltipProvider>
               
+              {/* Fullscreen Toggle Button */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mr-2 text-gray-400 hover:text-white"
+                      onClick={() => {
+                        // Dispatch a custom event to toggle fullscreen mode in the editor
+                        window.dispatchEvent(new Event('toggle-fullscreen'));
+                      }}
+                    >
+                      <Maximize2 className="h-4 w-4 mr-1" />
+                      <span className="hidden sm:inline">Fullscreen</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Toggle Fullscreen Mode</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
               {/* Consolidated Hamburger Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -483,6 +508,16 @@ export default function Header() {
                     <span>Delete Project</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
+                  
+                  {/* Toggle Fullscreen Mode Menu Item */}
+                  <DropdownMenuItem onClick={() => {
+                    // Dispatch a custom event to toggle fullscreen mode in the editor
+                    window.dispatchEvent(new Event('toggle-fullscreen'));
+                  }}>
+                    <Maximize2 className="h-4 w-4 mr-2" />
+                    <span>Toggle Fullscreen</span>
+                  </DropdownMenuItem>
+                  
                   <DropdownMenuItem onClick={() => setShowHelpModal(true)}>
                     <HelpCircle className="h-4 w-4 mr-2" />
                     <span>Help</span>
@@ -587,6 +622,18 @@ export default function Header() {
                   >
                     <FileEdit className="h-4 w-4 mr-2" />
                     <span>Edit Project Description</span>
+                  </DropdownMenuItem>
+                  
+                  {/* Toggle Fullscreen Mode Menu Item */}
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      // Dispatch a custom event to toggle fullscreen mode in the editor
+                      window.dispatchEvent(new Event('toggle-fullscreen'));
+                    }}
+                    disabled={!hasActiveProject}
+                  >
+                    <Maximize2 className="h-4 w-4 mr-2" />
+                    <span>Toggle Fullscreen</span>
                   </DropdownMenuItem>
                   
                   <DropdownMenuItem onClick={() => setShowHelpModal(true)}>
