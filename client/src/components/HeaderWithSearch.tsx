@@ -24,7 +24,9 @@ import {
   Presentation, 
   Play,         
   Maximize2,    
-  Minimize2     
+  Minimize2,
+  PlusCircle,
+  FilePlus
 } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { useAuth } from "@/context/AuthContext";

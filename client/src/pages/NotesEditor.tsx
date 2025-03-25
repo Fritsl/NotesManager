@@ -75,16 +75,6 @@ export default function NotesEditor() {
           {/* Mobile floating action buttons */}
           {isMobile && (
             <div className="fixed right-4 bottom-4 flex flex-col space-y-2 z-10">
-              {/* Add note button */}
-              <Button 
-                variant="outline" 
-                size="icon"
-                onClick={() => addNote(null)}
-                className="rounded-full h-12 w-12 shadow-lg bg-primary/90 border-primary-foreground text-white hover:bg-primary"
-              >
-                <FilePlus className="h-5 w-5" />
-              </Button>
-              
               {/* Clear filter button - only show if filter is active */}
               {activeFilter && filteredNotes.length > 0 && (
                 <Button 
