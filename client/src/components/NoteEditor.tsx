@@ -21,14 +21,14 @@ export default function NoteEditor() {
     saveProject, 
     currentProjectId
   } = useNotes();
-  
+
   // Get the Notes context to access its methods
   const notesContext = useNotes();
   const { toast } = useToast();
   // We're moving away from mobile-specific logic to reduce issues
   // This will be a unified interface for all device sizes
   const [isFullscreenEditMode, setIsFullscreenEditMode] = useState<boolean>(false);
-  
+
   const [content, setContent] = useState<string>("");
   const [youtubeUrl, setYoutubeUrl] = useState<string>("");
   const [externalUrl, setExternalUrl] = useState<string>("");
@@ -36,16 +36,16 @@ export default function NoteEditor() {
   const [isDiscussion, setIsDiscussion] = useState<boolean>(false);
   const [timeSet, setTimeSet] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
-  
+
   // Track if the form has unsaved changes
   const [hasChanges, setHasChanges] = useState<boolean>(false);
-  
+
   // References to track the form elements for blur handling
   const contentRef = useRef<HTMLTextAreaElement>(null);
   const youtubeUrlRef = useRef<HTMLInputElement>(null);
   const externalUrlRef = useRef<HTMLInputElement>(null);
   const urlDisplayTextRef = useRef<HTMLInputElement>(null);
-  
+
   // Auto-save timer references
   const blurSaveTimerRef = useRef<NodeJS.Timeout | null>(null);  // For blur-based auto-save
   const inactivitySaveTimerRef = useRef<NodeJS.Timeout | null>(null);  // For inactivity (5 seconds) auto-save
@@ -60,7 +60,7 @@ export default function NoteEditor() {
       setIsDiscussion(selectedNote.is_discussion);
       setTimeSet(selectedNote.time_set);
       setHasChanges(false); // Reset changes flag on note selection
-      
+
       // No longer using mobile-specific fullscreen mode
       // This helps ensure consistent behavior across devices
     } else {
@@ -74,21 +74,21 @@ export default function NoteEditor() {
       setHasChanges(false);
     }
   }, [selectedNote]);
-  
+
   // Direct save function - saves immediately without checks
   const saveDirectly = useCallback(async () => {
     if (!selectedNote || !currentProjectId || !contentRef.current) {
       console.log("Cannot save directly: No note selected, no project ID, or content reference is missing");
       return;
     }
-    
+
     try {
       // Get the latest content directly from the DOM reference
       const currentContent = contentRef.current.value;
-      
+
       // Update local state to keep it in sync
       setContent(currentContent);
-      
+
       // First update the note in memory
       const updatedNote = {
         ...selectedNote,
@@ -99,26 +99,26 @@ export default function NoteEditor() {
         is_discussion: isDiscussion,
         time_set: timeSet,
       };
-      
+
       // Update the note in local state first
       updateNote(updatedNote);
-      
+
       // Now perform the same actions as the manual save
       console.log("Direct save starting for note:", selectedNote.id);
       console.log("Direct save - Project ID:", currentProjectId);
-      
+
       // Ensure current note is saved to database by calling manual save function
       console.log("Manual save for project ID:", currentProjectId);
       await saveProject();
       console.log("Project saved directly from editor");
-      
+
       // Reset changes flag after successful save
       setHasChanges(false);
     } catch (error) {
       console.error("Failed to save project directly:", error);
     }
   }, [selectedNote, currentProjectId, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, timeSet, updateNote, saveProject, toast]);
-  
+
   // Auto-save when a field loses focus and there are changes
   const handleBlur = useCallback(async (e: React.FocusEvent) => {
     if (selectedNote && hasChanges && contentRef.current) {
@@ -126,17 +126,17 @@ export default function NoteEditor() {
       if (blurSaveTimerRef.current) {
         clearTimeout(blurSaveTimerRef.current);
       }
-      
+
       // Set a short delay to prevent saving while moving between fields
       blurSaveTimerRef.current = setTimeout(async () => {
         console.log("Blur auto-save triggered for note:", selectedNote.id);
-        
+
         // Set saveDirectly flag to true to trigger a save
         saveDirectly();
       }, 500);
     }
   }, [selectedNote, hasChanges, saveDirectly]);
-  
+
   // Auto-save after 5 seconds of inactivity in text fields
   useEffect(() => {
     // Only start inactivity timer if there are unsaved changes
@@ -145,16 +145,16 @@ export default function NoteEditor() {
       if (inactivitySaveTimerRef.current) {
         clearTimeout(inactivitySaveTimerRef.current);
       }
-      
+
       // Set up a new inactivity timer for 5 seconds
       inactivitySaveTimerRef.current = setTimeout(async () => {
         console.log("Inactivity auto-save triggered after 5 seconds");
-        
+
         // Use the direct save function to avoid circular dependency
         saveDirectly();
       }, 5000); // 5 seconds of inactivity
     }
-    
+
     // Clean up the timer when component unmounts or note changes
     return () => {
       if (inactivitySaveTimerRef.current) {
@@ -162,83 +162,83 @@ export default function NoteEditor() {
       }
     };
   }, [selectedNote, hasChanges, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, timeSet, updateNote, saveProject]);
-  
+
   // Set up debounced auto-save for content changes
   const [saveDebounceTimeout, setSaveDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
-  
+
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     // Update the state with new content
     const newContent = e.target.value;
     setContent(newContent);
     setHasChanges(true);
-    
+
     // Clear existing debounce if any
     if (saveDebounceTimeout) {
       clearTimeout(saveDebounceTimeout);
     }
-    
+
     // Save after a short delay to avoid too many saves while typing
     const timeout = setTimeout(() => {
       // Use the direct save function to avoid circular dependency
       saveDirectly();
     }, 1500); // 1.5 second debounce
-    
+
     // Save the timeout ID so we can clear it if needed
     setSaveDebounceTimeout(timeout);
   };
-  
+
   const handleYoutubeUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newUrl = e.target.value;
     setYoutubeUrl(newUrl);
     setHasChanges(true);
-    
+
     // Call the direct save function to avoid circular dependency 
     // This is the only reliable way to save that works
     setTimeout(() => {
       saveDirectly();
     }, 100);
   };
-  
+
   const handleExternalUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newUrl = e.target.value;
     setExternalUrl(newUrl);
     setHasChanges(true);
-    
+
     // Call the direct save function to avoid circular dependency
     // This is the only reliable way to save that works
     setTimeout(() => {
       saveDirectly();
     }, 100);
   };
-  
+
   const handleUrlDisplayTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newText = e.target.value;
     setUrlDisplayText(newText);
     setHasChanges(true);
-    
+
     // Call the direct save function to avoid circular dependency
     // This is the only reliable way to save that works
     setTimeout(() => {
       saveDirectly();
     }, 100);
   };
-  
+
   const handleDiscussionChange = (checked: boolean | "indeterminate") => {
     console.log("Discussion checkbox changed");
     console.log("Current discussion state:", isDiscussion);
     console.log("Current content:", content);
-    
+
     // Store current content in a variable to preserve it
     const currentContent = contentRef.current?.value || content;
     console.log("Content to preserve:", currentContent);
-    
+
     const newValue = checked === true;
     console.log("New discussion state will be:", newValue);
-    
+
     // Update state
     setIsDiscussion(newValue);
     setHasChanges(true);
-    
+
     // Ensure content is preserved
     setTimeout(() => {
       if (contentRef.current && contentRef.current.value !== currentContent) {
@@ -246,13 +246,13 @@ export default function NoteEditor() {
         contentRef.current.value = currentContent;
         setContent(currentContent);
       }
-      
+
       console.log("Calling saveDirectly");
       // Call the direct save function
       saveDirectly();
     }, 50);
   };
-  
+
   const handleTimeChange = (value: string | null) => {
     // Store time as HH:MM with no seconds
     let formattedTime = null;
@@ -266,29 +266,29 @@ export default function NoteEditor() {
         formattedTime = value;
       }
     }
-    
+
     // Update state with the formatted time
     setTimeSet(formattedTime);
     setHasChanges(true);
-    
+
     // Call the direct save function to avoid circular dependency
     // This is the only reliable way to save that works
     setTimeout(() => {
       saveDirectly();
     }, 100);
   };
-  
+
   // Handler for Apply button in the time picker
   const handleApplyTime = () => {
     saveDirectly();
   };
-  
+
   // Toggle fullscreen edit mode
   const toggleFullscreenMode = () => {
     setIsFullscreenEditMode(prev => !prev);
     console.log("Fullscreen mode toggled:", !isFullscreenEditMode);
   };
-  
+
   // Listen for fullscreen toggle events from header
   useEffect(() => {
     const handleFullscreenToggle = () => {
@@ -296,10 +296,10 @@ export default function NoteEditor() {
       setIsFullscreenEditMode(prev => !prev);
       console.log("Fullscreen toggle event received, setting fullscreen to:", !isFullscreenEditMode);
     };
-    
+
     // Listen for the custom fullscreen toggle event
     window.addEventListener('toggle-fullscreen', handleFullscreenToggle);
-    
+
     // Cleanup
     return () => {
       window.removeEventListener('toggle-fullscreen', handleFullscreenToggle);
@@ -310,14 +310,14 @@ export default function NoteEditor() {
     if (!selectedNote || !contentRef.current) return;
 
     setSaveStatus("saving");
-    
+
     try {
       // Get the latest content directly from the DOM reference
       const currentContent = contentRef.current.value;
-      
+
       // Update local state to keep it in sync
       setContent(currentContent);
-      
+
       // First update the note in memory
       const updatedNote = {
         ...selectedNote,
@@ -328,22 +328,22 @@ export default function NoteEditor() {
         is_discussion: isDiscussion,
         time_set: timeSet,
       };
-      
+
       // Update the note in local state first
       updateNote(updatedNote);
-      
+
       // Force a direct save to the online database
       console.log("Saving note directly to database");
       await saveProject();
       console.log("Note saved to online database successfully");
-      
+
       setSaveStatus("saved");
-      
+
       // Reset status after a delay
       setTimeout(() => {
         setSaveStatus("idle");
       }, 1500);
-      
+
       // Reset changes flag after successful save
       setHasChanges(false);
     } catch (error) {
@@ -362,7 +362,7 @@ export default function NoteEditor() {
       </div>
     );
   }
-  
+
   if (!selectedNote) {
     return (
       <div className="flex-1 flex items-center justify-center p-6">
@@ -395,32 +395,32 @@ export default function NoteEditor() {
                 {selectedNote.content.length > 15 ? '...' : ''}
               </span>
             </div>
-            
+
             <div className="flex items-center space-x-2">
               {isDiscussion && (
                 <span className="text-xs bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded-full">
                   Discussion
                 </span>
               )}
-              
+
               {youtubeUrl && (
                 <span className="text-xs bg-red-900/50 text-red-300 px-2 py-0.5 rounded-full">
                   YouTube
                 </span>
               )}
-              
+
               {externalUrl && (
                 <span className="text-xs bg-green-900/50 text-green-300 px-2 py-0.5 rounded-full">
                   Link
                 </span>
               )}
-              
+
               {timeSet && (
                 <span className="text-xs bg-purple-900/50 text-purple-300 px-2 py-0.5 rounded-full">
                   {timeSet}
                 </span>
               )}
-              
+
               {/* Save button */}
               {hasChanges && (
                 <Button
@@ -434,7 +434,7 @@ export default function NoteEditor() {
               )}
             </div>
           </div>
-          
+
           {/* Full-height textarea */}
           <div className="flex-1 flex flex-col overflow-hidden">
             <Textarea 
@@ -448,7 +448,7 @@ export default function NoteEditor() {
               style={{ minHeight: '100%', height: '100%' }}
             />
           </div>
-          
+
           {/* Mobile footer */}
           <div className="bg-gray-900 border-t border-gray-800 p-2 flex justify-around">
             <Button 
@@ -462,7 +462,7 @@ export default function NoteEditor() {
             >
               <ImagePlus size={16} />
             </Button>
-            
+
             <Button 
               variant="ghost" 
               size="sm"
@@ -470,19 +470,19 @@ export default function NoteEditor() {
                 console.log("Discussion toggle button clicked");
                 console.log("Current discussion state:", isDiscussion);
                 console.log("Current content:", content);
-                
+
                 // Toggle discussion flag
                 const newValue = !isDiscussion;
                 console.log("New discussion state will be:", newValue);
-                
+
                 // Store current content in a variable to preserve it
                 const currentContent = contentRef.current?.value || content;
                 console.log("Content to preserve:", currentContent);
-                
+
                 // Update state without losing content
                 setIsDiscussion(newValue);
                 setHasChanges(true);
-                
+
                 // Ensure content is preserved by explicitly setting it again
                 // This prevents content from being reset during re-renders
                 setTimeout(() => {
@@ -493,7 +493,7 @@ export default function NoteEditor() {
                     // Update React state to match
                     setContent(currentContent);
                   }
-                  
+
                   console.log("Calling saveDirectly");
                   // Call the direct save function
                   saveDirectly();
@@ -503,7 +503,7 @@ export default function NoteEditor() {
             >
               <CheckCircle2 size={16} />
             </Button>
-            
+
             <Popover.Root>
               <Popover.Trigger asChild>
                 <Button 
@@ -540,7 +540,7 @@ export default function NoteEditor() {
                 </div>
               </Popover.Content>
             </Popover.Root>
-            
+
             <Button 
               variant="ghost" 
               size="sm"
@@ -548,7 +548,7 @@ export default function NoteEditor() {
                 // Toggle external URL
                 let newUrl = "";
                 let newDisplayText = "";
-                
+
                 if (externalUrl) {
                   // Clear URL if already set
                   newUrl = "";
@@ -558,11 +558,11 @@ export default function NoteEditor() {
                   newUrl = "https://";
                   newDisplayText = "";
                 }
-                
+
                 setExternalUrl(newUrl);
                 setUrlDisplayText(newDisplayText);
                 setHasChanges(true);
-                
+
                 // Call the direct save function to avoid circular dependency
                 // This is the only reliable way to save that works
                 setTimeout(() => {
@@ -573,14 +573,14 @@ export default function NoteEditor() {
             >
               <Link size={16} />
             </Button>
-            
+
             <Button 
               variant="ghost" 
               size="sm"
               onClick={() => {
                 // Toggle YouTube URL
                 let newYoutubeUrl = "";
-                
+
                 if (youtubeUrl) {
                   // Clear URL if already set
                   newYoutubeUrl = "";
@@ -588,10 +588,10 @@ export default function NoteEditor() {
                   // Set a default YouTube URL if empty
                   newYoutubeUrl = "https://youtube.com/watch?v=";
                 }
-                
+
                 setYoutubeUrl(newYoutubeUrl);
                 setHasChanges(true);
-                
+
                 // Call the direct save function to avoid circular dependency
                 // This is the only reliable way to save that works
                 setTimeout(() => {
@@ -603,7 +603,7 @@ export default function NoteEditor() {
               <Youtube size={16} />
             </Button>
           </div>
-          
+
           {/* Hidden file input for mobile */}
           <input
             id="image-upload-mobile"
@@ -613,23 +613,23 @@ export default function NoteEditor() {
             onChange={async (e) => {
               const files = e.target.files;
               if (!files || files.length === 0 || !selectedNote) return;
-              
+
               const file = files[0];
               if (!file.type.startsWith('image/')) {
                 console.log("Invalid file type:", file.type);
                 return;
               }
-              
+
               // Check file size (limit to 5MB)
               if (file.size > 5 * 1024 * 1024) {
                 console.log("File too large:", file.size);
                 return;
               }
-              
+
               try {
                 // Upload the image using context
                 const image = await notesContext.uploadImage?.(selectedNote.id, file);
-                
+
                 if (image) {
                   // Reset the file input
                   e.target.value = '';
@@ -647,7 +647,7 @@ export default function NoteEditor() {
           <div className="bg-gray-900 border-b border-gray-800 p-2 flex items-center justify-between shadow-sm">
             <div className="breadcrumbs text-sm text-gray-400 flex items-center overflow-x-auto whitespace-nowrap">
               <span className="px-2 py-1 cursor-pointer hover:bg-gray-800 rounded">Root</span>
-              
+
               {breadcrumbs.map((crumb, index) => (
                 <div key={crumb.id} className="flex items-center">
                   <span className="mx-1 text-gray-500">/</span>
@@ -657,7 +657,7 @@ export default function NoteEditor() {
                   </span>
                 </div>
               ))}
-              
+
               {breadcrumbs.length > 0 && (
                 <div className="flex items-center">
                   <span className="mx-1 text-gray-500">/</span>
@@ -667,7 +667,7 @@ export default function NoteEditor() {
                   </span>
                 </div>
               )}
-              
+
               {breadcrumbs.length === 0 && (
                 <div className="flex items-center">
                   <span className="mx-1 text-gray-500">/</span>
@@ -678,7 +678,7 @@ export default function NoteEditor() {
                 </div>
               )}
             </div>
-            
+
             <div className="flex items-center gap-2">
               {/* Toggle fullscreen button */}
               <Button
@@ -689,7 +689,7 @@ export default function NoteEditor() {
               >
                 {isFullscreenEditMode ? <Minimize size={16} /> : <Expand size={16} />}
               </Button>
-              
+
               {/* Only show save button when there are unsaved changes */}
               {hasChanges && (
                 <Button
@@ -726,7 +726,7 @@ export default function NoteEditor() {
                   onBlur={handleBlur}
                 />
               </div>
-              
+
               {/* Optional fields in tabs */}
               <div className="border-t border-gray-800 pt-2 mt-2">
                 <div className="grid grid-cols-1 gap-2">
@@ -746,7 +746,7 @@ export default function NoteEditor() {
                       onBlur={handleBlur}
                     />
                   </div>
-                  
+
                   {/* External URL - more compact */}
                   <div className="flex items-center space-x-2">
                     <div className="flex-shrink-0">
@@ -763,7 +763,7 @@ export default function NoteEditor() {
                       onBlur={handleBlur}
                     />
                   </div>
-                  
+
                   {/* URL Display Text - only show if URL is entered */}
                   {externalUrl && (
                     <div className="flex items-center space-x-2 ml-5">
@@ -779,7 +779,7 @@ export default function NoteEditor() {
                       />
                     </div>
                   )}
-                  
+
                   {/* Time Picker - simple standard input */}
                   <div className="flex flex-col space-y-1">
                     <div className="flex items-center space-x-2">
@@ -831,7 +831,7 @@ export default function NoteEditor() {
                       </Popover.Root>
                     </div>
                   </div>
-                  
+
                   {/* Discussion Flag - more compact */}
                   <div className="flex items-center space-x-2 mt-1">
                     <Checkbox
@@ -866,23 +866,23 @@ export default function NoteEditor() {
                       onChange={async (e) => {
                         const files = e.target.files;
                         if (!files || files.length === 0 || !selectedNote) return;
-                        
+
                         const file = files[0];
                         if (!file.type.startsWith('image/')) {
                           console.log("Invalid file type:", file.type);
                           return;
                         }
-                        
+
                         // Check file size (limit to 5MB)
                         if (file.size > 5 * 1024 * 1024) {
                           console.log("File too large:", file.size);
                           return;
                         }
-                        
+
                         try {
                           // Upload the image using context
                           const image = await notesContext.uploadImage?.(selectedNote.id, file);
-                          
+
                           if (image) {
                             // Reset the file input
                             e.target.value = '';
@@ -894,7 +894,7 @@ export default function NoteEditor() {
                     />
                   </label>
                 </div>
-                
+
                 {/* Display images if any */}
                 {selectedNote.images && selectedNote.images.length > 0 && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
@@ -933,7 +933,7 @@ export default function NoteEditor() {
                           >
                             <ArrowUp size={14} />
                           </Button>
-                          
+
                           {/* Move down button */}
                           <Button 
                             variant="ghost" 
@@ -949,7 +949,7 @@ export default function NoteEditor() {
                           >
                             <ArrowDown size={14} />
                           </Button>
-                          
+
                           {/* Delete button */}
                           <Button 
                             variant="ghost" 
@@ -987,7 +987,7 @@ export default function NoteEditor() {
                           <span>YouTube</span>
                         </a>
                       )}
-                      
+
                       {externalUrl && (
                         <a 
                           href={externalUrl} 
@@ -1007,7 +1007,7 @@ export default function NoteEditor() {
           </div>
         </>
       )}
-          
+
           {/* Optional fields in tabs */}
           <div className="border-t border-gray-800 pt-2 mt-2">
             <div className="grid grid-cols-1 gap-2">
@@ -1027,7 +1027,7 @@ export default function NoteEditor() {
                   onBlur={handleBlur}
                 />
               </div>
-              
+
               {/* External URL - more compact */}
               <div className="flex items-center space-x-2">
                 <div className="flex-shrink-0">
@@ -1044,7 +1044,7 @@ export default function NoteEditor() {
                   onBlur={handleBlur}
                 />
               </div>
-              
+
               {/* URL Display Text - only show if URL is entered */}
               {externalUrl && (
                 <div className="flex items-center space-x-2 ml-5">
@@ -1060,7 +1060,7 @@ export default function NoteEditor() {
                   />
                 </div>
               )}
-              
+
               {/* Time Picker - simple standard input */}
               <div className="flex flex-col space-y-1">
                 <div className="flex items-center space-x-2">
@@ -1112,7 +1112,7 @@ export default function NoteEditor() {
                   </Popover.Root>
                 </div>
               </div>
-              
+
               {/* Discussion Flag - more compact */}
               <div className="flex items-center space-x-2 mt-1">
                 <Checkbox
@@ -1147,23 +1147,23 @@ export default function NoteEditor() {
                   onChange={async (e) => {
                     const files = e.target.files;
                     if (!files || files.length === 0 || !selectedNote) return;
-                    
+
                     const file = files[0];
                     if (!file.type.startsWith('image/')) {
                       console.log("Invalid file type:", file.type);
                       return;
                     }
-                    
+
                     // Check file size (limit to 5MB)
                     if (file.size > 5 * 1024 * 1024) {
                       console.log("File too large:", file.size);
                       return;
                     }
-                    
+
                     try {
                       // Upload the image using context
                       const image = await notesContext.uploadImage?.(selectedNote.id, file);
-                      
+
                       if (image) {
                         // Reset the file input
                         e.target.value = '';
@@ -1175,7 +1175,7 @@ export default function NoteEditor() {
                 />
               </label>
             </div>
-            
+
             {/* Display images if any */}
             {selectedNote.images && selectedNote.images.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
@@ -1206,15 +1206,15 @@ export default function NoteEditor() {
                         size="icon" 
                         className="h-6 w-6 bg-gray-900/80 hover:bg-gray-800 rounded-full"
                         onClick={async () => {
-                          if (image.position > 0) {
-                            await notesContext.reorderImage?.(selectedNote.id, image.id, image.position - 1);
+                          if (image.position > 0 && notesContext.reorderImage && selectedNote.id && image.id) {
+                            await notesContext.reorderImage(selectedNote.id, image.id, image.position - 1);
                           }
                         }}
                         disabled={image.position === 0}
                       >
                         <ArrowUp size={14} />
                       </Button>
-                      
+
                       {/* Move down button */}
                       <Button 
                         variant="ghost" 
@@ -1222,23 +1222,23 @@ export default function NoteEditor() {
                         className="h-6 w-6 bg-gray-900/80 hover:bg-gray-800 rounded-full"
                         onClick={async () => {
                           const maxPosition = (selectedNote.images?.length || 1) - 1;
-                          if (image.position < maxPosition) {
-                            await notesContext.reorderImage?.(selectedNote.id, image.id, image.position + 1);
+                          if (image.position < maxPosition && notesContext.reorderImage && selectedNote.id && image.id) {
+                            await notesContext.reorderImage(selectedNote.id, image.id, image.position + 1);
                           }
                         }}
                         disabled={image.position === (selectedNote.images?.length || 1) - 1}
                       >
                         <ArrowDown size={14} />
                       </Button>
-                      
+
                       {/* Delete button */}
                       <Button 
                         variant="ghost" 
                         size="icon" 
                         className="h-6 w-6 bg-gray-900/80 hover:bg-red-900/80 text-gray-400 hover:text-red-300 rounded-full"
                         onClick={async () => {
-                          if (confirm('Are you sure you want to remove this image?')) {
-                            await notesContext.removeImage?.(image.id);
+                          if (confirm('Are you sure you want to remove this image?') && notesContext.removeImage && image.id) {
+                            await notesContext.removeImage(image.id);
                           }
                         }}
                       >
@@ -1268,7 +1268,7 @@ export default function NoteEditor() {
                       <span>YouTube</span>
                     </a>
                   )}
-                  
+
                   {externalUrl && (
                     <a 
                       href={externalUrl} 
