@@ -958,12 +958,55 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
         return null;
       }
       
-      // CRITICAL: We must keep existing image records in the database for compatibility
-      // New project saving doesn't need to re-insert images, as we're preserving them
-      // The server API already stores the images in the project data JSON
-      console.log('Preserving existing image records in the database for compatibility with other apps');
+      // CRITICAL: We must update image records in the database for compatibility with other apps
+      console.log('Updating image records in the database for compatibility with other apps');
       
-      // The images are already included in the notes' data that was stored
+      // Process the images to update note references based on the new note IDs
+      if (flatImages.length > 0) {
+        console.log(`Processing ${flatImages.length} images with updated note references`);
+        
+        // Map the old note IDs to the new IDs for images
+        const processedImages = flatImages.map(image => {
+          const newNoteId = idMapping[image.note_id];
+          if (!newNoteId) {
+            console.warn(`Warning: No mapped note ID found for image ${image.id}, note ID ${image.note_id}`);
+            return null; // Skip images without valid note mapping
+          }
+          
+          return {
+            ...image,
+            note_id: newNoteId
+          };
+        }).filter(img => img !== null); // Remove any null entries
+        
+        console.log(`Have ${processedImages.length} valid images to update after note ID mapping`);
+        
+        // Use upsert to create new image records or update existing ones
+        // This ensures compatibility with both our app and others
+        for (let i = 0; i < processedImages.length; i += BATCH_SIZE) {
+          const batch = processedImages.slice(i, i + BATCH_SIZE);
+          console.log(`Upserting images batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(processedImages.length/BATCH_SIZE)}, size: ${batch.length}`);
+          
+          try {
+            const { data: upsertedData, error: upsertError } = await supabase
+              .from('note_images')
+              .upsert(batch, { onConflict: 'id' })
+              .select();
+              
+            if (upsertError) {
+              console.error(`Error upserting images batch ${Math.floor(i/BATCH_SIZE) + 1}:`, upsertError);
+              // Continue anyway to preserve as many images as possible
+            } else {
+              console.log(`Successfully upserted images batch ${Math.floor(i/BATCH_SIZE) + 1}, received:`, upsertedData?.length || 0, 'records');
+            }
+          } catch (batchError) {
+            console.error(`Error in image batch ${Math.floor(i/BATCH_SIZE) + 1}:`, batchError);
+            // Continue with next batch
+          }
+        }
+      } else {
+        console.log('No images to update');
+      }
       // The server-side API handles the image upload and provides URLs that work locally
     } else {
       console.log('No notes to insert');
