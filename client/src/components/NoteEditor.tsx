@@ -25,10 +25,9 @@ export default function NoteEditor() {
   // Get the Notes context to access its methods
   const notesContext = useNotes();
   const { toast } = useToast();
-  const isMobile = useIsMobile();
-  
-  // State for mobile fullscreen editing
-  const [isFullscreenEditMode, setIsFullscreenEditMode] = useState<boolean>(isMobile);
+  // We're moving away from mobile-specific logic to reduce issues
+  // This will be a unified interface for all device sizes
+  const [isFullscreenEditMode, setIsFullscreenEditMode] = useState<boolean>(false);
   
   const [content, setContent] = useState<string>("");
   const [youtubeUrl, setYoutubeUrl] = useState<string>("");
@@ -62,10 +61,8 @@ export default function NoteEditor() {
       setTimeSet(selectedNote.time_set);
       setHasChanges(false); // Reset changes flag on note selection
       
-      // Automatically enter fullscreen edit mode on mobile
-      if (isMobile) {
-        setIsFullscreenEditMode(true);
-      }
+      // No longer using mobile-specific fullscreen mode
+      // This helps ensure consistent behavior across devices
     } else {
       // Reset form when no note is selected
       setContent("");
@@ -76,7 +73,7 @@ export default function NoteEditor() {
       setTimeSet(null);
       setHasChanges(false);
     }
-  }, [selectedNote, isMobile]);
+  }, [selectedNote]);
   
   // Direct save function - saves immediately without checks
   const saveDirectly = useCallback(async () => {
