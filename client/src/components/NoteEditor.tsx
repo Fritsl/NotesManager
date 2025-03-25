@@ -267,13 +267,31 @@ export default function NoteEditor() {
       currentValue: isDiscussion, 
       newValue: checked === true, 
       selectedNoteId: selectedNote?.id,
-      currentContent: contentRef.current?.value
+      contentRefExists: !!contentRef.current,
+      contentLength: contentRef.current?.value?.length || 0,
+      componentState: {
+        content,
+        youtubeUrl,
+        externalUrl,
+        urlDisplayText,
+        isDiscussion,
+        timeSet
+      }
     });
     
+    // Make a snapshot of current note state
+    const previousState = {
+      id: selectedNote?.id,
+      content: selectedNote?.content,
+      isDiscussion: selectedNote?.is_discussion,
+      contentRefValue: contentRef.current?.value
+    };
+    console.log("📌 DISCUSSION TOGGLE - Previous state snapshot:", previousState);
+    
     const newValue = checked === true;
-    console.log("📌 DISCUSSION TOGGLE - Before setIsDiscussion");
+    console.log("📌 DISCUSSION TOGGLE - Before setIsDiscussion, changing from", isDiscussion, "to", newValue);
     setIsDiscussion(newValue);
-    console.log("📌 DISCUSSION TOGGLE - After setIsDiscussion");
+    console.log("📌 DISCUSSION TOGGLE - After setIsDiscussion, state is now", newValue);
     
     console.log("📌 DISCUSSION TOGGLE - Before setHasChanges");
     setHasChanges(true);
@@ -282,10 +300,32 @@ export default function NoteEditor() {
     // Call the direct save function to avoid circular dependency
     // This is the only reliable way to save that works
     console.log("📌 DISCUSSION TOGGLE - Setting timeout for save");
+    
+    // Use a longer timeout to ensure we can see the progression of state changes
     setTimeout(() => {
-      console.log("📌 DISCUSSION TOGGLE - Timeout triggered, about to call saveDirectly()");
-      console.log("📌 DISCUSSION TOGGLE - Current DOM content:", contentRef.current?.value);
-      saveDirectly();
+      try {
+        console.log("📌 DISCUSSION TOGGLE - Timeout triggered, current state:", {
+          isDiscussion: isDiscussion, // Current state at time of timeout
+          selectedNoteStillExists: !!selectedNote,
+          selectedNoteId: selectedNote?.id,
+          contentRefStillExists: !!contentRef.current,
+          contentRefValue: contentRef.current?.value?.substring(0, 50),
+          contentRefValueLength: contentRef.current?.value?.length
+        });
+        
+        if (selectedNote && contentRef.current) {
+          console.log("📌 DISCUSSION TOGGLE - About to call saveDirectly(), isDiscussion =", isDiscussion);
+          saveDirectly();
+        } else {
+          console.error("📌 DISCUSSION TOGGLE - ERROR: selectedNote or contentRef.current is missing at time of save!");
+          console.log("📌 DISCUSSION TOGGLE - Missing references:", {
+            selectedNote: !!selectedNote, 
+            contentRef: !!contentRef.current
+          });
+        }
+      } catch (error) {
+        console.error("📌 DISCUSSION TOGGLE - EXCEPTION during save:", error);
+      }
     }, 100);
     
     console.log("📌 DISCUSSION TOGGLE - END of handler");
