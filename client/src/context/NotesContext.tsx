@@ -239,30 +239,41 @@ export function NotesProvider({ children }: { children: ReactNode }) {
 
   // Export notes to JSON
   const exportNotes = useCallback((): NotesData => {
-    // Helper function to convert notes for export
-    const simplifyNotesForExport = (noteList: Note[]): Note[] => {
+    // Helper function to convert notes for export and reorder fields
+    const formatNotesForExport = (noteList: Note[]): Note[] => {
       return noteList.map(note => {
-        // Create a new note object with simplified images if any
+        // Prepare simplified images if any
+        const simplifiedImages = note.images && note.images.length > 0 
+          ? note.images.map(image => ({
+              // Only include the fields expected by other applications
+              url: image.url,
+              storage_path: image.storage_path,
+              position: image.position
+            } as NoteImage))
+          : [];
+            
+        // Create a completely new note object with fields in the exact order needed
+        // for compatibility with other applications
         const exportedNote: Note = {
-          ...note,
-          children: note.children ? simplifyNotesForExport(note.children) : []
+          id: note.id,
+          content: note.content,
+          position: note.position,
+          is_discussion: note.is_discussion,
+          time_set: note.time_set,
+          youtube_url: note.youtube_url,
+          url: note.url,
+          url_display_text: note.url_display_text,
+          // First include images (before children)
+          images: simplifiedImages,
+          // Then include children (after images)
+          children: note.children ? formatNotesForExport(note.children) : []
         };
-        
-        // Simplify image format to be compatible with other applications
-        if (note.images && note.images.length > 0) {
-          exportedNote.images = note.images.map(image => ({
-            // Only include the fields expected by other applications
-            url: image.url,
-            storage_path: image.storage_path,
-            position: image.position
-          } as NoteImage)); // Cast to NoteImage to satisfy TypeScript
-        }
         
         return exportedNote;
       });
     };
     
-    return { notes: simplifyNotesForExport(notes) };
+    return { notes: formatNotesForExport(notes) };
   }, [notes]);
 
   // Find a note and its path by ID

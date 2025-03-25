@@ -1128,15 +1128,42 @@ export async function removeImageFromNote(imageId: string): Promise<boolean> {
     console.log(`User ID: ${userId}`);
     
     // Get the image record first to get the storage path
-    const { data: imageData, error: getError } = await supabase
+    // First, try a direct approach with specific ID
+    let { data: imageData, error: getError } = await supabase
       .from('note_images')
       .select('storage_path, note_id')
       .eq('id', imageId)
-      .single();
+      .maybeSingle(); // Use maybeSingle instead of single to avoid error on no results
     
-    if (getError || !imageData) {
-      console.error('Error getting image record:', getError?.message || 'Image not found');
+    if (getError) {
+      console.error('Error getting image record:', getError.message);
       return false;
+    }
+    
+    // If no image found by ID, it might be that we have a simplified image format
+    // from a different app, try a fallback approach
+    if (!imageData) {
+      console.log('No image found with ID, trying alternative approach...');
+      
+      // Instead of using the database, we'll rely on removing the image directly from local state
+      // The actual record will be removed when the note is saved next time
+      
+      // Just proceed with a basic check that the imageId looks valid
+      if (!imageId || typeof imageId !== 'string' || imageId.trim() === '') {
+        console.error('Invalid image ID provided');
+        return false;
+      }
+      
+      // Create minimal imageData needed for storage removal
+      const imgIdParts = imageId.split('/');
+      const fileName = imgIdParts[imgIdParts.length - 1];
+      
+      imageData = {
+        storage_path: imageId.includes('/') ? imageId : `images/${fileName}`,
+        note_id: 'unknown' // We don't need this for deletion, but it's required by our type
+      };
+      
+      console.log('Using fallback image data:', imageData);
     }
     
     // Verify the note belongs to the user (optional, RLS should handle this)

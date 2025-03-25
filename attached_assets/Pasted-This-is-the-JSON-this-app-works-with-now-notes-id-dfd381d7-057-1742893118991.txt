@@ -1,0 +1,102 @@
+This is the JSON this app works with now:
+
+----
+{
+  "notes": [
+    {
+      "id": "dfd381d7-0574-4361-8224-549765c564ef",
+      "content": "The one note left, with image from Replit",
+      "position": 0,
+      "is_discussion": false,
+      "time_set": null,
+      "youtube_url": null,
+      "url": null,
+      "url_display_text": null,
+      "children": [
+        {
+          "id": "6a07f389-fbc6-4f37-a268-d1ff0b58396f",
+          "content": "New note",
+          "position": 0,
+          "is_discussion": false,
+          "time_set": null,
+          "youtube_url": null,
+          "url": null,
+          "url_display_text": null,
+          "children": [],
+          "images": []
+        },
+        {
+          "id": "1a3c3f3e-7130-4496-b2b7-9bbd3efb6089",
+          "content": "New note",
+          "position": 1,
+          "is_discussion": false,
+          "time_set": null,
+          "youtube_url": null,
+          "url": null,
+          "url_display_text": null,
+          "children": [],
+          "images": []
+        }
+      ],
+      "images": [
+        {
+          "url": "https://wxpdstlzutwzuxstysnl.supabase.co/storage/v1/object/public/note-images/images/2df0798b-b535-4015-8c5e-15ed98a09481/afa0375f-1687-40c1-8e2d-2e580472ba83.jpg",
+          "storage_path": "images/2df0798b-b535-4015-8c5e-15ed98a09481/afa0375f-1687-40c1-8e2d-2e580472ba83.jpg",
+          "position": 0
+        }
+      ]
+    }
+  ]
+}
+
+----
+
+This is the JSON it should work with instead:
+
+{
+  "notes": [
+    {
+      "id": "4d04bf90-34db-473e-acab-028bfb795f0e",
+      "content": "The one note left, with image from Replit",
+      "position": 0,
+      "is_discussion": false,
+      "time_set": null,
+      "youtube_url": null,
+      "url": null,
+      "url_display_text": null,
+      "images": [
+        {
+          "url": "https://wxpdstlzutwzuxstysnl.supabase.co/storage/v1/object/public/note-images/images/c89bf605-0cd5-4dbd-ba25-265163d87ae4.jpg",
+          "storage_path": "images/c89bf605-0cd5-4dbd-ba25-265163d87ae4.jpg",
+          "position": 0
+        }
+      ],
+      "children": [
+        {
+          "id": "c4096476-34b5-4812-beb4-bc802d53bc82",
+          "content": "New note",
+          "position": 0,
+          "is_discussion": false,
+          "time_set": null,
+          "youtube_url": null,
+          "url": null,
+          "url_display_text": null,
+          "images": [],
+          "children": []
+        },
+        {
+          "id": "f2a66fbd-2fdf-4f87-b7d1-19a0d837a0d7",
+          "content": "New note",
+          "position": 1,
+          "is_discussion": false,
+          "time_set": null,
+          "youtube_url": null,
+          "url": null,
+          "url_display_text": null,
+          "images": [],
+          "children": []
+        }
+      ]
+    }
+  ]
+}
