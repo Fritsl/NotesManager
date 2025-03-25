@@ -162,12 +162,28 @@ export default function ImageDiagnostics() {
                   ) : (
                     storageItems.map((item, i) => (
                       <li key={i} className="p-2 border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-                        <div className="font-medium">{item.name}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {new Date(item.created_at).toLocaleString()}
-                        </div>
-                        <div className="text-sm">
-                          Size: {Math.round(item.metadata?.size / 1024)} KB
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <div className="font-medium">{item.name}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              {new Date(item.created_at).toLocaleString()}
+                            </div>
+                            <div className="text-sm">
+                              Size: {Math.round(item.metadata?.size / 1024)} KB
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-center">
+                            <div className="h-24 w-24 relative rounded overflow-hidden bg-gray-200 dark:bg-gray-700">
+                              <img 
+                                src={`https://wxpdstlzutwzuxstysnl.supabase.co/storage/v1/object/public/note-images/${item.name}`} 
+                                alt={item.name}
+                                className="object-cover h-full w-full"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100?text=Error';
+                                }}
+                              />
+                            </div>
+                          </div>
                         </div>
                       </li>
                     ))
@@ -207,21 +223,37 @@ export default function ImageDiagnostics() {
                   ) : (
                     filteredRecords.map((record) => (
                       <li key={record.id} className="p-2 border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-                        <div className="font-medium truncate">{record.id}</div>
-                        <div className="text-sm">Note: {record.note_id}</div>
-                        <div className="text-sm truncate">Path: {record.storage_path}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          Position: {record.position}
-                        </div>
-                        <div className="text-sm mt-1">
-                          <a 
-                            href={record.url} 
-                            target="_blank" 
-                            rel="noreferrer" 
-                            className="text-blue-500 hover:underline"
-                          >
-                            View Image
-                          </a>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <div className="font-medium truncate">{record.id}</div>
+                            <div className="text-sm">Note: {record.note_id}</div>
+                            <div className="text-sm truncate">Path: {record.storage_path}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              Position: {record.position}
+                            </div>
+                            <div className="text-sm mt-1">
+                              <a 
+                                href={record.url} 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                className="text-blue-500 hover:underline"
+                              >
+                                View Image
+                              </a>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-center">
+                            <div className="h-24 w-24 relative rounded overflow-hidden bg-gray-200 dark:bg-gray-700">
+                              <img 
+                                src={record.url} 
+                                alt={`Image ${record.id}`}
+                                className="object-cover h-full w-full"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100?text=Error';
+                                }}
+                              />
+                            </div>
+                          </div>
                         </div>
                       </li>
                     ))
