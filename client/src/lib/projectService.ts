@@ -1127,7 +1127,7 @@ export async function addImageToNote(noteId: string, file: File): Promise<NoteIm
     const fileName = `${crypto.randomUUID()}.${fileExt}`;
     // CRITICAL: Use the format expected by the original app: images/[filename] - not images/user_id/filename
     // This is the exact format that must be used for compatibility with other applications
-    const filePath = `images/${fileName}`;
+    let filePath = `images/${fileName}`;
     
     console.log('Uploading image directly to Supabase storage with path:', filePath);
     
@@ -1161,14 +1161,40 @@ export async function addImageToNote(noteId: string, file: File): Promise<NoteIm
     }
     
     // Get the public URL
-    const { data: { publicUrl } } = supabase.storage
+    const urlResult = supabase.storage
       .from('note-images')
       .getPublicUrl(filePath);
+    
+    let publicUrl = urlResult.data.publicUrl;
     
     console.log('Image uploaded to Supabase, public URL:', publicUrl);
     
     // Use server API for the database part due to RLS policy restrictions
     console.log('Creating database record via server API');
+    
+    // Ensure path is properly formatted for compatibility with other apps
+    // Standard format is "images/filename.ext" - no user IDs or duplicated segments
+    if (filePath.includes('/images/images/')) {
+      // Fix double path segments
+      console.log(`Fixing double path segments in filePath: ${filePath}`);
+      const pathParts = filePath.split('/');
+      const fileNamePart = pathParts[pathParts.length - 1];
+      filePath = `images/${fileNamePart}`;
+    }
+    
+    // Similarly normalize public URL if needed
+    if (publicUrl && publicUrl.includes('/images/images/')) {
+      try {
+        const urlObj = new URL(publicUrl);
+        // Replace double path in URL
+        console.log(`Fixing double path segments in URL: ${publicUrl}`);
+        const newPath = urlObj.pathname.replace('/images/images/', '/images/');
+        publicUrl = publicUrl.replace(urlObj.pathname, newPath);
+      } catch (e) {
+        // If URL parsing fails, keep original URL
+        console.warn(`Failed to parse and normalize URL: ${publicUrl}`, e);
+      }
+    }
     
     // Create a FormData object with just the metadata (not the file)
     const formData = new FormData();
