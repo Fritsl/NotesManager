@@ -65,6 +65,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
     reorderImage
   } = useNotes();
   const { toast } = useToast();
+  const isMobile = useIsMobile(); // Check if we're on a mobile device
   
   // References
   const ref = useRef<HTMLDivElement>(null);
@@ -347,8 +348,200 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
     }
   }, [isEditing]);
 
+  // Define common save and cancel functions for both mobile and desktop editing
+  const handleSaveNote = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsSaving(true);
+    
+    try {
+      // Update the note in memory with all properties
+      const updatedNote = {
+        ...note,
+        content: editContent,
+        time_set: editTimeSet,
+        is_discussion: editIsDiscussion,
+        youtube_url: editYoutubeUrl,
+        url: editUrl,
+        url_display_text: editUrlDisplayText
+      };
+      
+      // First update in local state
+      updateNote(updatedNote);
+      
+      // Then save to server
+      await saveProject();
+      
+      toast({
+        title: "Note Updated",
+        description: "Changes have been saved",
+      });
+      
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error saving note:', error);
+      toast({
+        title: "Save Failed",
+        description: "Could not save your changes. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditing(false);
+    // Reset all edit states
+    setEditContent(note.content);
+    setEditTimeSet(note.time_set);
+    setEditIsDiscussion(note.is_discussion);
+    setEditYoutubeUrl(note.youtube_url);
+    setEditUrl(note.url);
+    setEditUrlDisplayText(note.url_display_text);
+  };
+
+  // Create edit form content that will be used in both mobile dialog and inline editing
+  const renderEditForm = () => (
+    <>
+      {/* Content editor with more height */}
+      <Textarea 
+        ref={contentEditRef}
+        rows={Math.min(isMobile ? 10 : 6, note.content.split('\n').length + 1)}
+        className={cn(
+          "w-full p-2 text-sm bg-gray-850 border border-gray-700 focus:border-primary focus:ring-1 focus:ring-primary resize-none mb-3",
+          isMobile && "h-48 min-h-[8rem]" // Taller textarea on mobile
+        )}
+        placeholder="Enter note content..."
+        value={editContent}
+        onChange={(e) => setEditContent(e.target.value)}
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        autoFocus
+      />
+
+      {/* Properties section (compact, single-line items) */}
+      <div className={cn(
+        "grid gap-x-4 gap-y-2 mb-3",
+        isMobile ? "grid-cols-1" : "grid-cols-2" // Single column on mobile for more space
+      )}>
+        {/* Time settings */}
+        <div className="flex items-center">
+          <label className="text-xs text-gray-400 w-14">Time:</label>
+          <input 
+            type="time" 
+            className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
+            value={editTimeSet || ''}
+            onChange={(e) => setEditTimeSet(e.target.value ? e.target.value : null)}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+        
+        {/* Discussion toggle */}
+        <div className="flex items-center">
+          <label className="text-xs text-gray-400 w-20">Discussion:</label>
+          <Switch 
+            checked={editIsDiscussion} 
+            onCheckedChange={setEditIsDiscussion}
+            className="ml-1 data-[state=checked]:bg-blue-600"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+        
+        {/* YouTube URL */}
+        <div className="flex items-center col-span-full">
+          <label className="text-xs text-gray-400 w-20">YouTube:</label>
+          <input 
+            type="url" 
+            className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
+            placeholder="https://youtube.com/watch?v=..."
+            value={editYoutubeUrl || ''}
+            onChange={(e) => setEditYoutubeUrl(e.target.value || null)}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+        
+        {/* External URL */}
+        <div className="flex items-center col-span-full">
+          <label className="text-xs text-gray-400 w-20">URL:</label>
+          <input 
+            type="url" 
+            className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
+            placeholder="https://..."
+            value={editUrl || ''}
+            onChange={(e) => setEditUrl(e.target.value || null)}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+        
+        {/* URL Display Text */}
+        <div className="flex items-center col-span-full">
+          <label className="text-xs text-gray-400 w-20">Link text:</label>
+          <input 
+            type="text" 
+            className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
+            placeholder="Display text for URL..."
+            value={editUrlDisplayText || ''}
+            onChange={(e) => setEditUrlDisplayText(e.target.value || null)}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      </div>
+    </>
+  );
+  
+  // Mobile Dialog for fullscreen editing
+  const MobileEditDialog = () => (
+    <Dialog open={isEditing && isMobile} onOpenChange={(open) => {
+      if (!open) setIsEditing(false);
+    }}>
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Edit Note</DialogTitle>
+        </DialogHeader>
+        <div onClick={(e) => e.stopPropagation()}>
+          {renderEditForm()}
+        </div>
+        <DialogFooter className="flex justify-between gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-9 px-4"
+            onClick={handleCancelEdit}
+          >
+            <X size={16} className="mr-1" />
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            className="h-9 px-4"
+            onClick={handleSaveNote}
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <>Loading...</>
+            ) : (
+              <>
+                <Check size={16} className="mr-1" />
+                Save
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
     <div className="note-tree-item">
+      {/* Mobile fullscreen edit dialog */}
+      {isMobile && <MobileEditDialog />}
+      
       <div className="relative">
         {/* Main note card */}
         <div 
