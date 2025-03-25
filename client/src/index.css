@@ -69,13 +69,38 @@
   /* Mobile optimizations */
   .mobile-touch-scrolling {
     -webkit-overflow-scrolling: touch;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: contain;
   }
   
   /* Touch target sizing for better mobile accessibility */
   .touch-target {
     @apply p-2;
-    min-height: 44px;
-    min-width: 44px;
+    min-height: 48px;
+    min-width: 48px;
+  }
+
+  /* Better tap targets for mobile */
+  @media (max-width: 768px) {
+    button, 
+    a,
+    [role="button"] {
+      @apply py-2.5 px-4;
+      touch-action: manipulation;
+    }
+
+    input,
+    textarea {
+      @apply text-base;
+      font-size: 16px !important;
+    }
+  }
+
+  /* Prevent text zoom on orientation change */
+  @media screen and (max-width: 768px) {
+    * {
+      text-size-adjust: none;
+    }
   }
   
   /* Hide elements on small screens */
