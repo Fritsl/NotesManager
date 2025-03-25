@@ -7,6 +7,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Link } from 'wouter';
 import { useAuth } from '@/context/AuthContext';
 import { migrateLocalImages } from '@/lib/projectService';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 // Diagnostics page for debugging image storage and display issues
 export default function ImageDiagnostics() {
@@ -85,6 +88,109 @@ export default function ImageDiagnostics() {
     } catch (error) {
       console.error('Migration error:', error);
       setMigrationResult({ error: String(error) });
+    }
+  };
+
+  // Get counts of problematic images
+  const imagePathStats = React.useMemo(() => {
+    const stats = {
+      total: imageRecords.length,
+      duplicatePaths: 0,
+      wrongFormat: 0,
+      duplicateUrls: 0,
+      correctFormat: 0
+    };
+    
+    imageRecords.forEach(record => {
+      if (!record.storage_path) return;
+      
+      if (record.storage_path.includes('/images/images/') || record.storage_path.includes('images/images/')) {
+        stats.duplicatePaths++;
+      } else if (!record.storage_path.startsWith('images/')) {
+        stats.wrongFormat++;
+      } else if (record.storage_path.match(/^images\/[^\/]+\.[a-zA-Z0-9]+$/)) {
+        stats.correctFormat++;
+      } else {
+        stats.wrongFormat++;
+      }
+      
+      if (record.url && record.url.includes('/images/images/')) {
+        stats.duplicateUrls++;
+      }
+    });
+    
+    return stats;
+  }, [imageRecords]);
+  
+  // Fix duplicate image paths directly in Supabase
+  const fixDuplicateImagePaths = async () => {
+    if (!window.confirm('This will update all records with duplicate "images/" paths. Continue?')) {
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      // For each problematic record, update it
+      let fixedCount = 0;
+      let errorCount = 0;
+      
+      for (const record of imageRecords) {
+        // Check if this record has the duplicate path issue
+        if (record.storage_path && (
+            record.storage_path.includes('/images/images/') || 
+            record.storage_path.includes('images/images/')
+        )) {
+          // Fix the storage path
+          const fixedPath = record.storage_path.replace(/images\/images\//g, 'images/');
+          
+          // Update the record
+          const { error } = await supabase
+            .from('note_images')
+            .update({ storage_path: fixedPath })
+            .eq('id', record.id);
+            
+          if (error) {
+            console.error(`Error fixing path for record ${record.id}:`, error);
+            errorCount++;
+          } else {
+            fixedCount++;
+          }
+        }
+        
+        // Check if this record has a URL with duplicate path
+        if (record.url && record.url.includes('/images/images/')) {
+          // Fix the URL
+          const fixedUrl = record.url.replace(/\/images\/images\//g, '/images/');
+          
+          // Update the record
+          const { error } = await supabase
+            .from('note_images')
+            .update({ url: fixedUrl })
+            .eq('id', record.id);
+            
+          if (error) {
+            console.error(`Error fixing URL for record ${record.id}:`, error);
+            errorCount++;
+          } else if (!record.storage_path.includes('/images/images/') && !record.storage_path.includes('images/images/')) {
+            // Only count if we haven't already counted this record for path fixes
+            fixedCount++;
+          }
+        }
+      }
+      
+      if (errorCount > 0) {
+        alert(`Fixed ${fixedCount} records with ${errorCount} errors. See console for details.`);
+      } else {
+        alert(`Successfully fixed ${fixedCount} records with duplicate paths/URLs.`);
+      }
+      
+      // Refresh the data
+      setRefreshing(prev => !prev);
+    } catch (error) {
+      console.error('Error fixing image paths:', error);
+      alert('Error fixing image paths: ' + String(error));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -251,12 +357,57 @@ export default function ImageDiagnostics() {
                             <div className="text-xs mt-1 text-gray-600 dark:text-gray-400 break-all">
                               <span className="font-semibold">Storage Path:</span> {record.storage_path}
                             </div>
-                            <div className="text-xs mt-1 bg-yellow-100 dark:bg-yellow-900 p-1 rounded">
-                              <span className="font-semibold text-yellow-800 dark:text-yellow-200">
-                                ⚠️ Path should be "images/filename" not "images/user_id"
-                              </span>
-                            </div>
-                            <div className="mt-2 text-xs">
+                            
+                            {/* Path validation */}
+                            {record.storage_path && (
+                              <>
+                                {!record.storage_path.startsWith('images/') ? (
+                                  <div className="text-xs mt-1 bg-red-100 dark:bg-red-900 p-1 rounded flex items-center">
+                                    <AlertCircle className="h-3 w-3 mr-1 text-red-600 dark:text-red-400" />
+                                    <span className="font-semibold text-red-800 dark:text-red-200">
+                                      Path should start with "images/"
+                                    </span>
+                                  </div>
+                                ) : record.storage_path.includes('/images/images/') || record.storage_path.includes('images/images/') ? (
+                                  <div className="text-xs mt-1 bg-yellow-100 dark:bg-yellow-900 p-1 rounded flex items-center">
+                                    <AlertTriangle className="h-3 w-3 mr-1 text-yellow-600 dark:text-yellow-400" />
+                                    <span className="font-semibold text-yellow-800 dark:text-yellow-200">
+                                      Duplicate "images/" in path
+                                    </span>
+                                  </div>
+                                ) : record.storage_path.match(/^images\/[^\/]+\.[a-zA-Z0-9]+$/) ? (
+                                  <div className="text-xs mt-1 bg-green-100 dark:bg-green-900 p-1 rounded flex items-center">
+                                    <CheckCircle2 className="h-3 w-3 mr-1 text-green-600 dark:text-green-400" />
+                                    <span className="font-semibold text-green-800 dark:text-green-200">
+                                      Correct path format
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className="text-xs mt-1 bg-yellow-100 dark:bg-yellow-900 p-1 rounded flex items-center">
+                                    <AlertTriangle className="h-3 w-3 mr-1 text-yellow-600 dark:text-yellow-400" />
+                                    <span className="font-semibold text-yellow-800 dark:text-yellow-200">
+                                      Should be "images/filename.ext"
+                                    </span>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                            
+                            {/* URL validation */}
+                            {record.url && (
+                              <>
+                                {record.url.includes('/images/images/') && (
+                                  <div className="text-xs mt-1 bg-yellow-100 dark:bg-yellow-900 p-1 rounded flex items-center">
+                                    <AlertTriangle className="h-3 w-3 mr-1 text-yellow-600 dark:text-yellow-400" />
+                                    <span className="font-semibold text-yellow-800 dark:text-yellow-200">
+                                      URL contains duplicate "images/" path
+                                    </span>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                            
+                            <div className="mt-2 text-xs flex space-x-2">
                               <a 
                                 href={record.url.includes('/images/images/') ? 
                                   // Remove the duplicate 'images/' if present
@@ -267,8 +418,11 @@ export default function ImageDiagnostics() {
                                 rel="noreferrer" 
                                 className="inline-flex items-center px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded"
                               >
-                                Open in New Tab
+                                Open Image
                               </a>
+                              <Badge variant={record.url.includes('/images/images/') ? "destructive" : "outline"}>
+                                {record.url.includes('/images/images/') ? 'URL needs fixing' : 'URL format OK'}
+                              </Badge>
                             </div>
                           </div>
                         </div>
