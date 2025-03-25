@@ -101,7 +101,7 @@ export default function Header() {
       document.title = currentProjectName || "Notes";
     }
   };
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { toast } = useToast();
   
   // Handle sign out
