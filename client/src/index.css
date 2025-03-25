@@ -34,11 +34,18 @@
   
   .note-item-content {
     @apply p-3 rounded-md transition-all duration-150;
-    display: grid;
-    grid-template-columns: 1fr auto;
-    grid-template-areas: 
-      "text text"
-      "tags tools";
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .note-text {
+    @apply w-full text-base break-words;
+  }
+
+  .note-actions {
+    display: flex;
+    justify-content: flex-end;
     gap: 0.5rem;
   }
 
