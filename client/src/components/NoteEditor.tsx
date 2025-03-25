@@ -292,7 +292,9 @@ export default function NoteEditor() {
   // Listen for fullscreen toggle events from header
   useEffect(() => {
     const handleFullscreenToggle = () => {
-      toggleFullscreenMode();
+      // Toggle fullscreen mode when the event is received
+      setIsFullscreenEditMode(prev => !prev);
+      console.log("Fullscreen toggle event received, setting fullscreen to:", !isFullscreenEditMode);
     };
     
     // Listen for the custom fullscreen toggle event
@@ -302,7 +304,7 @@ export default function NoteEditor() {
     return () => {
       window.removeEventListener('toggle-fullscreen', handleFullscreenToggle);
     };
-  }, [isFullscreenEditMode]);
+  }, []);
 
   const handleSave = async () => {
     if (!selectedNote || !contentRef.current) return;
