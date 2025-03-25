@@ -413,8 +413,13 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           isMobile && "h-48 min-h-[8rem]" // Taller textarea on mobile
         )}
         placeholder="Enter note content..."
-        value={editContent}
-        onChange={(e) => setEditContent(e.target.value)}
+        defaultValue={editContent} // Use defaultValue to prevent cursor jumps
+        onChange={(e) => {
+          // Only update if value has actually changed to prevent unnecessary rerenders
+          if (e.target.value !== editContent) {
+            setEditContent(e.target.value);
+          }
+        }}
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
         autoFocus
@@ -623,8 +628,13 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                     isMobile && "h-48 min-h-[8rem]" // Taller textarea on mobile
                   }`}
                   placeholder="Enter note content..."
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
+                  defaultValue={editContent} // Use defaultValue to prevent cursor jumps
+                  onChange={(e) => {
+                    // Only update if value has actually changed to prevent unnecessary rerenders
+                    if (e.target.value !== editContent) {
+                      setEditContent(e.target.value);
+                    }
+                  }}
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
                   autoFocus
