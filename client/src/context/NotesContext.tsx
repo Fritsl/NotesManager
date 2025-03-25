@@ -4,6 +4,9 @@ import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import { createProject, updateProject, addImageToNote, removeImageFromNote, updateImagePosition, getProject } from "@/lib/projectService";
 
+// State to track pending note movements that need to be saved
+let pendingNoteMoves = false;
+
 interface NotesContextType {
   notes: Note[];
   setNotes: (notes: Note[]) => void;
@@ -53,6 +56,8 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const [hasActiveProject, setHasActiveProject] = useState<boolean>(false);
   const [isInitialLoad, setIsInitialLoad] = useState<boolean>(true);
   const [isAutoLoading, setIsAutoLoading] = useState<boolean>(false);
+  // State to track pending note movements that need to be saved
+  const [pendingNoteMoves, setPendingNoteMoves] = useState<boolean>(false);
   const { toast } = useToast();
 
   // Auto-load the last accessed project on initial mount
@@ -535,9 +540,6 @@ export function NotesProvider({ children }: { children: ReactNode }) {
 
   // Reference to track if a move operation is in progress to prevent multiple simultaneous moves
   const isMovingRef = useRef<boolean>(false);
-  
-  // Create a state to track pending note movements that need to be saved
-  const [pendingNoteMoves, setPendingNoteMoves] = useState<boolean>(false);
   
   // Move a note in the tree
   const moveNote = useCallback(async (noteId: string, targetParentId: string | null, position: number) => {
