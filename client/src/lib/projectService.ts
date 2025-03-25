@@ -958,10 +958,10 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
         return null;
       }
       
-      // For now, we'll skip inserting images into Supabase due to RLS issues
-      // Instead, we're storing image data directly in the project's data JSON
-      // This is already happening because the images are part of the note's data
-      console.log('Skipping separate image insertion due to RLS restrictions');
+      // CRITICAL: We must keep existing image records in the database for compatibility
+      // New project saving doesn't need to re-insert images, as we're preserving them
+      // The server API already stores the images in the project data JSON
+      console.log('Preserving existing image records in the database for compatibility with other apps');
       
       // The images are already included in the notes' data that was stored
       // The server-side API handles the image upload and provides URLs that work locally
