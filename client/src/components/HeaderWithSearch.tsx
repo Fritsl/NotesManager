@@ -15,6 +15,7 @@ import {
   FileText,
   FolderOpen,
   LogOut,
+  LogIn,
   Edit,
   FileEdit,
   Trash2,
@@ -537,6 +538,7 @@ export default function Header() {
       {showPayoffModal && <PayoffModal isOpen={showPayoffModal} onClose={() => setShowPayoffModal(false)} />}
       {showDescriptionModal && <ProjectDescriptionModal isOpen={showDescriptionModal} onClose={() => setShowDescriptionModal(false)} />}
       <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
       
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
