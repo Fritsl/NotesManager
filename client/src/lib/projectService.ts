@@ -822,27 +822,10 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
     console.log('Project settings successfully updated, now updating notes');
     
     // Now handle notes update - convert hierarchical structure to flat DB records
-    // First, delete all existing images for this project's notes
-    console.log('Deleting existing images for project notes:', id);
-    // First get all note IDs in this project
-    const { data: noteIds } = await supabase
-      .from('notes')
-      .select('id')
-      .eq('project_id', id)
-      .eq('user_id', userData.user.id);
-      
-    if (noteIds && noteIds.length > 0) {
-      // Delete all images associated with these notes
-      const { error: imagesDeleteError } = await supabase
-        .from('note_images')
-        .delete()
-        .in('note_id', noteIds.map(note => note.id));
-        
-      if (imagesDeleteError) {
-        console.error('Error deleting note images:', imagesDeleteError);
-        // Continue with note deletion anyway
-      }
-    }
+    // IMPORTANT: We're not going to delete the existing images
+    // Deleting images causes compatibility issues with other apps
+    // Instead, we'll preserve all image records
+    console.log('Skipping image deletion to maintain compatibility with other apps');
     
     // Now delete all existing notes for this project
     console.log('Deleting existing notes for project:', id);

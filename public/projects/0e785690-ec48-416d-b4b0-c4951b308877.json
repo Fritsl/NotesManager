@@ -63,12 +63,20 @@
             "url": "https://wxpdstlzutwzuxstysnl.supabase.co/storage/v1/object/public/note-images/images/0daedb6d-22b3-40a4-a2a9-1e9db724e334.jpg",
             "position": 6,
             "created_at": "2025-03-25T11:40:55.569Z"
+          },
+          {
+            "id": "99a88a94-73f6-430c-ae58-ba903345ec8b",
+            "note_id": "dfd381d7-0574-4361-8224-549765c564ef",
+            "storage_path": "images/af1f4093-d612-459b-a2a9-79d392fd9b2c.png",
+            "url": "https://wxpdstlzutwzuxstysnl.supabase.co/storage/v1/object/public/note-images/images/af1f4093-d612-459b-a2a9-79d392fd9b2c.png",
+            "position": 7,
+            "created_at": "2025-03-25T12:06:25.878Z"
           }
         ]
       }
     ]
   },
   "description": "",
-  "updated_at": "2025-03-25T11:41:51.244Z",
-  "created_at": "2025-03-25T11:41:51.244Z"
+  "updated_at": "2025-03-25T12:06:40.690Z",
+  "created_at": "2025-03-25T12:06:40.690Z"
 }
