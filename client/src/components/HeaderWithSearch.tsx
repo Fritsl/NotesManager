@@ -30,6 +30,8 @@ import ProjectsModal from "@/components/ProjectsModal";
 import PayoffModal from "@/components/PayoffModal";
 import ProjectDescriptionModal from "@/components/ProjectDescriptionModal";
 import HelpModal from "@/components/HelpModal";
+import AuthModal from "@/components/AuthModal";
+import UserMenu from "@/components/UserMenu";
 import SearchBar from "@/components/SearchBar";
 import FilterMenu, { FilterType } from "@/components/FilterMenu";
 import { Note } from "@/types/notes";
@@ -129,6 +131,7 @@ export default function Header() {
   const [editedProjectName, setEditedProjectName] = useState(currentProjectName || '');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const projectNameInputRef = useRef<HTMLInputElement>(null);
 
   // Update local state when context project name changes
