@@ -369,10 +369,16 @@ export default function NoteEditor() {
     setHasChanges(true);
     
     // Immediately update the note with current content and changed discussion status
-    if (selectedNote) {
+    if (selectedNote && contentRef.current) {
+      // Get the latest content directly from the DOM reference
+      const currentContent = contentRef.current.value;
+      
+      // Update local state to keep it in sync
+      setContent(currentContent);
+      
       const updatedNote = {
         ...selectedNote,
-        content, // Include current content
+        content: currentContent, // Use the latest content from DOM reference
         youtube_url: youtubeUrl || null,
         url: externalUrl || null,
         url_display_text: externalUrl ? (urlDisplayText || null) : null,
@@ -409,11 +415,17 @@ export default function NoteEditor() {
     setHasChanges(true);
     
     // Immediate save to prevent content loss
-    if (selectedNote) {
+    if (selectedNote && contentRef.current) {
+      // Get the latest content directly from the DOM reference
+      const currentContent = contentRef.current.value;
+      
+      // Update local state to keep it in sync
+      setContent(currentContent);
+      
       // Update the note with both the new time and current content
       const updatedNote = {
         ...selectedNote,
-        content, // Preserve current content
+        content: currentContent, // Get the latest content from DOM reference
         youtube_url: youtubeUrl || null,
         url: externalUrl || null,
         url_display_text: externalUrl ? (urlDisplayText || null) : null,
@@ -442,15 +454,21 @@ export default function NoteEditor() {
   };
 
   const handleSave = async () => {
-    if (!selectedNote) return;
+    if (!selectedNote || !contentRef.current) return;
 
     setSaveStatus("saving");
     
     try {
+      // Get the latest content directly from the DOM reference
+      const currentContent = contentRef.current.value;
+      
+      // Update local state to keep it in sync
+      setContent(currentContent);
+      
       // First update the note in memory
       const updatedNote = {
         ...selectedNote,
-        content,
+        content: currentContent, // Use the latest content from DOM reference
         youtube_url: youtubeUrl || null,
         url: externalUrl || null,
         url_display_text: externalUrl ? (urlDisplayText || null) : null,
@@ -614,10 +632,16 @@ export default function NoteEditor() {
                 setHasChanges(true);
                 
                 // Save immediately to prevent content loss
-                if (selectedNote) {
+                if (selectedNote && contentRef.current) {
+                  // Get the latest content directly from the DOM reference
+                  const currentContent = contentRef.current.value;
+                  
+                  // Update local state to keep it in sync
+                  setContent(currentContent);
+                  
                   const updatedNote = {
                     ...selectedNote,
-                    content, // Preserve current content
+                    content: currentContent, // Get the latest content from DOM reference
                     youtube_url: youtubeUrl || null,
                     url: externalUrl || null,
                     url_display_text: externalUrl ? (urlDisplayText || null) : null,
@@ -699,10 +723,16 @@ export default function NoteEditor() {
                 setHasChanges(true);
                 
                 // Save immediately to prevent content loss
-                if (selectedNote) {
+                if (selectedNote && contentRef.current) {
+                  // Get the latest content directly from the DOM reference
+                  const currentContent = contentRef.current.value;
+                  
+                  // Update local state to keep it in sync
+                  setContent(currentContent);
+                  
                   const updatedNote = {
                     ...selectedNote,
-                    content, // Preserve current content
+                    content: currentContent, // Get the latest content from DOM reference
                     youtube_url: youtubeUrl || null,
                     url: newUrl || null,
                     url_display_text: newUrl ? (newDisplayText || null) : null,
@@ -743,10 +773,16 @@ export default function NoteEditor() {
                 setHasChanges(true);
                 
                 // Save immediately to prevent content loss
-                if (selectedNote) {
+                if (selectedNote && contentRef.current) {
+                  // Get the latest content directly from the DOM reference
+                  const currentContent = contentRef.current.value;
+                  
+                  // Update local state to keep it in sync
+                  setContent(currentContent);
+                  
                   const updatedNote = {
                     ...selectedNote,
-                    content, // Preserve current content
+                    content: currentContent, // Get the latest content from DOM reference
                     youtube_url: newYoutubeUrl || null,
                     url: externalUrl || null,
                     url_display_text: externalUrl ? (urlDisplayText || null) : null,
