@@ -588,30 +588,6 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             isOver && isOverRight && "bg-primary opacity-80 w-4"
           )}></div>
 
-          {hasChildren ? (
-            <Button
-              variant="ghost" 
-              size="sm" 
-              className="h-6 w-6 min-w-[1.5rem] p-0 mr-1 flex items-center justify-center text-gray-500 hover:text-gray-700 touch-target"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleExpand(note.id);
-              }}
-            >
-              {isExpanded 
-                ? <ChevronDown size={16} /> 
-                : <div className="flex items-center">
-                    <ChevronRight size={16} />
-                    {note.children.length > 0 && (
-                      <span className="ml-1 text-xs text-gray-400 font-mono">{note.children.length}</span>
-                    )}
-                  </div>
-              }
-            </Button>
-          ) : (
-            <div className="w-[1.5rem] mr-1"></div>
-          )}
-
           <div className="flex-1 overflow-hidden">
             {isEditing && !isMobile ? (
               /* Inline Edit Mode - Only shown on desktop; mobile uses fullscreen dialog */
@@ -808,7 +784,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                             // Then save the project to ensure images are synced with server
                             await saveProject();
                           }
-                          // Clear the input after upload
+                          // Clear the input afterupload
                           e.target.value = '';
                         } catch (err) {
                           console.error("Failed to upload image:", err);
