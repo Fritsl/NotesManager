@@ -19,9 +19,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Initialize Supabase client with service role key for admin access
-const supabaseUrl = process.env.SUPABASE_URL || "";
-const supabaseKey = process.env.SUPABASE_ANON_KEY || ""; // Using the anon key here
+const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || ""; // Using the anon key here
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+console.log('Supabase URL configured:', !!supabaseUrl);
 
 // Initialize PostgreSQL connection pool
 const pool = new Pool({
@@ -287,7 +289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storageTests: {},
       };
       
-      // Check if the note-images bucket exists
+      // Check if the note-images bucket exists and create if missing
       try {
         const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
         
@@ -297,14 +299,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
             status: "failed",
           };
         } else {
-          const noteImagesBucket = buckets.find(b => b.name === 'note-images');
-          diagnostics.storageTests = {
-            bucketsListed: true,
-            bucketsCount: buckets.length,
-            bucketsNames: buckets.map(b => b.name),
-            noteImagesBucketExists: !!noteImagesBucket,
-            status: !!noteImagesBucket ? "success" : "bucket_missing",
-          };
+          let noteImagesBucket = buckets.find(b => b.name === 'note-images');
+          
+          // If bucket doesn't exist, try to create it
+          if (!noteImagesBucket) {
+            log('Note-images bucket not found, attempting to create it...');
+            const { data: newBucket, error: createError } = await supabase.storage.createBucket('note-images', {
+              public: true // Make the bucket public so images can be accessed without authentication
+            });
+            
+            if (createError) {
+              diagnostics.storageTests = {
+                bucketsListed: true,
+                bucketsCount: buckets.length,
+                bucketsNames: buckets.map(b => b.name),
+                noteImagesBucketExists: false,
+                bucketCreationError: createError.message,
+                status: "bucket_creation_failed",
+              };
+            } else {
+              log('Note-images bucket created successfully');
+              noteImagesBucket = newBucket;
+              diagnostics.storageTests = {
+                bucketsListed: true,
+                bucketsCount: buckets.length + 1,
+                bucketsNames: [...buckets.map(b => b.name), 'note-images'],
+                noteImagesBucketExists: true,
+                bucketCreated: true,
+                status: "bucket_created",
+              };
+            }
+          } else {
+            diagnostics.storageTests = {
+              bucketsListed: true,
+              bucketsCount: buckets.length,
+              bucketsNames: buckets.map(b => b.name),
+              noteImagesBucketExists: !!noteImagesBucket,
+              status: !!noteImagesBucket ? "success" : "bucket_missing",
+            };
+          }
           
           // If bucket exists, try to list files
           if (noteImagesBucket) {
