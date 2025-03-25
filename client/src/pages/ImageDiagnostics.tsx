@@ -177,7 +177,7 @@ export default function ImageDiagnostics() {
             )}
           </CardContent>
           <CardFooter>
-            <div className="text-sm">
+            <div className="text-sm text-gray-700 dark:text-gray-300">
               Total: {storageItems.length} files
             </div>
           </CardFooter>
@@ -198,19 +198,19 @@ export default function ImageDiagnostics() {
               />
             </div>
             {loading ? (
-              <p>Loading image records...</p>
+              <p className="text-gray-700 dark:text-gray-300">Loading image records...</p>
             ) : (
               <ScrollArea className="h-[300px]">
                 <ul className="space-y-2">
                   {filteredRecords.length === 0 ? (
-                    <p>No image records found</p>
+                    <p className="text-gray-700 dark:text-gray-300">No image records found</p>
                   ) : (
                     filteredRecords.map((record) => (
-                      <li key={record.id} className="p-2 border rounded">
+                      <li key={record.id} className="p-2 border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                         <div className="font-medium truncate">{record.id}</div>
                         <div className="text-sm">Note: {record.note_id}</div>
                         <div className="text-sm truncate">Path: {record.storage_path}</div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
                           Position: {record.position}
                         </div>
                         <div className="text-sm mt-1">
@@ -231,7 +231,7 @@ export default function ImageDiagnostics() {
             )}
           </CardContent>
           <CardFooter>
-            <div className="text-sm">
+            <div className="text-sm text-gray-700 dark:text-gray-300">
               Showing {filteredRecords.length} of {imageRecords.length} records
             </div>
           </CardFooter>
