@@ -221,13 +221,49 @@ export function flattenNoteHierarchy(notes: Note[], projectId: string, userId: s
     if (note.images && note.images.length > 0) {
       // Add each image to the noteImages array for insertion/preservation
       note.images.forEach(image => {
+        // Normalize storage path to ensure compatibility with other apps
+        // Standard format is "images/filename.ext" - no user IDs or duplicated segments
+        let normalizedPath = image.storage_path;
+        if (normalizedPath) {
+          // Get just the filename
+          const pathParts = normalizedPath.split('/');
+          const fileName = pathParts[pathParts.length - 1];
+          
+          // Fix double path segments like "images/images/file.jpg"
+          if (normalizedPath.includes('/images/images/')) {
+            console.log(`Fixing double path segments in image: ${normalizedPath}`);
+            normalizedPath = `images/${fileName}`;
+          }
+          
+          // Make sure path starts with "images/"
+          if (!normalizedPath.startsWith('images/')) {
+            console.log(`Adding images/ prefix to path: ${normalizedPath}`);
+            normalizedPath = `images/${fileName}`;
+          }
+        }
+        
+        // Normalize URL in the same way
+        let normalizedUrl = image.url;
+        if (normalizedUrl && normalizedUrl.includes('/images/images/')) {
+          try {
+            const urlObj = new URL(normalizedUrl);
+            // Replace double path in URL
+            console.log(`Fixing double path segments in URL: ${normalizedUrl}`);
+            const newPath = urlObj.pathname.replace('/images/images/', '/images/');
+            normalizedUrl = normalizedUrl.replace(urlObj.pathname, newPath);
+          } catch (e) {
+            // If URL parsing fails, keep original URL
+            console.warn(`Failed to parse and normalize URL: ${normalizedUrl}`, e);
+          }
+        }
+        
         // CRITICAL: Always preserve the original image ID exactly as is
         // This ensures images are properly maintained across app refreshes
         noteImages.push({
           id: image.id, // Never generate a new ID for existing images
           note_id: note.id,
-          storage_path: image.storage_path,
-          url: image.url,
+          storage_path: normalizedPath,
+          url: normalizedUrl,
           position: image.position,
           created_at: image.created_at || now
         });
@@ -967,15 +1003,55 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
         
         // Map the old note IDs to the new IDs for images
         const processedImages = flatImages.map(image => {
+          // IMPORTANT: Get the new note ID for this image
           const newNoteId = idMapping[image.note_id];
           if (!newNoteId) {
             console.warn(`Warning: No mapped note ID found for image ${image.id}, note ID ${image.note_id}`);
             return null; // Skip images without valid note mapping
           }
           
+          // Normalize storage path for compatibility
+          let normalizedPath = image.storage_path;
+          if (normalizedPath) {
+            // Get just the filename
+            const pathParts = normalizedPath.split('/');
+            const fileName = pathParts[pathParts.length - 1];
+            
+            // Fix double path segments like "images/images/file.jpg"
+            if (normalizedPath.includes('/images/images/')) {
+              console.log(`Fixing double path segments in image: ${normalizedPath}`);
+              normalizedPath = `images/${fileName}`;
+            }
+            
+            // Make sure path starts with "images/"
+            if (!normalizedPath.startsWith('images/')) {
+              console.log(`Adding images/ prefix to path: ${normalizedPath}`);
+              normalizedPath = `images/${fileName}`;
+            }
+          }
+          
+          // Normalize URL for compatibility
+          let normalizedUrl = image.url;
+          if (normalizedUrl && normalizedUrl.includes('/images/images/')) {
+            try {
+              const urlObj = new URL(normalizedUrl);
+              // Replace double path in URL
+              console.log(`Fixing double path segments in URL: ${normalizedUrl}`);
+              const newPath = urlObj.pathname.replace('/images/images/', '/images/');
+              normalizedUrl = normalizedUrl.replace(urlObj.pathname, newPath);
+            } catch (e) {
+              // If URL parsing fails, keep original URL
+              console.warn(`Failed to parse and normalize URL: ${normalizedUrl}`, e);
+            }
+          }
+          
           return {
-            ...image,
-            note_id: newNoteId
+            id: image.id,  // CRITICAL: Preserve original image ID
+            note_id: newNoteId,
+            storage_path: normalizedPath,
+            url: normalizedUrl,
+            position: image.position,
+            created_at: image.created_at
           };
         }).filter(img => img !== null); // Remove any null entries
         
