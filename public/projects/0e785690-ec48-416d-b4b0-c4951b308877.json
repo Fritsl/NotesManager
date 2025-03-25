@@ -1,0 +1,98 @@
+{
+  "id": "0e785690-ec48-416d-b4b0-c4951b308877",
+  "name": "DILLER",
+  "user_id": "2df0798b-b535-4015-8c5e-15ed98a09481",
+  "data": {
+    "notes": [
+      {
+        "id": "3088f823-7d05-43e7-8559-a8c970e2ceae",
+        "content": "New note",
+        "position": 0,
+        "is_discussion": true,
+        "time_set": null,
+        "youtube_url": "https://www.youtube.com/watch?v=DOWDNBu9DkU",
+        "url": null,
+        "url_display_text": null,
+        "children": [],
+        "images": [
+          {
+            "id": "facabb0e-ddba-44d7-9583-b6cb620baf81",
+            "note_id": "3088f823-7d05-43e7-8559-a8c970e2ceae",
+            "storage_path": "images/e70ce82b-88ef-4a9d-820c-06d45f0d1d4a.jpg",
+            "url": "http://3243e722-ac0b-41a9-9cda-5c6989309426-00-5cj9stwfo8t8.janeway.replit.dev/uploads/e70ce82b-88ef-4a9d-820c-06d45f0d1d4a.jpg",
+            "position": 0,
+            "created_at": "2025-03-24T09:08:46.192+00:00"
+          },
+          {
+            "id": "d85b6b91-56c3-458d-a88c-1704d17bab1e",
+            "note_id": "3088f823-7d05-43e7-8559-a8c970e2ceae",
+            "storage_path": "images/e70ce82b-88ef-4a9d-820c-06d45f0d1d4a.jpg",
+            "url": "http://3243e722-ac0b-41a9-9cda-5c6989309426-00-5cj9stwfo8t8.janeway.replit.dev/uploads/e70ce82b-88ef-4a9d-820c-06d45f0d1d4a.jpg",
+            "position": 1,
+            "created_at": "2025-03-24T09:08:46.192+00:00"
+          },
+          {
+            "id": "868d176e-efb3-434e-9c75-84cb60c680af",
+            "note_id": "3088f823-7d05-43e7-8559-a8c970e2ceae",
+            "storage_path": "images/597ea5b8-f39e-408d-836f-6ad0031304e9.jpg",
+            "url": "http://3243e722-ac0b-41a9-9cda-5c6989309426-00-5cj9stwfo8t8.janeway.replit.dev/uploads/597ea5b8-f39e-408d-836f-6ad0031304e9.jpg",
+            "position": 2,
+            "created_at": "2025-03-24T09:09:49.394+00:00"
+          }
+        ]
+      },
+      {
+        "id": "460ef71d-a36a-453a-8ff9-1a8c957a02b5",
+        "content": "New note",
+        "position": 1,
+        "is_discussion": false,
+        "time_set": null,
+        "youtube_url": null,
+        "url": null,
+        "url_display_text": null,
+        "children": [],
+        "images": []
+      },
+      {
+        "id": "dfd381d7-0574-4361-8224-549765c564ef",
+        "content": "New note",
+        "position": 2,
+        "is_discussion": false,
+        "time_set": null,
+        "youtube_url": null,
+        "url": null,
+        "url_display_text": null,
+        "children": [
+          {
+            "id": "6a07f389-fbc6-4f37-a268-d1ff0b58396f",
+            "content": "New note",
+            "position": 0,
+            "is_discussion": false,
+            "time_set": null,
+            "youtube_url": null,
+            "url": null,
+            "url_display_text": null,
+            "children": [],
+            "images": []
+          },
+          {
+            "id": "1a3c3f3e-7130-4496-b2b7-9bbd3efb6089",
+            "content": "New note",
+            "position": 1,
+            "is_discussion": false,
+            "time_set": null,
+            "youtube_url": null,
+            "url": null,
+            "url_display_text": null,
+            "children": [],
+            "images": []
+          }
+        ],
+        "images": []
+      }
+    ]
+  },
+  "description": "",
+  "updated_at": "2025-03-24T22:47:40.042Z",
+  "created_at": "2025-03-24T22:47:40.042Z"
+}
