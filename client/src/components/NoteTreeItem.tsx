@@ -782,7 +782,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                             updateNote(updatedNote);
 
                             //                            // Then save the project to ensure images are synced with server
-                            awaitawait saveProject();
+                            await saveProject();
                           }
                           // Clear the input afterupload
                           e.target.value = '';
@@ -837,31 +837,34 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               /* Normal Display Mode */
               <>
                 {/* Title line - larger and more prominent */}
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center">
                   <div 
-                    className={`mobile-text-base font-medium ${level >= 0 && level < levelColors.length ? levelColors[level].text : levelColors[0].text} truncate flex-shrink`}
+                    className={`mobile-text-base font-medium ${level >= 0 && level < levelColors.length ? levelColors[level].text : levelColors[0].text} truncate flex-1`}
                     onDoubleClick={(e) => {
                       e.stopPropagation();
                       setIsEditing(true);
+                      // No need to set editContent anymore, using uncontrolled component
                       // Select the note as well
                       selectNote(note);
                     }}
                   >
                     {displayContent}
                   </div>
-                  {/* All tools aligned right */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    {note.youtube_url && (
-                      <span className="text-xs bg-red-900/50 text-red-300 px-2 py-0.5 rounded-full">YouTube</span>
-                    )}
-                    {note.url && (
-                      <span className="text-xs bg-green-900/50 text-green-300 px-2 py-0.5 rounded-full">Link</span>
-                    )}
-                    {note.is_discussion && (
-                      <span className="text-blue-400 shrink-0" title="Discussion">
-                        <MessageCircle size={16} />
-                      </span>
-                    )}
+                  {/* Discussion icon and unfold button */}
+                  <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2 ml-2">
+                      {note.is_discussion && (
+                        <span className="text-blue-400 shrink-0" title="Discussion">
+                          <MessageCircle size={16} />
+                        </span>
+                      )}
+                      {note.youtube_url && (
+                        <span className="text-xs bg-red-900/50 text-red-300 px-2 py-0.5 rounded-full">YouTube</span>
+                      )}
+                      {note.url && (
+                        <span className="text-xs bg-green-900/50 text-green-300 px-2 py-0.5 rounded-full">Link</span>
+                      )}
+                    </div>
                     {hasChildren && (
                       <Button
                         variant="ghost" 
@@ -896,6 +899,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                         onDoubleClick={(e) => {
                           e.stopPropagation();
                           setIsEditing(true);
+                          // No need to set editContent anymore, using uncontrolled component
                           // Select the note as well 
                           selectNote(note);
                         }}
