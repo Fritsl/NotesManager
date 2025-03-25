@@ -83,7 +83,8 @@ export default function Header() {
     setHasActiveProject,
     createNewProject,
     saveProject,
-    currentProjectId
+    currentProjectId,
+    addNote
   } = useNotes();
 
   // For filter functionality
