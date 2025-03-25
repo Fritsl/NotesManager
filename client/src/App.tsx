@@ -1,11 +1,63 @@
-import { Switch, Route, Link } from "wouter";
+import { Switch, Route, Link, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import NotesEditor from "@/pages/NotesEditor";
 import { NotesProvider } from "@/context/NotesContext";
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import AuthModal from "@/components/AuthModal";
+
+// Authentication guard component
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [, navigate] = useLocation();
+  
+  // If still loading auth state, show a simple loading indicator
+  if (loading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  
+  // If user is not authenticated, show login screen
+  if (!user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center p-4 bg-gray-950">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Welcome to Notes</CardTitle>
+            <CardDescription>Please sign in to use the application</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <p className="text-sm text-gray-400">
+              This hierarchical notes application requires authentication to protect your data 
+              and enable sharing features.
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              className="w-full" 
+              onClick={() => setShowAuthModal(true)}
+            >
+              Sign In / Create Account
+            </Button>
+          </CardFooter>
+        </Card>
+        <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+      </div>
+    );
+  }
+  
+  // User is authenticated, render the children
+  return <>{children}</>;
+}
 
 function Router() {
   return (
@@ -14,9 +66,11 @@ function Router() {
         <Route 
           path="/" 
           component={() => (
-            <NotesProvider>
-              <NotesEditor />
-            </NotesProvider>
+            <AuthGuard>
+              <NotesProvider>
+                <NotesEditor />
+              </NotesProvider>
+            </AuthGuard>
           )} 
         />
         <Route component={NotFound} />
