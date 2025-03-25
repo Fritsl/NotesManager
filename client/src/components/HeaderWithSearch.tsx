@@ -21,10 +21,10 @@ import {
   Trash2,
   AlertTriangle,
   HelpCircle,
-  Presentation, // Adding Presentation icon for Viewer button
-  Play,         // Alternative icon if needed
-  Maximize2,    // For fullscreen toggle
-  Minimize2     // For exiting fullscreen
+  Presentation, 
+  Play,         
+  Maximize2,    
+  Minimize2     
 } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { useAuth } from "@/context/AuthContext";
@@ -83,22 +83,22 @@ export default function Header() {
     saveProject,
     currentProjectId
   } = useNotes();
-  
+
   // For filter functionality
   const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
-  
+
   // Handle filter change
   const handleFilterChange = (filtered: Note[], type: FilterType) => {
     setFilteredNotes(filtered);
     setActiveFilter(type);
-    
+
     // Dispatch a custom event for NotesEditor to listen for
     const filterEvent = new CustomEvent('filter-change', { 
       detail: { filteredNotes: filtered, filterType: type } 
     });
     window.dispatchEvent(filterEvent);
-    
+
     // Update document title when applying a filter
     if (type) {
       document.title = `Filtered Notes - ${currentProjectName || "Notes"}`;
@@ -108,7 +108,7 @@ export default function Header() {
   };
   const { user, signOut } = useAuth();
   const { toast } = useToast();
-  
+
   // Handle sign out
   const handleSignOut = async () => {
     try {
@@ -125,7 +125,7 @@ export default function Header() {
       });
     }
   };
-  
+
   // Remove debug log
   const [showImportModal, setShowImportModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -151,7 +151,7 @@ export default function Header() {
       projectNameInputRef.current.select();
     }
   }, [isEditingProjectName]);
-  
+
   // Add global keyboard shortcut for Viewer (I key)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -161,13 +161,13 @@ export default function Header() {
         target.tagName === 'INPUT' || 
         target.tagName === 'TEXTAREA' || 
         target.isContentEditable;
-      
+
       // Only trigger if 'I' key is pressed and we're not editing text
       if (!isEditingText && e.key.toLowerCase() === 'i') {
         window.open("https://fastpresenterviwer.netlify.app", "_self");
       }
     };
-    
+
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
@@ -185,27 +185,27 @@ export default function Header() {
       setIsEditingProjectName(false);
       return;
     }
-    
+
     // If the project name hasn't actually changed, just exit edit mode
     if (editedProjectName === currentProjectName) {
       setIsEditingProjectName(false);
       return;
     }
-    
+
     // Update the project name in the context
     setCurrentProjectName(editedProjectName);
     setIsEditingProjectName(false);
-    
+
     // Log the name change for debugging
     console.log(`Project name changed from "${currentProjectName}" to "${editedProjectName}"`);
-    
+
     // Trigger the auto-save functionality
     if (currentProjectId) {
       setTimeout(async () => {
         try {
           await saveProject();
           console.log("Project auto-saved after name change");
-          
+
           // The toast was already removed as requested
           /*
           toast({
@@ -314,21 +314,19 @@ export default function Header() {
                       }}
                       className={cn(
                         "h-7 w-7 p-0 font-bold text-white",
-                        level > 0 ? "ml-1" : "", // Spacing between buttons
-                        // Apply the level color - now with colors always showing but highlighted when active
+                        level > 0 ? "ml-1" : "", 
                         `${colorTheme.bg} border ${colorTheme.border}`,
-                        // Additional styling when the button is active
                         currentLevel === level 
                           ? `${colorTheme.highlight} border-2 shadow-md` 
                           : `opacity-70 hover:opacity-100 hover:${colorTheme.highlight} hover:border-2`
                       )}
                     >
-                      {colorTheme.label} {/* Use the label from the color theme */}
+                      {colorTheme.label} 
                     </Button>
                   );
                 })}
               </div>
-              
+
               {/* Viewer Button */}
               <TooltipProvider>
                 <Tooltip>
@@ -350,7 +348,7 @@ export default function Header() {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              
+
               {/* Fullscreen Toggle Button */}
               <TooltipProvider>
                 <Tooltip>
@@ -360,7 +358,6 @@ export default function Header() {
                       size="sm"
                       className="mr-2 text-gray-400 hover:text-white"
                       onClick={() => {
-                        // Dispatch a custom event to toggle fullscreen mode in the editor
                         window.dispatchEvent(new Event('toggle-fullscreen'));
                       }}
                     >
@@ -373,7 +370,7 @@ export default function Header() {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              
+
               {/* Consolidated Hamburger Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -395,14 +392,11 @@ export default function Header() {
                             size="sm"
                             onClick={() => {
                               expandToLevel(level);
-                              // Close dropdown on mobile after selecting
                               document.body.click();
                             }}
                             className={cn(
                               "h-8 w-8 p-0 font-bold text-white",
-                              // Apply the level color - now with colors always showing but highlighted when active
                               `${colorTheme.bg} border ${colorTheme.border}`,
-                              // Additional styling when the button is active
                               currentLevel === level 
                                 ? `${colorTheme.highlight} border-2 shadow-md` 
                                 : `opacity-70 hover:opacity-100 hover:${colorTheme.highlight} hover:border-2`
@@ -443,7 +437,6 @@ export default function Header() {
 
                   {/* File Operations */}
                   <DropdownMenuItem onClick={() => {
-                    // Create a new project
                     createNewProject('New Project');
                   }}>
                     <FileText className="h-4 w-4 mr-2" />
@@ -454,7 +447,6 @@ export default function Header() {
                     <span>Projects</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={async () => {
-                    // Manual save button
                     if (currentProjectId) {
                       try {
                         await saveProject();
@@ -481,9 +473,9 @@ export default function Header() {
                     <span>Save</span>
                     <span className="ml-auto text-xs text-muted-foreground">{currentProjectId ? "(Manual)" : "(No Project)"}</span>
                   </DropdownMenuItem>
-                  
 
-                  
+
+
                   {/* Import/Export */}
                   <DropdownMenuItem onClick={() => setShowImportModal(true)}>
                     <FileUp className="h-4 w-4 mr-2" />
@@ -493,7 +485,7 @@ export default function Header() {
                     <FileDown className="h-4 w-4 mr-2" />
                     <span>Export JSON</span>
                   </DropdownMenuItem>
-                  
+
                   <DropdownMenuSeparator />
                   {/* User Options - Incorporating UserMenu items here */}
                   <DropdownMenuItem onClick={() => setShowPayoffModal(true)}>
@@ -517,16 +509,24 @@ export default function Header() {
                     <span>Delete Project</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  
+
                   {/* Toggle Fullscreen Mode Menu Item */}
                   <DropdownMenuItem onClick={() => {
-                    // Dispatch a custom event to toggle fullscreen mode in the editor
                     window.dispatchEvent(new Event('toggle-fullscreen'));
                   }}>
                     <Maximize2 className="h-4 w-4 mr-2" />
                     <span>Toggle Fullscreen</span>
                   </DropdownMenuItem>
-                  
+
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={()=> {/*Add SearchBar here*/}}>
+                    <span>Search</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={()=> {/*Add FilterMenu here*/}}>
+                    <span>Filter</span>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => setShowHelpModal(true)}>
                     <HelpCircle className="h-4 w-4 mr-2" />
                     <span>Help</span>
@@ -546,16 +546,7 @@ export default function Header() {
               </DropdownMenu>
             </div>
           </div>
-          
-          {/* Search and filter row */}
-          <div className="w-full flex items-center gap-1">
-            <div className="flex-grow relative">
-              <SearchBar />
-            </div>
-            <div className="flex-shrink-0">
-              <FilterMenu onFilterChange={handleFilterChange} />
-            </div>
-          </div>
+
         </div>
       ) : (
         <>
@@ -586,7 +577,7 @@ export default function Header() {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              
+
               {/* Consolidated Hamburger Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -597,7 +588,6 @@ export default function Header() {
                 <DropdownMenuContent align="end" className="w-56">
                   {/* File Operations */}
                   <DropdownMenuItem onClick={() => {
-                    // Create a new project with default name
                     createNewProject('New Project');
                   }}>
                     <FileText className="h-4 w-4 mr-2" />
@@ -608,7 +598,7 @@ export default function Header() {
                     <span>Projects</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  
+
                   {/* Import/Export */}
                   <DropdownMenuItem onClick={() => setShowImportModal(true)}>
                     <FileUp className="h-4 w-4 mr-2" />
@@ -618,7 +608,7 @@ export default function Header() {
                     <FileDown className="h-4 w-4 mr-2" />
                     <span>Export JSON</span>
                   </DropdownMenuItem>
-                  
+
                   <DropdownMenuSeparator />
                   {/* User Options */}
                   <DropdownMenuItem onClick={() => setShowPayoffModal(true)}>
@@ -632,11 +622,10 @@ export default function Header() {
                     <FileEdit className="h-4 w-4 mr-2" />
                     <span>Edit Project Description</span>
                   </DropdownMenuItem>
-                  
+
                   {/* Toggle Fullscreen Mode Menu Item */}
                   <DropdownMenuItem 
                     onClick={() => {
-                      // Dispatch a custom event to toggle fullscreen mode in the editor
                       window.dispatchEvent(new Event('toggle-fullscreen'));
                     }}
                     disabled={!hasActiveProject}
@@ -644,12 +633,21 @@ export default function Header() {
                     <Maximize2 className="h-4 w-4 mr-2" />
                     <span>Toggle Fullscreen</span>
                   </DropdownMenuItem>
-                  
+
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={()=> {/*Add SearchBar here*/}}>
+                    <span>Search</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={()=> {/*Add FilterMenu here*/}}>
+                    <span>Filter</span>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => setShowHelpModal(true)}>
                     <HelpCircle className="h-4 w-4 mr-2" />
                     <span>Help</span>
                   </DropdownMenuItem>
-                  
+
                   {user ? (
                     <DropdownMenuItem onClick={handleSignOut}>
                       <LogOut className="h-4 w-4 mr-2" />
@@ -667,7 +665,7 @@ export default function Header() {
           </div>
         </>
       )}
-      
+
       {/* Modals */}
       {showImportModal && <ImportModal onClose={() => setShowImportModal(false)} />}
       {showExportModal && <ExportModal onClose={() => setShowExportModal(false)} />}
@@ -676,7 +674,7 @@ export default function Header() {
       {showDescriptionModal && <ProjectDescriptionModal isOpen={showDescriptionModal} onClose={() => setShowDescriptionModal(false)} />}
       <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
-      
+
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent className="bg-gray-900 border border-gray-800">
@@ -696,18 +694,14 @@ export default function Header() {
               onClick={async () => {
                 if (currentProjectId) {
                   try {
-                    // Call the moveProjectToTrash function
                     const success = await moveProjectToTrash(currentProjectId);
-                    
+
                     if (success) {
                       toast({
                         title: 'Moved to Trash',
                         description: 'Project moved to trash successfully',
                       });
-                      // Reset app state
                       setHasActiveProject(false);
-                      
-                      // Remove from localStorage to avoid auto-loading
                       localStorage.removeItem('lastProjectId');
                     } else {
                       toast({
