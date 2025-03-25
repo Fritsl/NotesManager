@@ -125,31 +125,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     }
   }, [currentProjectId]);
   
-  // Effect to handle saving after note moves
-  useEffect(() => {
-    // This effect runs after the saveProject function is defined
-    if (pendingNoteMoves && currentProjectId) {
-      const handleSave = async () => {
-        try {
-          console.log('Auto-saving project after note movement');
-          await saveProject();
-          console.log('Project auto-saved after note movement');
-          
-          // Clear the pending flag
-          setPendingNoteMoves(false);
-        } catch (error) {
-          console.error('Failed to auto-save after note movement:', error);
-        }
-      };
-      
-      // Save with a slight delay to ensure state has updated
-      const saveTimeout = setTimeout(handleSave, 300);
-      
-      return () => {
-        clearTimeout(saveTimeout);
-      };
-    }
-  }, [pendingNoteMoves, currentProjectId, saveProject]);
+
 
   // Clean note positions to ensure sequential ordering without gaps
   const cleanNotePositions = useCallback((noteList: Note[]): Note[] => {
@@ -863,10 +839,19 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       
       console.log('Project saved successfully:', updatedProject);
       
-      toast({
-        title: "Project Saved",
-        description: `"${currentProjectName}" has been saved`,
-      });
+      // Only show toast when manually saved via button (not auto-saves)
+      if (!pendingNoteMoves) {
+        toast({
+          title: "Project Saved",
+          description: `"${currentProjectName}" has been saved`,
+        });
+      }
+      
+      // Clear the pending flag if it was set
+      if (pendingNoteMoves) {
+        setPendingNoteMoves(false);
+      }
+      
     } catch (error) {
       console.error('Error saving project:', error);
       toast({
@@ -875,7 +860,25 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         variant: "destructive",
       });
     }
-  }, [currentProjectId, currentProjectName, currentProjectDescription, notes, cleanNotePositions, toast]);
+  }, [currentProjectId, currentProjectName, currentProjectDescription, notes, cleanNotePositions, toast, pendingNoteMoves]);
+  
+  // Effect to handle auto-saving when pendingNoteMoves is set
+  useEffect(() => {
+    if (pendingNoteMoves && currentProjectId) {
+      console.log('Auto-saving project after note movement');
+      const saveTimeout = setTimeout(() => {
+        saveProject().then(() => {
+          console.log('Project auto-saved after note movement');
+        }).catch(err => {
+          console.error('Failed to auto-save after note movement:', err);
+        });
+      }, 500);
+      
+      return () => {
+        clearTimeout(saveTimeout);
+      };
+    }
+  }, [pendingNoteMoves, currentProjectId, saveProject]);
 
   // Handle image uploads for a note
   const uploadImage = useCallback(async (noteId: string, file: File): Promise<NoteImage | null> => {
