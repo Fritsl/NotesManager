@@ -115,22 +115,10 @@ export default function NoteEditor() {
       await saveProject();
       console.log("Project saved directly from editor");
       
-      // Show a toast notification for the save
-      toast({
-        title: "Changes Saved",
-        description: "Your changes have been saved to the database",
-        variant: "default",
-      });
-      
       // Reset changes flag after successful save
       setHasChanges(false);
     } catch (error) {
       console.error("Failed to save project directly:", error);
-      toast({
-        title: "Save Failed",
-        description: "Could not save your changes. Please try again.",
-        variant: "destructive",
-      });
     }
   }, [selectedNote, currentProjectId, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, timeSet, updateNote, saveProject, toast]);
   
@@ -239,15 +227,33 @@ export default function NoteEditor() {
   };
   
   const handleDiscussionChange = (checked: boolean | "indeterminate") => {
+    console.log("DESKTOP: Discussion checkbox changed");
+    console.log("DESKTOP: Current discussion state:", isDiscussion);
+    console.log("DESKTOP: Current content:", content);
+    
+    // Store current content in a variable to preserve it
+    const currentContent = contentRef.current?.value || content;
+    console.log("DESKTOP: Content to preserve:", currentContent);
+    
     const newValue = checked === true;
+    console.log("DESKTOP: New discussion state will be:", newValue);
+    
+    // Update state
     setIsDiscussion(newValue);
     setHasChanges(true);
     
-    // Call the direct save function to avoid circular dependency
-    // This is the only reliable way to save that works
+    // Ensure content is preserved
     setTimeout(() => {
+      if (contentRef.current && contentRef.current.value !== currentContent) {
+        console.log("DESKTOP: Content was reset, restoring to:", currentContent);
+        contentRef.current.value = currentContent;
+        setContent(currentContent);
+      }
+      
+      console.log("DESKTOP: Calling saveDirectly");
+      // Call the direct save function
       saveDirectly();
-    }, 100);
+    }, 50);
   };
   
   const handleTimeChange = (value: string | null) => {
@@ -323,22 +329,10 @@ export default function NoteEditor() {
         setSaveStatus("idle");
       }, 1500);
       
-      // Show a confirmation toast
-      toast({
-        title: "Changes Saved",
-        description: "Your changes have been saved to the online database",
-        variant: "default",
-      });
-      
       // Reset changes flag after successful save
       setHasChanges(false);
     } catch (error) {
       console.error("Failed to save note and project:", error);
-      toast({
-        title: "Save Error",
-        description: "Failed to save changes. Please try again.",
-        variant: "destructive",
-      });
       setSaveStatus("idle");
     }
   };
@@ -458,16 +452,37 @@ export default function NoteEditor() {
               variant="ghost" 
               size="sm"
               onClick={() => {
+                console.log("MOBILE: Discussion toggle button clicked");
+                console.log("MOBILE: Current discussion state:", isDiscussion);
+                console.log("MOBILE: Current content:", content);
+                
                 // Toggle discussion flag
                 const newValue = !isDiscussion;
+                console.log("MOBILE: New discussion state will be:", newValue);
+                
+                // Store current content in a variable to preserve it
+                const currentContent = contentRef.current?.value || content;
+                console.log("MOBILE: Content to preserve:", currentContent);
+                
+                // Update state without losing content
                 setIsDiscussion(newValue);
                 setHasChanges(true);
                 
-                // Call the direct save function to avoid circular dependency
-                // This is the only reliable way to save that works
+                // Ensure content is preserved by explicitly setting it again
+                // This prevents content from being reset during re-renders
                 setTimeout(() => {
+                  if (contentRef.current && contentRef.current.value !== currentContent) {
+                    console.log("MOBILE: Content was reset, restoring to:", currentContent);
+                    // Set the value directly on the DOM element
+                    contentRef.current.value = currentContent;
+                    // Update React state to match
+                    setContent(currentContent);
+                  }
+                  
+                  console.log("MOBILE: Calling saveDirectly");
+                  // Call the direct save function to avoid circular dependency
                   saveDirectly();
-                }, 100);
+                }, 50);
               }}
               className={isDiscussion ? "text-blue-400" : "text-gray-400"}
             >
@@ -586,21 +601,13 @@ export default function NoteEditor() {
               
               const file = files[0];
               if (!file.type.startsWith('image/')) {
-                toast({
-                  title: "Invalid File",
-                  description: "Please select an image file",
-                  variant: "destructive",
-                });
+                console.log("Invalid file type:", file.type);
                 return;
               }
               
               // Check file size (limit to 5MB)
               if (file.size > 5 * 1024 * 1024) {
-                toast({
-                  title: "File Too Large",
-                  description: "Image file must be less than 5MB",
-                  variant: "destructive",
-                });
+                console.log("File too large:", file.size);
                 return;
               }
               
@@ -609,21 +616,11 @@ export default function NoteEditor() {
                 const image = await notesContext.uploadImage?.(selectedNote.id, file);
                 
                 if (image) {
-                  toast({
-                    title: "Image Uploaded",
-                    description: "Image has been added to the note",
-                  });
-                  
                   // Reset the file input
                   e.target.value = '';
                 }
               } catch (error) {
                 console.error('Error uploading image:', error);
-                toast({
-                  title: "Upload Failed",
-                  description: "There was a problem uploading the image",
-                  variant: "destructive",
-                });
               }
             }}
           />
@@ -857,21 +854,13 @@ export default function NoteEditor() {
                         
                         const file = files[0];
                         if (!file.type.startsWith('image/')) {
-                          toast({
-                            title: "Invalid File",
-                            description: "Please select an image file",
-                            variant: "destructive",
-                          });
+                          console.log("Invalid file type:", file.type);
                           return;
                         }
                         
                         // Check file size (limit to 5MB)
                         if (file.size > 5 * 1024 * 1024) {
-                          toast({
-                            title: "File Too Large",
-                            description: "Image file must be less than 5MB",
-                            variant: "destructive",
-                          });
+                          console.log("File too large:", file.size);
                           return;
                         }
                         
@@ -880,21 +869,11 @@ export default function NoteEditor() {
                           const image = await notesContext.uploadImage?.(selectedNote.id, file);
                           
                           if (image) {
-                            toast({
-                              title: "Image Uploaded",
-                              description: "Image has been added to the note",
-                            });
-                            
                             // Reset the file input
                             e.target.value = '';
                           }
                         } catch (error) {
                           console.error('Error uploading image:', error);
-                          toast({
-                            title: "Upload Failed",
-                            description: "There was a problem uploading the image",
-                            variant: "destructive",
-                          });
                         }
                       }}
                     />
@@ -1156,21 +1135,13 @@ export default function NoteEditor() {
                     
                     const file = files[0];
                     if (!file.type.startsWith('image/')) {
-                      toast({
-                        title: "Invalid File",
-                        description: "Please select an image file",
-                        variant: "destructive",
-                      });
+                      console.log("Invalid file type:", file.type);
                       return;
                     }
                     
                     // Check file size (limit to 5MB)
                     if (file.size > 5 * 1024 * 1024) {
-                      toast({
-                        title: "File Too Large",
-                        description: "Image file must be less than 5MB",
-                        variant: "destructive",
-                      });
+                      console.log("File too large:", file.size);
                       return;
                     }
                     
@@ -1179,21 +1150,11 @@ export default function NoteEditor() {
                       const image = await notesContext.uploadImage?.(selectedNote.id, file);
                       
                       if (image) {
-                        toast({
-                          title: "Image Uploaded",
-                          description: "Image has been added to the note",
-                        });
-                        
                         // Reset the file input
                         e.target.value = '';
                       }
                     } catch (error) {
                       console.error('Error uploading image:', error);
-                      toast({
-                        title: "Upload Failed",
-                        description: "There was a problem uploading the image",
-                        variant: "destructive",
-                      });
                     }
                   }}
                 />
