@@ -354,10 +354,13 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
     setIsSaving(true);
     
     try {
+      // Get content directly from the textarea ref to avoid cursor jump issues
+      const currentContent = contentEditRef.current?.value || note.content;
+      
       // Update the note in memory with all properties
       const updatedNote = {
         ...note,
-        content: editContent,
+        content: currentContent,
         time_set: editTimeSet,
         is_discussion: editIsDiscussion,
         youtube_url: editYoutubeUrl,
@@ -404,7 +407,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   // Create edit form content that will be used in both mobile dialog and inline editing
   const renderEditForm = () => (
     <>
-      {/* Content editor with more height */}
+      {/* Content editor with more height - Using completely uncontrolled component */}
       <Textarea 
         ref={contentEditRef}
         rows={Math.min(isMobile ? 10 : 6, note.content.split('\n').length + 1)}
@@ -413,13 +416,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           isMobile && "h-48 min-h-[8rem]" // Taller textarea on mobile
         )}
         placeholder="Enter note content..."
-        defaultValue={editContent} // Use defaultValue to prevent cursor jumps
-        onChange={(e) => {
-          // Only update if value has actually changed to prevent unnecessary rerenders
-          if (e.target.value !== editContent) {
-            setEditContent(e.target.value);
-          }
-        }}
+        defaultValue={note.content} // Initialize with note content, but don't update during typing
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
         autoFocus
@@ -628,13 +625,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                     isMobile && "h-48 min-h-[8rem]" // Taller textarea on mobile
                   }`}
                   placeholder="Enter note content..."
-                  defaultValue={editContent} // Use defaultValue to prevent cursor jumps
-                  onChange={(e) => {
-                    // Only update if value has actually changed to prevent unnecessary rerenders
-                    if (e.target.value !== editContent) {
-                      setEditContent(e.target.value);
-                    }
-                  }}
+                  defaultValue={note.content} // Initialize with note content, but don't track changes
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
                   autoFocus
@@ -878,7 +869,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                     onDoubleClick={(e) => {
                       e.stopPropagation();
                       setIsEditing(true);
-                      setEditContent(note.content);
+                      // No need to set editContent anymore, using uncontrolled component
                       // Select the note as well
                       selectNote(note);
                     }}
@@ -902,8 +893,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                         onDoubleClick={(e) => {
                           e.stopPropagation();
                           setIsEditing(true);
-                          setEditContent(note.content);
-                          // Select the note as well
+                          // No need to set editContent anymore, using uncontrolled component
+                          // Select the note as well 
                           selectNote(note);
                         }}
                       >
