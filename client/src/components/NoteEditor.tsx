@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Save, Youtube, Link, CheckCircle2, FileEdit, ImagePlus, X, ArrowUp, ArrowDown, Trash2, Clock } from "lucide-react";
+import { Save, Youtube, Link, CheckCircle2, FileEdit, ImagePlus, X, ArrowUp, ArrowDown, Trash2, Clock, Expand, Minimize, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { NoteImage } from "@/types/notes";
 import * as Popover from '@radix-ui/react-popover';
+import { useIsMobile } from "@/hooks/useMediaQuery";
 
 export default function NoteEditor() {
   const { 
@@ -24,6 +25,10 @@ export default function NoteEditor() {
   // Get the Notes context to access its methods
   const notesContext = useNotes();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
+  
+  // State for mobile fullscreen editing
+  const [isFullscreenEditMode, setIsFullscreenEditMode] = useState<boolean>(isMobile);
   
   const [content, setContent] = useState<string>("");
   const [youtubeUrl, setYoutubeUrl] = useState<string>("");
@@ -56,6 +61,11 @@ export default function NoteEditor() {
       setIsDiscussion(selectedNote.is_discussion);
       setTimeSet(selectedNote.time_set);
       setHasChanges(false); // Reset changes flag on note selection
+      
+      // Automatically enter fullscreen edit mode on mobile
+      if (isMobile) {
+        setIsFullscreenEditMode(true);
+      }
     } else {
       // Reset form when no note is selected
       setContent("");
@@ -66,7 +76,7 @@ export default function NoteEditor() {
       setTimeSet(null);
       setHasChanges(false);
     }
-  }, [selectedNote]);
+  }, [selectedNote, isMobile]);
   
   // Direct save function - saves immediately without checks
   const saveDirectly = useCallback(async () => {
@@ -275,6 +285,11 @@ export default function NoteEditor() {
   // Handler for Apply button in the time picker
   const handleApplyTime = () => {
     saveDirectly();
+  };
+  
+  // Toggle fullscreen edit mode
+  const toggleFullscreenMode = () => {
+    setIsFullscreenEditMode(prev => !prev);
   };
 
   const handleSave = async () => {
