@@ -188,25 +188,33 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       return;
     }
     
-    // Process notes to ensure compatible image format
+    // Process notes to ensure compatible image format and generate new IDs
     const processImagesInNotes = (noteList: Note[]): Note[] => {
-      return noteList.map(note => {
-        // Create a new note to avoid mutating the original
+      // Create ID mapping to maintain parent-child relationships
+      const idMap = new Map<string, string>();
+      
+      const processNote = (note: Note): Note => {
+        // Generate a new ID for this note
+        const newId = uuidv4();
+        // Store mapping from old ID to new ID
+        idMap.set(note.id, newId);
+        
+        // Create a new note with the new ID
         const processedNote: Note = {
           ...note,
-          children: note.children ? processImagesInNotes(note.children) : []
+          id: newId,
+          children: note.children ? note.children.map(child => processNote(child)) : []
         };
         
         // Process images if present
         if (note.images && note.images.length > 0) {
           processedNote.images = note.images.map((image, index) => {
-            // If the image is in the simplified format (missing id, note_id, created_at),
-            // enhance it with the required fields for this application
+            // Always generate new IDs for images too
             const enhancedImage: NoteImage = {
               ...image,
-              id: image.id || uuidv4(), // Generate an ID if missing
-              note_id: image.note_id || note.id, // Use note's ID if missing
-              created_at: image.created_at || new Date().toISOString(), // Use current time if missing
+              id: uuidv4(), // Always generate a new ID
+              note_id: newId, // Use the new note ID
+              created_at: image.created_at || new Date().toISOString(),
               url: image.url,
               storage_path: image.storage_path,
               position: image.position !== undefined ? image.position : index
@@ -217,7 +225,9 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         }
         
         return processedNote;
-      });
+      };
+      
+      return noteList.map(processNote);
     };
     
     // Process the notes to ensure compatible image format, then clean positions

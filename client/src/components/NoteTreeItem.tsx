@@ -526,6 +526,11 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                       e.stopPropagation();
                       try {
                         setIsSaving(true);
+                        // Ensure image.id is defined before trying to remove it
+                        if (!image.id) {
+                          console.error('Cannot remove image: image ID is undefined');
+                          return;
+                        }
                         const success = await removeImage(image.id);
                         if (success) {
                           // Update the note in state to remove the image
