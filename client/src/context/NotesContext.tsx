@@ -786,9 +786,52 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       const image = await addImageToNote(noteId, file);
       
       if (image) {
+        // Update the notes state to include the new image
+        setNotes(prevNotes => {
+          // Create a deep copy of the notes array with the updated note
+          return prevNotes.map(note => {
+            if (note.id === noteId) {
+              // If this is the target note, add the image to its images array
+              return {
+                ...note,
+                images: [...(note.images || []), image]
+              };
+            } else if (note.children && note.children.length > 0) {
+              // If this note has children, recursively search them
+              const updateChildrenWithImage = (children: Note[]): Note[] => {
+                return children.map(child => {
+                  if (child.id === noteId) {
+                    return {
+                      ...child,
+                      images: [...(child.images || []), image]
+                    };
+                  } else if (child.children && child.children.length > 0) {
+                    return {
+                      ...child,
+                      children: updateChildrenWithImage(child.children)
+                    };
+                  }
+                  return child;
+                });
+              };
+              
+              return {
+                ...note,
+                children: updateChildrenWithImage(note.children)
+              };
+            }
+            return note;
+          });
+        });
+
         toast({
           title: "Image Uploaded",
           description: "The image has been attached to the note",
+        });
+        
+        // Save the project to ensure the image is persisted
+        saveProject().catch(err => {
+          console.error("Error saving project after image upload:", err);
         });
       }
       
@@ -802,7 +845,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       });
       return null;
     }
-  }, [toast]);
+  }, [toast, saveProject]);
   
   // Remove an image from a note
   const removeImage = useCallback(async (imageId: string): Promise<boolean> => {
@@ -811,9 +854,44 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       const success = await removeImageFromNote(imageId);
       
       if (success) {
+        // Update the notes state to remove the image
+        setNotes(prevNotes => {
+          // Create a deep copy of the notes array with the image removed
+          // Helper function to update a notes array by removing the specified image
+          const removeImageFromNotes = (notes: Note[]): Note[] => {
+            return notes.map(note => {
+              // Check if this note has the image
+              if (note.images && note.images.some(img => img.id === imageId)) {
+                return {
+                  ...note,
+                  images: note.images.filter(img => img.id !== imageId)
+                };
+              }
+              
+              // If the note has children, recursively check them
+              if (note.children && note.children.length > 0) {
+                return {
+                  ...note,
+                  children: removeImageFromNotes(note.children)
+                };
+              }
+              
+              // No changes needed for this note
+              return note;
+            });
+          };
+          
+          return removeImageFromNotes(prevNotes);
+        });
+
         toast({
           title: "Image Removed",
           description: "The image has been removed from the note",
+        });
+        
+        // Save the project to ensure the image removal is persisted
+        saveProject().catch(err => {
+          console.error("Error saving project after image removal:", err);
         });
       }
       
@@ -827,7 +905,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       });
       return false;
     }
-  }, [toast]);
+  }, [toast, saveProject]);
   
   // Reorder images within a note
   const reorderImage = useCallback(async (noteId: string, imageId: string, newPosition: number): Promise<boolean> => {
@@ -836,9 +914,66 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       const success = await updateImagePosition(noteId, imageId, newPosition);
       
       if (success) {
+        // Update the notes state to reflect the new image position
+        setNotes(prevNotes => {
+          // Helper function to update the images array for a note
+          const updateImagesInNote = (note: Note): Note => {
+            if (note.id === noteId && note.images && note.images.length > 0) {
+              // Find the image to reorder
+              const imageToMove = note.images.find(img => img.id === imageId);
+              
+              if (imageToMove) {
+                // Remove the image from its current position
+                const filteredImages = note.images.filter(img => img.id !== imageId);
+                
+                // Calculate a safe position that's within bounds
+                const safePosition = Math.max(0, Math.min(newPosition, filteredImages.length));
+                
+                // Insert the image at the new position
+                const updatedImages = [
+                  ...filteredImages.slice(0, safePosition),
+                  { ...imageToMove, position: safePosition },
+                  ...filteredImages.slice(safePosition)
+                ];
+                
+                // Sort images by position to ensure correct order
+                const sortedImages = updatedImages.sort((a, b) => a.position - b.position);
+                
+                return { ...note, images: sortedImages };
+              }
+            }
+            return note;
+          };
+          
+          // Helper function to update notes recursively
+          const updateNotesWithReorderedImage = (notes: Note[]): Note[] => {
+            return notes.map(note => {
+              // First check if this is the note with the image
+              const updatedNote = updateImagesInNote(note);
+              
+              // If the note has children, recursively update them too
+              if (updatedNote.children && updatedNote.children.length > 0) {
+                return {
+                  ...updatedNote,
+                  children: updateNotesWithReorderedImage(updatedNote.children)
+                };
+              }
+              
+              return updatedNote;
+            });
+          };
+          
+          return updateNotesWithReorderedImage(prevNotes);
+        });
+
         toast({
           title: "Image Reordered",
           description: "The image position has been updated",
+        });
+        
+        // Save the project to ensure the image reordering is persisted
+        saveProject().catch(err => {
+          console.error("Error saving project after image reordering:", err);
         });
       }
       
@@ -852,7 +987,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       });
       return false;
     }
-  }, [toast]);
+  }, [toast, saveProject]);
 
   // Debug info function removed
 
