@@ -10,12 +10,6 @@ import { AuthProvider } from "@/context/AuthContext";
 function Router() {
   return (
     <>
-      <div className="fixed bottom-0 right-0 p-4 z-50 flex gap-2">
-        <Link href="/">
-          <div className="px-3 py-1 bg-primary text-white rounded-md hover:bg-primary/80 cursor-pointer">Notes App</div>
-        </Link>
-      </div>
-      
       <Switch>
         <Route 
           path="/" 

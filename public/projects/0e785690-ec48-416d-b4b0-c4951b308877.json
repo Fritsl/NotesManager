@@ -47,6 +47,14 @@
             "url": "https://wxpdstlzutwzuxstysnl.supabase.co/storage/v1/object/public/note-images/images/c562a44c-48e1-43eb-86d7-395bde8f308c.png",
             "position": 8,
             "created_at": "2025-03-25T12:23:42.670Z"
+          },
+          {
+            "id": "ce6a33d6-64d1-48e8-afa2-bab096824bbe",
+            "note_id": "dfd381d7-0574-4361-8224-549765c564ef",
+            "storage_path": "images/b0a90af3-6b8c-45e8-a2c4-638d7bc8f828.png",
+            "url": "https://wxpdstlzutwzuxstysnl.supabase.co/storage/v1/object/public/note-images/images/b0a90af3-6b8c-45e8-a2c4-638d7bc8f828.png",
+            "position": 10,
+            "created_at": "2025-03-25T15:38:32.893Z"
           }
         ]
       },
@@ -65,6 +73,6 @@
     ]
   },
   "description": "",
-  "updated_at": "2025-03-25T14:16:16.042Z",
-  "created_at": "2025-03-25T14:16:16.042Z"
+  "updated_at": "2025-03-25T15:38:45.858Z",
+  "created_at": "2025-03-25T15:38:45.858Z"
 }
