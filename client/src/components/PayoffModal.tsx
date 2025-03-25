@@ -7,6 +7,13 @@ import { useToast } from '../hooks/use-toast';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
+const ButtonWithLabel = ({ label, children, ...props }) => (
+  <div className="flex flex-col gap-2 w-full">
+    <Label>{label}</Label>
+    <Button {...props}>{children}</Button>
+  </div>
+);
+
 interface PayoffModalProps {
   isOpen: boolean;
   onClose: () => void;

@@ -9,6 +9,13 @@ import { useAuth } from '../context/AuthContext';
 import { Separator } from './ui/separator';
 import { FaGoogle } from 'react-icons/fa';
 
+const ButtonWithLabel = ({ label, children, ...props }) => (
+  <div className="flex flex-col gap-2 w-full">
+    <Label>{label}</Label>
+    <Button {...props}>{children}</Button>
+  </div>
+);
+
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
