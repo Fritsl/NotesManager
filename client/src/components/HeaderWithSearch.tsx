@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useState, useEffect, useRef } from "react";
 import { 
   Menu, 
@@ -56,7 +57,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { levelColors } from "@/lib/level-colors";
 
