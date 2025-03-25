@@ -194,9 +194,8 @@ export default function NoteEditor() {
     
     // Save after a short delay to avoid too many saves while typing
     const timeout = setTimeout(() => {
-      // Call the manual save function directly to ensure content is saved properly
-      // This is the only reliable way to save that works
-      handleSave();
+      // Use the direct save function to avoid circular dependency
+      saveDirectly();
     }, 1500); // 1.5 second debounce
     
     // Save the timeout ID so we can clear it if needed
@@ -208,10 +207,10 @@ export default function NoteEditor() {
     setYoutubeUrl(newUrl);
     setHasChanges(true);
     
-    // Call the manual save function directly to ensure content is saved properly
+    // Call the direct save function to avoid circular dependency 
     // This is the only reliable way to save that works
     setTimeout(() => {
-      handleSave();
+      saveDirectly();
     }, 100);
   };
   
@@ -220,10 +219,10 @@ export default function NoteEditor() {
     setExternalUrl(newUrl);
     setHasChanges(true);
     
-    // Call the manual save function directly to ensure content is saved properly
+    // Call the direct save function to avoid circular dependency
     // This is the only reliable way to save that works
     setTimeout(() => {
-      handleSave();
+      saveDirectly();
     }, 100);
   };
   
@@ -232,10 +231,10 @@ export default function NoteEditor() {
     setUrlDisplayText(newText);
     setHasChanges(true);
     
-    // Call the manual save function directly to ensure content is saved properly
+    // Call the direct save function to avoid circular dependency
     // This is the only reliable way to save that works
     setTimeout(() => {
-      handleSave();
+      saveDirectly();
     }, 100);
   };
   
@@ -244,10 +243,10 @@ export default function NoteEditor() {
     setIsDiscussion(newValue);
     setHasChanges(true);
     
-    // Call the manual save function directly to ensure content is saved properly
+    // Call the direct save function to avoid circular dependency
     // This is the only reliable way to save that works
     setTimeout(() => {
-      handleSave();
+      saveDirectly();
     }, 100);
   };
   
@@ -269,10 +268,10 @@ export default function NoteEditor() {
     setTimeSet(formattedTime);
     setHasChanges(true);
     
-    // Call the manual save function directly to ensure content is saved properly
+    // Call the direct save function to avoid circular dependency
     // This is the only reliable way to save that works
     setTimeout(() => {
-      handleSave();
+      saveDirectly();
     }, 100);
   };
   
@@ -464,10 +463,10 @@ export default function NoteEditor() {
                 setIsDiscussion(newValue);
                 setHasChanges(true);
                 
-                // Call the manual save function to ensure content is saved properly
+                // Call the direct save function to avoid circular dependency
                 // This is the only reliable way to save that works
                 setTimeout(() => {
-                  handleSave();
+                  saveDirectly();
                 }, 100);
               }}
               className={isDiscussion ? "text-blue-400" : "text-gray-400"}
@@ -534,10 +533,10 @@ export default function NoteEditor() {
                 setUrlDisplayText(newDisplayText);
                 setHasChanges(true);
                 
-                // Call the manual save function to ensure content is saved properly
+                // Call the direct save function to avoid circular dependency
                 // This is the only reliable way to save that works
                 setTimeout(() => {
-                  handleSave();
+                  saveDirectly();
                 }, 100);
               }}
               className={externalUrl ? "text-green-400" : "text-gray-400"}
@@ -563,10 +562,10 @@ export default function NoteEditor() {
                 setYoutubeUrl(newYoutubeUrl);
                 setHasChanges(true);
                 
-                // Call the manual save function to ensure content is saved properly
+                // Call the direct save function to avoid circular dependency
                 // This is the only reliable way to save that works
                 setTimeout(() => {
-                  handleSave();
+                  saveDirectly();
                 }, 100);
               }}
               className={youtubeUrl ? "text-red-400" : "text-gray-400"}
