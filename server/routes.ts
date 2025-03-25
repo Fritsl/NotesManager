@@ -279,6 +279,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint to fix Supabase Storage RLS policies
+  app.post("/api/fix-storage-permissions", async (_req: Request, res: Response) => {
+    try {
+      log('Attempting to fix Supabase Storage permissions...');
+      
+      // Make sure the bucket exists first
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      
+      if (bucketsError) {
+        return res.status(500).json({
+          error: "Failed to list buckets",
+          message: bucketsError.message
+        });
+      }
+      
+      let noteImagesBucket = buckets.find(b => b.name === 'note-images');
+      
+      // Create the bucket if it doesn't exist
+      if (!noteImagesBucket) {
+        log('Note-images bucket not found, creating it...');
+        const { error: createError } = await supabase.storage.createBucket('note-images', {
+          public: true // Make the bucket public so images can be accessed without authentication
+        });
+        
+        if (createError) {
+          return res.status(500).json({
+            error: "Failed to create bucket",
+            message: createError.message
+          });
+        }
+        
+        log('Note-images bucket created successfully');
+      }
+      
+      // Check if 'images' folder exists, create it if not
+      try {
+        const { data: imagesList, error: listError } = await supabase.storage
+          .from('note-images')
+          .list();
+          
+        if (listError) {
+          log(`Error listing bucket contents: ${listError.message}`);
+        } else {
+          const imagesFolder = imagesList?.find(item => item.name === 'images');
+          
+          if (!imagesFolder) {
+            log('Creating images folder in note-images bucket');
+            
+            // Create an empty file to establish the folder
+            const { error: folderError } = await supabase.storage
+              .from('note-images')
+              .upload('images/.folder', new Uint8Array(0));
+              
+            if (folderError && !folderError.message.includes('already exists')) {
+              log(`Error creating images folder: ${folderError.message}`);
+            } else {
+              log('Images folder created or already exists');
+            }
+          }
+        }
+      } catch (folderError) {
+        log(`Error checking/creating images folder: ${folderError}`);
+      }
+      
+      // Try to update the bucket to be public
+      try {
+        log('Updating bucket to be public...');
+        
+        // Make the bucket publicly accessible
+        const { error: updateError } = await supabase.storage.updateBucket('note-images', {
+          public: true 
+        });
+        
+        if (updateError) {
+          return res.status(500).json({
+            error: "Failed to update bucket permissions",
+            message: updateError.message
+          });
+        }
+        
+        log('Successfully updated bucket to public');
+      } catch (permError: any) {
+        log(`Error updating bucket permissions: ${permError.message}`);
+        // Continue anyway - the permissions might already be set correctly
+      }
+      
+      // Check if the bucket is accessible after our changes
+      const { data: publicUrl } = supabase.storage
+        .from('note-images')
+        .getPublicUrl('images/.folder');
+        
+      log(`Public URL test: ${publicUrl.publicUrl}`);
+      
+      // Return success with the next steps
+      return res.status(200).json({
+        success: true,
+        message: "Storage permissions updated successfully",
+        publicUrl: publicUrl.publicUrl,
+        nextSteps: [
+          "Images should now be publicly accessible",
+          "If images are still not loading, clear your browser cache",
+          "You may need to log in to your Supabase account and manually update the bucket policies"
+        ]
+      });
+    } catch (error: any) {
+      log(`Error fixing storage permissions: ${error.message}`);
+      return res.status(500).json({
+        error: "Failed to fix storage permissions",
+        details: error.message
+      });
+    }
+  });
+
   // Supabase diagnostics endpoint to check storage access
   app.get("/api/supabase-diagnostics", async (_req: Request, res: Response) => {
     try {
