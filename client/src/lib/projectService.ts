@@ -885,6 +885,9 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
     // Define batch size for operations
     const BATCH_SIZE = 50;
     
+    // Create an ID mapping outside the try-catch so it can be accessed from all blocks
+    const idMapping: Record<string, string> = {};
+    
     if (flatNotes.length > 0) {
       console.log('First flattened note sample:', JSON.stringify(flatNotes[0]));
       
@@ -915,9 +918,7 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
           console.log('No obsolete notes to delete');
         }
         
-        // Preserve original note IDs - create a dummy mapping that maps each ID to itself
-        const idMapping: Record<string, string> = {};
-        
+        // Preserve original note IDs - map each ID to itself
         // Instead of generating new IDs, just map each note ID to itself
         flatNotes.forEach(note => {
           idMapping[note.id] = note.id; // Keep the same ID
@@ -999,7 +1000,7 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
             
             const { data: insertedData, error: insertError } = await supabase
               .from('notes')
-              .insert(batch)
+              .upsert(batch, { onConflict: 'id' })
               .select();
               
             if (insertError) {
