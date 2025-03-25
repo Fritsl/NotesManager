@@ -368,77 +368,617 @@ export default function NoteEditor() {
 
   return (
     <>
-      {/* Toolbar with breadcrumbs */}
-      <div className="bg-gray-900 border-b border-gray-800 p-2 flex items-center justify-between shadow-sm">
-        <div className="breadcrumbs text-sm text-gray-400 flex items-center overflow-x-auto whitespace-nowrap">
-          <span className="px-2 py-1 cursor-pointer hover:bg-gray-800 rounded">Root</span>
-          
-          {breadcrumbs.map((crumb, index) => (
-            <div key={crumb.id} className="flex items-center">
-              <span className="mx-1 text-gray-500">/</span>
-              <span className="px-2 py-1 cursor-pointer hover:bg-gray-800 rounded">
-                {crumb.content.split('\n')[0].slice(0, 20)}
-                {crumb.content.length > 20 ? '...' : ''}
+      {isFullscreenEditMode ? (
+        /* MOBILE FULLSCREEN EDIT MODE */
+        <div className="fixed inset-0 z-50 bg-gray-950 flex flex-col">
+          {/* Mobile header */}
+          <div className="bg-gray-900 p-2 flex items-center justify-between border-b border-gray-800">
+            <div className="flex items-center space-x-2">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={toggleFullscreenMode}
+                className="text-gray-400 hover:text-white"
+              >
+                <X size={18} />
+              </Button>
+              <span className="text-sm font-medium truncate max-w-[15ch]">
+                {selectedNote.content.split('\n')[0].slice(0, 15)}
+                {selectedNote.content.length > 15 ? '...' : ''}
               </span>
             </div>
-          ))}
-          
-          {breadcrumbs.length > 0 && (
-            <div className="flex items-center">
-              <span className="mx-1 text-gray-500">/</span>
-              <span className="px-2 py-1 font-medium text-primary bg-gray-800 rounded">
-                {selectedNote.content.split('\n')[0].slice(0, 20)}
-                {selectedNote.content.length > 20 ? '...' : ''}
-              </span>
+            
+            <div className="flex items-center space-x-2">
+              {isDiscussion && (
+                <span className="text-xs bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded-full">
+                  Discussion
+                </span>
+              )}
+              
+              {youtubeUrl && (
+                <span className="text-xs bg-red-900/50 text-red-300 px-2 py-0.5 rounded-full">
+                  YouTube
+                </span>
+              )}
+              
+              {externalUrl && (
+                <span className="text-xs bg-green-900/50 text-green-300 px-2 py-0.5 rounded-full">
+                  Link
+                </span>
+              )}
+              
+              {timeSet && (
+                <span className="text-xs bg-purple-900/50 text-purple-300 px-2 py-0.5 rounded-full">
+                  {timeSet}
+                </span>
+              )}
+              
+              {/* Save button */}
+              {hasChanges && (
+                <Button
+                  onClick={handleSave}
+                  size="sm"
+                  className={`${saveStatus === "saved" ? "bg-green-500 hover:bg-green-600" : ""}`}
+                  disabled={saveStatus === "saving"}
+                >
+                  {saveStatus === "saving" ? "Saving..." : "Save"}
+                </Button>
+              )}
             </div>
-          )}
+          </div>
           
-          {breadcrumbs.length === 0 && (
-            <div className="flex items-center">
-              <span className="mx-1 text-gray-500">/</span>
-              <span className="px-2 py-1 font-medium text-primary bg-gray-800 rounded">
-                {selectedNote.content.split('\n')[0].slice(0, 20)}
-                {selectedNote.content.length > 20 ? '...' : ''}
-              </span>
-            </div>
-          )}
-        </div>
-        
-        {/* Only show save button when there are unsaved changes */}
-        {hasChanges && (
-          <Button
-            onClick={handleSave}
-            className={`
-              flex items-center space-x-1
-              ${saveStatus === "saved" ? "bg-green-500 hover:bg-green-600" : ""}
-            `}
-            disabled={saveStatus === "saving"}
-          >
-            <Save size={16} />
-            <span>{saveStatus === "saving" ? "Saving..." : "Save"}</span>
-          </Button>
-        )}
-      </div>
-
-      {/* Compact note editor form */}
-      <div className="p-3 flex-1 overflow-auto bg-gray-950">
-        <div className="bg-gray-900 rounded-lg shadow-md border border-gray-800 p-3 mx-auto note-editor-form">
-          {/* Content area - more compact now */}
-          <div className="mb-3">
-            <Label htmlFor="noteContent" className="block text-xs font-medium text-gray-400 mb-1">
-              Edit Content
-            </Label>
+          {/* Full-height textarea */}
+          <div className="flex-1 flex flex-col overflow-hidden">
             <Textarea 
-              id="noteContent" 
+              id="noteContentFullscreen" 
               ref={contentRef}
-              rows={6} 
-              className="w-full p-2 text-sm bg-gray-850 border-gray-700 focus:border-primary"
+              className="flex-1 w-full p-4 text-base bg-gray-950 border-none focus:border-none focus:ring-0 resize-none"
               placeholder="Enter note content..."
               value={content}
               onChange={handleContentChange}
               onBlur={handleBlur}
+              style={{ minHeight: '100%', height: '100%' }}
             />
           </div>
+          
+          {/* Mobile footer */}
+          <div className="bg-gray-900 border-t border-gray-800 p-2 flex justify-around">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => {
+                const fileInput = document.getElementById('image-upload-mobile') as HTMLInputElement;
+                if (fileInput) fileInput.click();
+              }}
+              className="text-primary"
+            >
+              <ImagePlus size={16} />
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => {
+                setIsDiscussion(!isDiscussion);
+                setHasChanges(true);
+              }}
+              className={isDiscussion ? "text-blue-400" : "text-gray-400"}
+            >
+              <CheckCircle2 size={16} />
+            </Button>
+            
+            <Popover.Root>
+              <Popover.Trigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className={timeSet ? "text-purple-400" : "text-gray-400"}
+                >
+                  <Clock size={16} />
+                </Button>
+              </Popover.Trigger>
+              <Popover.Content 
+                className="bg-gray-850 border border-gray-700 p-4 rounded-md shadow-lg z-50"
+                sideOffset={5}
+              >
+                <div className="flex flex-col space-y-4">
+                  <Input 
+                    type="time"
+                    value={timeSet ? (timeSet.includes(':') ? timeSet.split(':').slice(0, 2).join(':') : timeSet) : ""}
+                    onChange={(e) => handleTimeChange(e.target.value)}
+                    className="text-lg px-3 py-2 h-10 bg-gray-800 border-gray-600 focus:border-primary"
+                  />
+                  <div className="flex justify-between">
+                    <Button
+                      variant="outline"
+                      className="border-gray-700 hover:bg-gray-800"
+                      onClick={() => handleTimeChange(null)}
+                    >
+                      Clear
+                    </Button>
+                    <Popover.Close asChild>
+                      <Button onClick={handleApplyTime}>Apply</Button>
+                    </Popover.Close>
+                  </div>
+                </div>
+              </Popover.Content>
+            </Popover.Root>
+            
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => {
+                if (externalUrl) {
+                  setExternalUrl("");
+                  setUrlDisplayText("");
+                } else {
+                  // Set a default URL if empty
+                  setExternalUrl("https://");
+                  setHasChanges(true);
+                }
+              }}
+              className={externalUrl ? "text-green-400" : "text-gray-400"}
+            >
+              <Link size={16} />
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => {
+                if (youtubeUrl) {
+                  setYoutubeUrl("");
+                } else {
+                  // Set a default YouTube URL if empty
+                  setYoutubeUrl("https://youtube.com/watch?v=");
+                  setHasChanges(true);
+                }
+              }}
+              className={youtubeUrl ? "text-red-400" : "text-gray-400"}
+            >
+              <Youtube size={16} />
+            </Button>
+          </div>
+          
+          {/* Hidden file input for mobile */}
+          <input
+            id="image-upload-mobile"
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={async (e) => {
+              const files = e.target.files;
+              if (!files || files.length === 0 || !selectedNote) return;
+              
+              const file = files[0];
+              if (!file.type.startsWith('image/')) {
+                toast({
+                  title: "Invalid File",
+                  description: "Please select an image file",
+                  variant: "destructive",
+                });
+                return;
+              }
+              
+              // Check file size (limit to 5MB)
+              if (file.size > 5 * 1024 * 1024) {
+                toast({
+                  title: "File Too Large",
+                  description: "Image file must be less than 5MB",
+                  variant: "destructive",
+                });
+                return;
+              }
+              
+              try {
+                // Upload the image using context
+                const image = await notesContext.uploadImage?.(selectedNote.id, file);
+                
+                if (image) {
+                  toast({
+                    title: "Image Uploaded",
+                    description: "Image has been added to the note",
+                  });
+                  
+                  // Reset the file input
+                  e.target.value = '';
+                }
+              } catch (error) {
+                console.error('Error uploading image:', error);
+                toast({
+                  title: "Upload Failed",
+                  description: "There was a problem uploading the image",
+                  variant: "destructive",
+                });
+              }
+            }}
+          />
+        </div>
+      ) : (
+        /* DESKTOP REGULAR EDIT MODE */
+        <>
+          {/* Toolbar with breadcrumbs */}
+          <div className="bg-gray-900 border-b border-gray-800 p-2 flex items-center justify-between shadow-sm">
+            <div className="breadcrumbs text-sm text-gray-400 flex items-center overflow-x-auto whitespace-nowrap">
+              <span className="px-2 py-1 cursor-pointer hover:bg-gray-800 rounded">Root</span>
+              
+              {breadcrumbs.map((crumb, index) => (
+                <div key={crumb.id} className="flex items-center">
+                  <span className="mx-1 text-gray-500">/</span>
+                  <span className="px-2 py-1 cursor-pointer hover:bg-gray-800 rounded">
+                    {crumb.content.split('\n')[0].slice(0, 20)}
+                    {crumb.content.length > 20 ? '...' : ''}
+                  </span>
+                </div>
+              ))}
+              
+              {breadcrumbs.length > 0 && (
+                <div className="flex items-center">
+                  <span className="mx-1 text-gray-500">/</span>
+                  <span className="px-2 py-1 font-medium text-primary bg-gray-800 rounded">
+                    {selectedNote.content.split('\n')[0].slice(0, 20)}
+                    {selectedNote.content.length > 20 ? '...' : ''}
+                  </span>
+                </div>
+              )}
+              
+              {breadcrumbs.length === 0 && (
+                <div className="flex items-center">
+                  <span className="mx-1 text-gray-500">/</span>
+                  <span className="px-2 py-1 font-medium text-primary bg-gray-800 rounded">
+                    {selectedNote.content.split('\n')[0].slice(0, 20)}
+                    {selectedNote.content.length > 20 ? '...' : ''}
+                  </span>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {/* Toggle fullscreen button */}
+              <Button
+                onClick={toggleFullscreenMode}
+                variant="ghost"
+                size="sm"
+                className="flex items-center space-x-1 text-gray-400 hover:text-white"
+              >
+                {isFullscreenEditMode ? <Minimize size={16} /> : <Expand size={16} />}
+              </Button>
+              
+              {/* Only show save button when there are unsaved changes */}
+              {hasChanges && (
+                <Button
+                  onClick={handleSave}
+                  className={`
+                    flex items-center space-x-1
+                    ${saveStatus === "saved" ? "bg-green-500 hover:bg-green-600" : ""}
+                  `}
+                  disabled={saveStatus === "saving"}
+                >
+                  <Save size={16} />
+                  <span>{saveStatus === "saving" ? "Saving..." : "Save"}</span>
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Desktop editor form */}
+          <div className="p-3 flex-1 overflow-auto bg-gray-950">
+            <div className="bg-gray-900 rounded-lg shadow-md border border-gray-800 p-3 mx-auto note-editor-form">
+              {/* Content area */}
+              <div className="mb-3">
+                <Label htmlFor="noteContent" className="block text-xs font-medium text-gray-400 mb-1">
+                  Edit Content
+                </Label>
+                <Textarea 
+                  id="noteContent" 
+                  ref={contentRef}
+                  rows={6} 
+                  className="w-full p-2 text-sm bg-gray-850 border-gray-700 focus:border-primary"
+                  placeholder="Enter note content..."
+                  value={content}
+                  onChange={handleContentChange}
+                  onBlur={handleBlur}
+                />
+              </div>
+              
+              {/* Optional fields in tabs */}
+              <div className="border-t border-gray-800 pt-2 mt-2">
+                <div className="grid grid-cols-1 gap-2">
+                  {/* YouTube URL - more compact */}
+                  <div className="flex items-center space-x-2">
+                    <div className="flex-shrink-0">
+                      <Youtube size={14} className="text-gray-400" />
+                    </div>
+                    <Input
+                      type="url"
+                      id="youtubeUrl"
+                      ref={youtubeUrlRef}
+                      className="h-8 text-xs bg-gray-850 border-gray-700"
+                      placeholder="YouTube URL (optional)"
+                      value={youtubeUrl}
+                      onChange={handleYoutubeUrlChange}
+                      onBlur={handleBlur}
+                    />
+                  </div>
+                  
+                  {/* External URL - more compact */}
+                  <div className="flex items-center space-x-2">
+                    <div className="flex-shrink-0">
+                      <Link size={14} className="text-gray-400" />
+                    </div>
+                    <Input
+                      type="url"
+                      id="externalUrl"
+                      ref={externalUrlRef}
+                      className="h-8 text-xs bg-gray-850 border-gray-700"
+                      placeholder="Link URL (optional)"
+                      value={externalUrl}
+                      onChange={handleExternalUrlChange}
+                      onBlur={handleBlur}
+                    />
+                  </div>
+                  
+                  {/* URL Display Text - only show if URL is entered */}
+                  {externalUrl && (
+                    <div className="flex items-center space-x-2 ml-5">
+                      <Input
+                        type="text"
+                        id="urlDisplayText"
+                        ref={urlDisplayTextRef}
+                        className="h-8 text-xs bg-gray-850 border-gray-700"
+                        placeholder="Link text (optional)"
+                        value={urlDisplayText}
+                        onChange={handleUrlDisplayTextChange}
+                        onBlur={handleBlur}
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Time Picker - simple standard input */}
+                  <div className="flex flex-col space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <div className="flex-shrink-0">
+                        <Clock size={14} className="text-gray-400" />
+                      </div>
+                      <Label className="text-xs text-gray-400">
+                        Set time (optional)
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Popover.Root>
+                        <Popover.Trigger asChild>
+                          <Button 
+                            variant="outline"
+                            className="h-9 px-4 flex items-center justify-between bg-gray-850 border-gray-700 hover:bg-gray-800 hover:border-gray-600 w-32"
+                          >
+                            <span className="text-sm">
+                              {timeSet ? (timeSet.includes(':') ? timeSet.split(':').slice(0, 2).join(':') : timeSet) : "Set time"}
+                            </span>
+                            <Clock size={14} className="ml-2 text-gray-400" />
+                          </Button>
+                        </Popover.Trigger>
+                        <Popover.Content 
+                          className="bg-gray-850 border border-gray-700 p-4 rounded-md shadow-lg z-50"
+                          sideOffset={5}
+                        >
+                          <div className="flex flex-col space-y-4">
+                            <Input 
+                              type="time"
+                              value={timeSet ? (timeSet.includes(':') ? timeSet.split(':').slice(0, 2).join(':') : timeSet) : ""}
+                              onChange={(e) => handleTimeChange(e.target.value)}
+                              className="text-lg px-3 py-2 h-10 bg-gray-800 border-gray-600 focus:border-primary"
+                            />
+                            <div className="flex justify-between">
+                              <Button
+                                variant="outline"
+                                className="border-gray-700 hover:bg-gray-800"
+                                onClick={() => handleTimeChange(null)}
+                              >
+                                Clear
+                              </Button>
+                              <Popover.Close asChild>
+                                <Button onClick={handleApplyTime}>Apply</Button>
+                              </Popover.Close>
+                            </div>
+                          </div>
+                        </Popover.Content>
+                      </Popover.Root>
+                    </div>
+                  </div>
+                  
+                  {/* Discussion Flag - more compact */}
+                  <div className="flex items-center space-x-2 mt-1">
+                    <Checkbox
+                      id="isDiscussion"
+                      className="h-3 w-3 border-gray-600"
+                      checked={isDiscussion}
+                      onCheckedChange={handleDiscussionChange}
+                      onBlur={handleBlur}
+                    />
+                    <Label htmlFor="isDiscussion" className="text-xs text-gray-400">
+                      Mark as discussion
+                    </Label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Images Section */}
+              <div className="mt-3 border-t border-gray-800 pt-2">
+                <div className="text-xs text-gray-400 flex justify-between items-center mb-2">
+                  <span>Images</span>
+                  <label 
+                    htmlFor="image-upload" 
+                    className="inline-flex items-center text-primary hover:text-primary-hover cursor-pointer text-xs"
+                  >
+                    <ImagePlus size={14} className="mr-1" />
+                    <span>Add Image</span>
+                    <input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const files = e.target.files;
+                        if (!files || files.length === 0 || !selectedNote) return;
+                        
+                        const file = files[0];
+                        if (!file.type.startsWith('image/')) {
+                          toast({
+                            title: "Invalid File",
+                            description: "Please select an image file",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                        
+                        // Check file size (limit to 5MB)
+                        if (file.size > 5 * 1024 * 1024) {
+                          toast({
+                            title: "File Too Large",
+                            description: "Image file must be less than 5MB",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                        
+                        try {
+                          // Upload the image using context
+                          const image = await notesContext.uploadImage?.(selectedNote.id, file);
+                          
+                          if (image) {
+                            toast({
+                              title: "Image Uploaded",
+                              description: "Image has been added to the note",
+                            });
+                            
+                            // Reset the file input
+                            e.target.value = '';
+                          }
+                        } catch (error) {
+                          console.error('Error uploading image:', error);
+                          toast({
+                            title: "Upload Failed",
+                            description: "There was a problem uploading the image",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+                
+                {/* Display images if any */}
+                {selectedNote.images && selectedNote.images.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                    {/* Deduplicate images by converting to a Map using ID as key, then back to array */}
+                    {Array.from(
+                      // Create a Map with image ID as key to eliminate duplicates
+                      new Map(
+                        selectedNote.images.map(img => [img.id, img])
+                      ).values()
+                    )
+                    // Sort by position after deduplication
+                    .sort((a, b) => a.position - b.position)
+                    .map((image) => (
+                      <div 
+                        key={`image-${image.id}`} 
+                        className="relative group border border-gray-800 rounded-md overflow-hidden"
+                      >
+                        <img 
+                          src={image.url} 
+                          alt="Note attachment" 
+                          className="w-full h-auto object-cover cursor-pointer"
+                          onClick={() => window.open(image.url, '_blank')}
+                        />
+                        <div className="absolute top-0 right-0 p-1 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
+                          {/* Move up button */}
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 bg-gray-900/80 hover:bg-gray-800 rounded-full"
+                            onClick={async () => {
+                              if (image.position > 0 && notesContext.reorderImage && selectedNote.id && image.id) {
+                                await notesContext.reorderImage(selectedNote.id, image.id, image.position - 1);
+                              }
+                            }}
+                            disabled={image.position === 0}
+                          >
+                            <ArrowUp size={14} />
+                          </Button>
+                          
+                          {/* Move down button */}
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 bg-gray-900/80 hover:bg-gray-800 rounded-full"
+                            onClick={async () => {
+                              const maxPosition = (selectedNote.images?.length || 1) - 1;
+                              if (image.position < maxPosition && notesContext.reorderImage && selectedNote.id && image.id) {
+                                await notesContext.reorderImage(selectedNote.id, image.id, image.position + 1);
+                              }
+                            }}
+                            disabled={image.position === (selectedNote.images?.length || 1) - 1}
+                          >
+                            <ArrowDown size={14} />
+                          </Button>
+                          
+                          {/* Delete button */}
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 bg-gray-900/80 hover:bg-red-900/80 text-gray-400 hover:text-red-300 rounded-full"
+                            onClick={async () => {
+                              if (confirm('Are you sure you want to remove this image?') && notesContext.removeImage && image.id) {
+                                await notesContext.removeImage(image.id);
+                              }
+                            }}
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Links Section */}
+              {(youtubeUrl || externalUrl) && (
+                <div className="mt-3 border-t border-gray-800 pt-2">
+                  <div className="text-xs text-gray-400 flex justify-between items-center mb-1">
+                    <span>Links</span>
+                    <div className="flex space-x-2">
+                      {youtubeUrl && (
+                        <a 
+                          href={youtubeUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-red-400 hover:text-red-300 text-xs"
+                        >
+                          <Youtube size={12} className="mr-1" />
+                          <span>YouTube</span>
+                        </a>
+                      )}
+                      
+                      {externalUrl && (
+                        <a 
+                          href={externalUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-blue-400 hover:text-blue-300 text-xs"
+                        >
+                          <Link size={12} className="mr-1" />
+                          <span>{urlDisplayText || "Link"}</span>
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
           
           {/* Optional fields in tabs */}
           <div className="border-t border-gray-800 pt-2 mt-2">
