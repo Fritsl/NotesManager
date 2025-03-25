@@ -422,6 +422,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                   placeholder="Enter note content..."
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
                   autoFocus
                 />
 
@@ -435,6 +437,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                       className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
                       value={editTimeSet || ''}
                       onChange={(e) => setEditTimeSet(e.target.value ? e.target.value : null)}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                     />
                   </div>
                   
@@ -457,6 +461,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                       placeholder="https://youtube.com/watch?v=..."
                       value={editYoutubeUrl || ''}
                       onChange={(e) => setEditYoutubeUrl(e.target.value || null)}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                     />
                   </div>
                   
