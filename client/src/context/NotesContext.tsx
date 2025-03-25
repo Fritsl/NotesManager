@@ -235,9 +235,12 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       setCurrentProjectName(projectName);
     }
     
-    // Set current project ID if provided, otherwise set to null
-    // This ensures local imports don't have a projectId but database loads do
-    setCurrentProjectId(projectId || null);
+    // Only update the project ID if explicitly provided
+    // Otherwise keep the current project ID to maintain save functionality
+    if (projectId !== undefined) {
+      setCurrentProjectId(projectId || null);
+    }
+    // currentProjectId remains unchanged if projectId is undefined
     
     // Always set hasActiveProject to true when importing notes
     setHasActiveProject(true);
