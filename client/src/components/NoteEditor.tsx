@@ -456,7 +456,7 @@ export default function NoteEditor() {
               variant="ghost"
               size="sm"
               onClick={() => {
-                const fileInput = document.getElementById(`image-upload-${selectedNote?.id}`) as HTMLInputElement;
+                const fileInput = document.getElementById(`file-upload-${selectedNote?.id}`) as HTMLInputElement;
                 fileInput?.click();
               }}
               className="text-primary"
@@ -464,38 +464,31 @@ export default function NoteEditor() {
               <ImagePlus size={16} />
             </Button>
 
-            {/* Hidden file input for mobile */}
             <input
-              id={`image-upload-${selectedNote?.id}`}
               type="file"
-              accept="image/*"
+              id={`file-upload-${selectedNote?.id}`}
               className="hidden"
+              accept="image/*"
               onChange={async (e) => {
-                const files = e.target.files;
-                if (!files || files.length === 0 || !selectedNote) return;
-
-                const file = files[0];
-                if (!file.type.startsWith('image/')) {
-                  console.log("Invalid file type:", file.type);
-                  return;
-                }
-
-                // Check file size (limit to 5MB)
-                if (file.size > 5 * 1024 * 1024) {
-                  console.log("File too large:", file.size);
-                  return;
-                }
-
-                try {
-                  // Upload the image using context
-                  const image = await notesContext.uploadImage?.(selectedNote.id, file);
-
-                  if (image) {
-                    // Reset the file input
-                    e.target.value = '';
+                const file = e.target.files?.[0];
+                if (file && selectedNote) {
+                  try {
+                    const image = await notesContext.uploadImage?.(selectedNote.id, file);
+                    if (image) {
+                      e.target.value = '';
+                      toast({
+                        title: "Image Uploaded",
+                        description: "Image has been added to the note",
+                      });
+                    }
+                  } catch (error) {
+                    console.error("Failed to upload image:", error);
+                    toast({
+                      title: "Upload Failed",
+                      description: "Could not upload image. Please try again.",
+                      variant: "destructive",
+                    });
                   }
-                } catch (error) {
-                  console.error('Error uploading image:', error);
                 }
               }}
             />
