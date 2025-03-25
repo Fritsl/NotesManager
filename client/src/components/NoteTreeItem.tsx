@@ -11,7 +11,15 @@ import MoveNoteModal from "./MoveNoteModal";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import ImageWithFallback from "@/components/ui/image-with-fallback";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
