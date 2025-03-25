@@ -44,13 +44,12 @@ export default function ProjectDescriptionModal({ isOpen, onClose }: ProjectDesc
       // Update the project description in context
       setCurrentProjectDescription(description);
       
-      // Save the project with updated description
+      // Save the project directly to the online database
+      console.log('Direct save of project description to online database');
       await saveProject();
+      console.log('Project description saved to online database');
       
-      toast({
-        title: 'Success',
-        description: 'Project description updated successfully',
-      });
+      // Minimal toast notification (removed)
       onClose();
     } catch (error) {
       console.error('Error saving project description:', error);

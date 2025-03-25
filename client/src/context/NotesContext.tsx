@@ -511,7 +511,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const isMovingRef = useRef<boolean>(false);
   
   // Move a note in the tree
-  const moveNote = useCallback((noteId: string, targetParentId: string | null, position: number) => {
+  const moveNote = useCallback(async (noteId: string, targetParentId: string | null, position: number) => {
     // Prevent multiple drop handlers from triggering simultaneously
     if (isMovingRef.current) {
       console.log("⚠️ Ignoring duplicate move operation - operation already in progress");
@@ -527,6 +527,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     }, 200); // 200ms should be enough to block duplicate events
     
     console.log(`📌 MOVING note ${noteId} to parent: ${targetParentId}, position: ${position}`);
+    
+    // Create a variable to store the result for saving to database
+    let finalNotes: Note[] = [];
     
     setNotes((prevNotes) => {
       const updatedNotes = [...prevNotes];
@@ -626,14 +629,29 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       
       // For complex moves that might affect multiple levels, 
       // use the full cleanNotePositions function to ensure consistency
-      return cleanNotePositions(updatedNotes);
+      const resultNotes = cleanNotePositions(updatedNotes);
+      
+      // Store the final notes for saving to database
+      finalNotes = resultNotes;
+      
+      return resultNotes;
     });
     
-    toast({
-      title: "Note Moved",
-      description: "The note has been moved to a new position",
-    });
-  }, [findNoteAndParent, cleanNotePositions, toast]);
+    // After updating the local state, save to the online database
+    if (currentProjectId && finalNotes.length > 0) {
+      try {
+        console.log('Auto-saving project after note movement');
+        
+        // Store a new update to avoid waiting for state to update
+        setTimeout(async () => {
+          await saveProject();
+          console.log('Project auto-saved after note movement');
+        }, 100);
+      } catch (error) {
+        console.error('Failed to auto-save after note movement:', error);
+      }
+    }
+  }, [findNoteAndParent, cleanNotePositions, currentProjectId, saveProject]);
 
   // Toggle expansion for a single node
   const toggleExpand = useCallback((noteId: string) => {
