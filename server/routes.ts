@@ -92,7 +92,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         for (const note of notes) {
           if (note.images && Array.isArray(note.images)) {
             imageCount += note.images.length;
+            
+            // IMPORTANT: Make sure all images follow the standard format
+            // This ensures compatibility with other applications using the same database
+            note.images.forEach((image: any) => {
+              // Ensure storage_path is correctly formatted (should be images/filename.ext)
+              if (image.storage_path) {
+                const pathParts = image.storage_path.split('/');
+                const fileName = pathParts[pathParts.length - 1];
+                
+                // Fix double path segments like "images/images/file.jpg"
+                if (image.storage_path.includes('/images/images/')) {
+                  console.log(`Fixing double path segments in image: ${image.storage_path}`);
+                  image.storage_path = `images/${fileName}`;
+                }
+                
+                // Make sure path starts with "images/"
+                if (!image.storage_path.startsWith('images/')) {
+                  console.log(`Adding images/ prefix to path: ${image.storage_path}`);
+                  image.storage_path = `images/${fileName}`;
+                }
+              }
+              
+              // Fix URL if it has double segments
+              if (image.url && image.url.includes('/images/images/')) {
+                const urlObj = new URL(image.url);
+                const pathParts = urlObj.pathname.split('/');
+                const fileName = pathParts[pathParts.length - 1];
+                
+                // Replace double path in URL
+                console.log(`Fixing double path segments in URL: ${image.url}`);
+                const newPath = urlObj.pathname.replace('/images/images/', '/images/');
+                image.url = image.url.replace(urlObj.pathname, newPath);
+              }
+            });
           }
+          
           if (note.children && Array.isArray(note.children)) {
             countImages(note.children);
           }
@@ -103,7 +138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         countImages(data.notes);
       }
       
-      console.log(`Project contains ${imageCount} images`);
+      console.log(`Project contains ${imageCount} images (normalized)`);
       
       // Store the project data in a file to bypass Supabase RLS
       const projectFilePath = path.join(projectsDir, `${id}.json`);
