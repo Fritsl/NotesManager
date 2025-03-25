@@ -1,0 +1,56 @@
+ there are a few key areas to investigate:
+
+Row Level Security (RLS) Policies:
+
+The error "new row violates row-level security policy" indicates the user doesn't have permission to insert rows into the note_images table
+Check if proper RLS policies exist for:
+The storage.objects table (for file uploads)
+The note_images table (for image metadata)
+Storage Bucket Configuration:
+
+Verify the storage bucket exists and is properly configured
+Check if the bucket has proper public/private settings
+Ensure RLS policies are set up for the bucket
+User Authentication:
+
+The 403 Unauthorized error suggests authentication issues
+Verify the user is properly authenticated
+Check if the auth token is being passed correctly
+Ensure the user has the 'authenticated' role
+Required Policies:
+Looking at this project's setup, you need these key policies:
+
+
+-- For storage.objects
+CREATE POLICY "Allow authenticated uploads"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+  bucket_id = 'note-images'
+  AND (LOWER(storage.extension(name)) = 'jpg' OR LOWER(storage.extension(name)) = 'jpeg' OR LOWER(storage.extension(name)) = 'png')
+);
+
+-- For note_images table
+CREATE POLICY "Users can insert their own note images"
+ON note_images FOR INSERT
+TO authenticated
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM notes
+    WHERE notes.id = note_images.note_id
+    AND notes.user_id = auth.uid()
+  )
+);
+Database Schema:
+
+Verify the note_images table exists and has the correct structure
+Check foreign key relationships are properly set up
+Ensure the notes table exists and has proper RLS policies
+To debug this:
+
+Check if RLS is enabled: SELECT relname, relrowsecurity FROM pg_class WHERE relname IN ('note_images', 'objects');
+View existing policies: SELECT * FROM pg_policies WHERE tablename IN ('note_images', 'objects');
+Verify storage bucket exists: SELECT * FROM storage.buckets WHERE id = 'note-images';
+Check user authentication state in the application
+Review the network requests to see the exact payload being sent
+The most common cause of this error is missing or incorrect RLS policies, so I'd start there.

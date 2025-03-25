@@ -79,52 +79,27 @@ export default function ImageTestPage() {
     try {
       setUploading(true);
       
-      // Generate a unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${uniqueId()}.${fileExt}`;
-      const filePath = `test_images/${fileName}`;
-      
-      // Step 1: Upload the file to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('note-images')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
-      
-      if (uploadError) {
-        throw uploadError;
-      }
-      
-      // Step 2: Get the public URL for the uploaded file
-      const { data: { publicUrl } } = supabase.storage
-        .from('note-images')
-        .getPublicUrl(filePath);
-      
-      // Step 3: Use server API to create a record in the note_images table (bypasses RLS)
+      // Use the all-in-one server-side upload API instead of direct Supabase storage
+      // This endpoint handles both file upload and database record creation
       const testNoteId = 'test-' + uniqueId();
       
-      // Use the API endpoint which has server-side permissions
       const formData = new FormData();
+      formData.append('image', file); // The file itself
       formData.append('noteId', testNoteId);
       formData.append('userId', 'test-user'); // A placeholder user ID for test uploads
-      formData.append('filePath', filePath);
-      formData.append('publicUrl', publicUrl);
       
-      // Use server API to create the record
-      const response = await fetch('/api/create-image-record', {
+      console.log("Sending upload request to server API...");
+      
+      // Use the server-side upload endpoint
+      const response = await fetch('/api/upload-image', {
         method: 'POST',
         body: formData,
       });
       
       if (!response.ok) {
-        // If API call fails, also delete the uploaded file
-        await supabase.storage
-          .from('note-images')
-          .remove([filePath]);
-          
         const errorData = await response.json();
-        throw new Error(`API error: ${errorData.error || response.statusText}`);
+        console.error('Error uploading image:', errorData);
+        throw new Error(`API error: ${errorData.error || errorData.message || response.statusText}`);
       }
       
       // Parse the successful response
@@ -161,6 +136,9 @@ export default function ImageTestPage() {
     try {
       setDeleting(image.id);
       
+      // TODO: Create a server-side image deletion endpoint
+      // For now, we'll still try the direct Supabase approach, but with better error handling
+      
       // Step 1: Delete the record from the database
       const { error: dbError } = await supabase
         .from('note_images')
@@ -168,7 +146,8 @@ export default function ImageTestPage() {
         .eq('id', image.id);
       
       if (dbError) {
-        throw dbError;
+        console.error('Database deletion error:', dbError.message);
+        throw new Error(`Failed to delete image record: ${dbError.message}`);
       }
       
       // Step 2: Delete the file from storage
@@ -210,7 +189,7 @@ export default function ImageTestPage() {
         <Card>
           <CardHeader>
             <CardTitle>Upload Test Image</CardTitle>
-            <CardDescription>Test the direct Supabase image upload functionality</CardDescription>
+            <CardDescription>Test server-side image upload functionality (bypasses RLS)</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
@@ -324,9 +303,9 @@ export default function ImageTestPage() {
               <h3 className="font-medium mb-2">Image Upload Process:</h3>
               <ol className="list-decimal list-inside space-y-2 text-sm">
                 <li>File is selected via the file input</li>
-                <li>File is uploaded directly to Supabase storage 'note-images' bucket with a unique name</li>
-                <li>Public URL is generated for the uploaded file</li>
-                <li>Image record is created in the 'note_images' table with note_id, storage_path, URL and position</li>
+                <li>File is sent to server-side API endpoint (/api/upload-image)</li>
+                <li>Server uploads the file to Supabase storage or falls back to local storage if needed</li>
+                <li>Server creates the image record in the database (bypassing RLS policies)</li>
                 <li>Image list is refreshed to show the newly uploaded image</li>
               </ol>
             </div>
