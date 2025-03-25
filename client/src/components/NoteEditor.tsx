@@ -287,38 +287,11 @@ export default function NoteEditor() {
     setYoutubeUrl(newUrl);
     setHasChanges(true);
     
-    // Auto-save after URL change, using debounce
-    if (saveDebounceTimeout) {
-      clearTimeout(saveDebounceTimeout);
-    }
-    
-    const timeout = setTimeout(() => {
-      if (selectedNote && contentRef.current) {
-        // Get the latest content directly from the DOM reference
-        const currentContent = contentRef.current.value;
-        
-        // Update local state to keep it in sync
-        setContent(currentContent);
-        
-        const updatedNote = {
-          ...selectedNote,
-          content: currentContent, // Use the latest content from DOM reference
-          youtube_url: newUrl || null,
-          url: externalUrl || null,
-          url_display_text: externalUrl ? (urlDisplayText || null) : null,
-          is_discussion: isDiscussion,
-          time_set: timeSet,
-        };
-        
-        // Update in context and save to database
-        updateNote(updatedNote);
-        saveProject().catch(error => {
-          console.error("Failed to auto-save note after YouTube URL change:", error);
-        });
-      }
-    }, 1000); // 1 second debounce
-    
-    setSaveDebounceTimeout(timeout);
+    // Call the manual save function directly to ensure content is saved properly
+    // This is the only reliable way to save that works
+    setTimeout(() => {
+      handleSave();
+    }, 100);
   };
   
   const handleExternalUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -326,38 +299,11 @@ export default function NoteEditor() {
     setExternalUrl(newUrl);
     setHasChanges(true);
     
-    // Auto-save after URL change, using debounce
-    if (saveDebounceTimeout) {
-      clearTimeout(saveDebounceTimeout);
-    }
-    
-    const timeout = setTimeout(() => {
-      if (selectedNote && contentRef.current) {
-        // Get the latest content directly from the DOM reference
-        const currentContent = contentRef.current.value;
-        
-        // Update local state to keep it in sync
-        setContent(currentContent);
-        
-        const updatedNote = {
-          ...selectedNote,
-          content: currentContent, // Use the latest content from DOM reference
-          youtube_url: youtubeUrl || null,
-          url: newUrl || null,
-          url_display_text: newUrl ? (urlDisplayText || null) : null,
-          is_discussion: isDiscussion,
-          time_set: timeSet,
-        };
-        
-        // Update in context and save to database
-        updateNote(updatedNote);
-        saveProject().catch(error => {
-          console.error("Failed to auto-save note after external URL change:", error);
-        });
-      }
-    }, 1000); // 1 second debounce
-    
-    setSaveDebounceTimeout(timeout);
+    // Call the manual save function directly to ensure content is saved properly
+    // This is the only reliable way to save that works
+    setTimeout(() => {
+      handleSave();
+    }, 100);
   };
   
   const handleUrlDisplayTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -365,38 +311,11 @@ export default function NoteEditor() {
     setUrlDisplayText(newText);
     setHasChanges(true);
     
-    // Auto-save after URL display text change, using debounce
-    if (saveDebounceTimeout) {
-      clearTimeout(saveDebounceTimeout);
-    }
-    
-    const timeout = setTimeout(() => {
-      if (selectedNote && externalUrl && contentRef.current) {
-        // Get the latest content directly from the DOM reference
-        const currentContent = contentRef.current.value;
-        
-        // Update local state to keep it in sync
-        setContent(currentContent);
-        
-        const updatedNote = {
-          ...selectedNote,
-          content: currentContent, // Use the latest content from DOM reference
-          youtube_url: youtubeUrl || null,
-          url: externalUrl || null,
-          url_display_text: newText || null,
-          is_discussion: isDiscussion,
-          time_set: timeSet,
-        };
-        
-        // Update in context and save to database
-        updateNote(updatedNote);
-        saveProject().catch(error => {
-          console.error("Failed to auto-save note after URL display text change:", error);
-        });
-      }
-    }, 1000); // 1 second debounce
-    
-    setSaveDebounceTimeout(timeout);
+    // Call the manual save function directly to ensure content is saved properly
+    // This is the only reliable way to save that works
+    setTimeout(() => {
+      handleSave();
+    }, 100);
   };
   
   const handleDiscussionChange = (checked: boolean | "indeterminate") => {
@@ -624,32 +543,11 @@ export default function NoteEditor() {
                 setIsDiscussion(newValue);
                 setHasChanges(true);
                 
-                // Save immediately to prevent content loss
-                if (selectedNote && contentRef.current) {
-                  // Get the latest content directly from the DOM reference
-                  const currentContent = contentRef.current.value;
-                  
-                  // Update local state to keep it in sync
-                  setContent(currentContent);
-                  
-                  const updatedNote = {
-                    ...selectedNote,
-                    content: currentContent, // Get the latest content from DOM reference
-                    youtube_url: youtubeUrl || null,
-                    url: externalUrl || null,
-                    url_display_text: externalUrl ? (urlDisplayText || null) : null,
-                    is_discussion: newValue,
-                    time_set: timeSet,
-                  };
-                  
-                  // Update in context
-                  updateNote(updatedNote);
-                  
-                  // Save to database
-                  saveProject().catch(error => {
-                    console.error("Failed to save note after discussion change in mobile view:", error);
-                  });
-                }
+                // Call the manual save function to ensure content is saved properly
+                // This is the only reliable way to save that works
+                setTimeout(() => {
+                  handleSave();
+                }, 100);
               }}
               className={isDiscussion ? "text-blue-400" : "text-gray-400"}
             >
@@ -715,32 +613,11 @@ export default function NoteEditor() {
                 setUrlDisplayText(newDisplayText);
                 setHasChanges(true);
                 
-                // Save immediately to prevent content loss
-                if (selectedNote && contentRef.current) {
-                  // Get the latest content directly from the DOM reference
-                  const currentContent = contentRef.current.value;
-                  
-                  // Update local state to keep it in sync
-                  setContent(currentContent);
-                  
-                  const updatedNote = {
-                    ...selectedNote,
-                    content: currentContent, // Get the latest content from DOM reference
-                    youtube_url: youtubeUrl || null,
-                    url: newUrl || null,
-                    url_display_text: newUrl ? (newDisplayText || null) : null,
-                    is_discussion: isDiscussion,
-                    time_set: timeSet,
-                  };
-                  
-                  // Update in context
-                  updateNote(updatedNote);
-                  
-                  // Save to database
-                  saveProject().catch(error => {
-                    console.error("Failed to save note after URL change in mobile view:", error);
-                  });
-                }
+                // Call the manual save function to ensure content is saved properly
+                // This is the only reliable way to save that works
+                setTimeout(() => {
+                  handleSave();
+                }, 100);
               }}
               className={externalUrl ? "text-green-400" : "text-gray-400"}
             >
@@ -765,32 +642,11 @@ export default function NoteEditor() {
                 setYoutubeUrl(newYoutubeUrl);
                 setHasChanges(true);
                 
-                // Save immediately to prevent content loss
-                if (selectedNote && contentRef.current) {
-                  // Get the latest content directly from the DOM reference
-                  const currentContent = contentRef.current.value;
-                  
-                  // Update local state to keep it in sync
-                  setContent(currentContent);
-                  
-                  const updatedNote = {
-                    ...selectedNote,
-                    content: currentContent, // Get the latest content from DOM reference
-                    youtube_url: newYoutubeUrl || null,
-                    url: externalUrl || null,
-                    url_display_text: externalUrl ? (urlDisplayText || null) : null,
-                    is_discussion: isDiscussion,
-                    time_set: timeSet,
-                  };
-                  
-                  // Update in context
-                  updateNote(updatedNote);
-                  
-                  // Save to database
-                  saveProject().catch(error => {
-                    console.error("Failed to save note after YouTube URL change in mobile view:", error);
-                  });
-                }
+                // Call the manual save function to ensure content is saved properly
+                // This is the only reliable way to save that works
+                setTimeout(() => {
+                  handleSave();
+                }, 100);
               }}
               className={youtubeUrl ? "text-red-400" : "text-gray-400"}
             >
