@@ -222,35 +222,172 @@ export default function NoteEditor() {
     };
   }, [selectedNote, hasChanges, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, timeSet, updateNote, saveProject]);
   
-  // Set up change tracking with proper state updates
+  // Set up debounced auto-save for content changes
+  const [saveDebounceTimeout, setSaveDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
+  
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    // Update the state with new content
     const newContent = e.target.value;
     setContent(newContent);
     setHasChanges(true);
+    
+    // Clear existing debounce if any
+    if (saveDebounceTimeout) {
+      clearTimeout(saveDebounceTimeout);
+    }
+    
+    // Save after a short delay to avoid too many saves while typing
+    const timeout = setTimeout(() => {
+      if (selectedNote) {
+        // Create updated note with all the current properties
+        const updatedNote = {
+          ...selectedNote,
+          content: newContent,
+          youtube_url: youtubeUrl || null,
+          url: externalUrl || null,
+          url_display_text: externalUrl ? (urlDisplayText || null) : null,
+          is_discussion: isDiscussion,
+          time_set: timeSet,
+        };
+        
+        // Update in context
+        updateNote(updatedNote);
+        
+        // Save to database in the background
+        saveProject().catch(error => {
+          console.error("Failed to auto-save note after content change:", error);
+        });
+      }
+    }, 1500); // 1.5 second debounce
+    
+    // Save the timeout ID so we can clear it if needed
+    setSaveDebounceTimeout(timeout);
   };
   
   const handleYoutubeUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newUrl = e.target.value;
     setYoutubeUrl(newUrl);
     setHasChanges(true);
+    
+    // Auto-save after URL change, using debounce
+    if (saveDebounceTimeout) {
+      clearTimeout(saveDebounceTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      if (selectedNote) {
+        const updatedNote = {
+          ...selectedNote,
+          content, // Preserve current content
+          youtube_url: newUrl || null,
+          url: externalUrl || null,
+          url_display_text: externalUrl ? (urlDisplayText || null) : null,
+          is_discussion: isDiscussion,
+          time_set: timeSet,
+        };
+        
+        // Update in context and save to database
+        updateNote(updatedNote);
+        saveProject().catch(error => {
+          console.error("Failed to auto-save note after YouTube URL change:", error);
+        });
+      }
+    }, 1000); // 1 second debounce
+    
+    setSaveDebounceTimeout(timeout);
   };
   
   const handleExternalUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newUrl = e.target.value;
     setExternalUrl(newUrl);
     setHasChanges(true);
+    
+    // Auto-save after URL change, using debounce
+    if (saveDebounceTimeout) {
+      clearTimeout(saveDebounceTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      if (selectedNote) {
+        const updatedNote = {
+          ...selectedNote,
+          content, // Preserve current content
+          youtube_url: youtubeUrl || null,
+          url: newUrl || null,
+          url_display_text: newUrl ? (urlDisplayText || null) : null,
+          is_discussion: isDiscussion,
+          time_set: timeSet,
+        };
+        
+        // Update in context and save to database
+        updateNote(updatedNote);
+        saveProject().catch(error => {
+          console.error("Failed to auto-save note after external URL change:", error);
+        });
+      }
+    }, 1000); // 1 second debounce
+    
+    setSaveDebounceTimeout(timeout);
   };
   
   const handleUrlDisplayTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newText = e.target.value;
     setUrlDisplayText(newText);
     setHasChanges(true);
+    
+    // Auto-save after URL display text change, using debounce
+    if (saveDebounceTimeout) {
+      clearTimeout(saveDebounceTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      if (selectedNote && externalUrl) {
+        const updatedNote = {
+          ...selectedNote,
+          content, // Preserve current content
+          youtube_url: youtubeUrl || null,
+          url: externalUrl || null,
+          url_display_text: newText || null,
+          is_discussion: isDiscussion,
+          time_set: timeSet,
+        };
+        
+        // Update in context and save to database
+        updateNote(updatedNote);
+        saveProject().catch(error => {
+          console.error("Failed to auto-save note after URL display text change:", error);
+        });
+      }
+    }, 1000); // 1 second debounce
+    
+    setSaveDebounceTimeout(timeout);
   };
   
   const handleDiscussionChange = (checked: boolean | "indeterminate") => {
     const newValue = checked === true;
     setIsDiscussion(newValue);
     setHasChanges(true);
+    
+    // Immediately update the note with current content and changed discussion status
+    if (selectedNote) {
+      const updatedNote = {
+        ...selectedNote,
+        content, // Include current content
+        youtube_url: youtubeUrl || null,
+        url: externalUrl || null,
+        url_display_text: externalUrl ? (urlDisplayText || null) : null,
+        is_discussion: newValue,
+        time_set: timeSet,
+      };
+      
+      // Update in context
+      updateNote(updatedNote);
+      
+      // Save to database
+      saveProject().catch(error => {
+        console.error("Failed to save note after discussion change:", error);
+      });
+    }
   };
   
   const handleTimeChange = (value: string | null) => {
@@ -271,14 +408,26 @@ export default function NoteEditor() {
     setTimeSet(formattedTime);
     setHasChanges(true);
     
-    // Immediate save if needed
+    // Immediate save to prevent content loss
     if (selectedNote) {
-      // Update the note with the new time
+      // Update the note with both the new time and current content
       const updatedNote = {
         ...selectedNote,
-        time_set: formattedTime
+        content, // Preserve current content
+        youtube_url: youtubeUrl || null,
+        url: externalUrl || null,
+        url_display_text: externalUrl ? (urlDisplayText || null) : null,
+        is_discussion: isDiscussion,
+        time_set: formattedTime,
       };
+      
+      // Update in context
       updateNote(updatedNote);
+      
+      // Save to database
+      saveProject().catch(error => {
+        console.error("Failed to save note after time change:", error);
+      });
     }
   };
   
@@ -459,8 +608,31 @@ export default function NoteEditor() {
               variant="ghost" 
               size="sm"
               onClick={() => {
-                setIsDiscussion(!isDiscussion);
+                // Toggle discussion flag
+                const newValue = !isDiscussion;
+                setIsDiscussion(newValue);
                 setHasChanges(true);
+                
+                // Save immediately to prevent content loss
+                if (selectedNote) {
+                  const updatedNote = {
+                    ...selectedNote,
+                    content, // Preserve current content
+                    youtube_url: youtubeUrl || null,
+                    url: externalUrl || null,
+                    url_display_text: externalUrl ? (urlDisplayText || null) : null,
+                    is_discussion: newValue,
+                    time_set: timeSet,
+                  };
+                  
+                  // Update in context
+                  updateNote(updatedNote);
+                  
+                  // Save to database
+                  saveProject().catch(error => {
+                    console.error("Failed to save note after discussion change in mobile view:", error);
+                  });
+                }
               }}
               className={isDiscussion ? "text-blue-400" : "text-gray-400"}
             >
@@ -508,13 +680,43 @@ export default function NoteEditor() {
               variant="ghost" 
               size="sm"
               onClick={() => {
+                // Toggle external URL
+                let newUrl = "";
+                let newDisplayText = "";
+                
                 if (externalUrl) {
-                  setExternalUrl("");
-                  setUrlDisplayText("");
+                  // Clear URL if already set
+                  newUrl = "";
+                  newDisplayText = "";
                 } else {
                   // Set a default URL if empty
-                  setExternalUrl("https://");
-                  setHasChanges(true);
+                  newUrl = "https://";
+                  newDisplayText = "";
+                }
+                
+                setExternalUrl(newUrl);
+                setUrlDisplayText(newDisplayText);
+                setHasChanges(true);
+                
+                // Save immediately to prevent content loss
+                if (selectedNote) {
+                  const updatedNote = {
+                    ...selectedNote,
+                    content, // Preserve current content
+                    youtube_url: youtubeUrl || null,
+                    url: newUrl || null,
+                    url_display_text: newUrl ? (newDisplayText || null) : null,
+                    is_discussion: isDiscussion,
+                    time_set: timeSet,
+                  };
+                  
+                  // Update in context
+                  updateNote(updatedNote);
+                  
+                  // Save to database
+                  saveProject().catch(error => {
+                    console.error("Failed to save note after URL change in mobile view:", error);
+                  });
                 }
               }}
               className={externalUrl ? "text-green-400" : "text-gray-400"}
@@ -526,12 +728,39 @@ export default function NoteEditor() {
               variant="ghost" 
               size="sm"
               onClick={() => {
+                // Toggle YouTube URL
+                let newYoutubeUrl = "";
+                
                 if (youtubeUrl) {
-                  setYoutubeUrl("");
+                  // Clear URL if already set
+                  newYoutubeUrl = "";
                 } else {
                   // Set a default YouTube URL if empty
-                  setYoutubeUrl("https://youtube.com/watch?v=");
-                  setHasChanges(true);
+                  newYoutubeUrl = "https://youtube.com/watch?v=";
+                }
+                
+                setYoutubeUrl(newYoutubeUrl);
+                setHasChanges(true);
+                
+                // Save immediately to prevent content loss
+                if (selectedNote) {
+                  const updatedNote = {
+                    ...selectedNote,
+                    content, // Preserve current content
+                    youtube_url: newYoutubeUrl || null,
+                    url: externalUrl || null,
+                    url_display_text: externalUrl ? (urlDisplayText || null) : null,
+                    is_discussion: isDiscussion,
+                    time_set: timeSet,
+                  };
+                  
+                  // Update in context
+                  updateNote(updatedNote);
+                  
+                  // Save to database
+                  saveProject().catch(error => {
+                    console.error("Failed to save note after YouTube URL change in mobile view:", error);
+                  });
                 }
               }}
               className={youtubeUrl ? "text-red-400" : "text-gray-400"}
