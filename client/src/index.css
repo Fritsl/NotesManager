@@ -33,7 +33,15 @@
   }
   
   .note-item-content {
-    @apply p-3 rounded-md transition-all duration-150;
+    @apply p-4 rounded-md transition-all duration-150 flex flex-col gap-3;
+  }
+
+  .note-text {
+    @apply w-full text-lg;
+  }
+
+  .note-tools {
+    @apply flex justify-end items-center gap-2 pt-2 border-t border-border/30;
   }
 
   .selected-note {
