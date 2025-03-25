@@ -177,7 +177,13 @@ export default function ImageDiagnostics() {
                             <div className="text-xs text-gray-600 dark:text-gray-400 break-all">
                               <span className="font-semibold">Location:</span> note-images/{item.name}
                             </div>
-                            <div className="mt-2 text-xs">
+                            <div className="text-xs mt-1 mb-2">
+                              <span className="font-semibold">Full Path:</span>
+                              <code className="ml-1 p-1 bg-gray-100 dark:bg-gray-700 rounded text-xs break-all">
+                                https://wxpdstlzutwzuxstysnl.supabase.co/storage/v1/object/public/note-images/{item.name}
+                              </code>
+                            </div>
+                            <div className="text-xs">
                               <a 
                                 href={`https://wxpdstlzutwzuxstysnl.supabase.co/storage/v1/object/public/note-images/${item.name}`} 
                                 target="_blank" 
@@ -242,9 +248,21 @@ export default function ImageDiagnostics() {
                             <div className="text-xs text-gray-600 dark:text-gray-400 break-all">
                               <span className="font-semibold">URL:</span> {record.url}
                             </div>
+                            <div className="text-xs mt-1 text-gray-600 dark:text-gray-400 break-all">
+                              <span className="font-semibold">Storage Path:</span> {record.storage_path}
+                            </div>
+                            <div className="text-xs mt-1 bg-yellow-100 dark:bg-yellow-900 p-1 rounded">
+                              <span className="font-semibold text-yellow-800 dark:text-yellow-200">
+                                ⚠️ Path should be "images/filename" not "images/user_id"
+                              </span>
+                            </div>
                             <div className="mt-2 text-xs">
                               <a 
-                                href={record.url} 
+                                href={record.url.includes('/images/images/') ? 
+                                  // Remove the duplicate 'images/' if present
+                                  record.url.replace('/images/images/', '/images/') : 
+                                  record.url
+                                } 
                                 target="_blank" 
                                 rel="noreferrer" 
                                 className="inline-flex items-center px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded"
