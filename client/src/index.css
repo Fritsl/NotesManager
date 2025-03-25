@@ -33,15 +33,43 @@
   }
   
   .note-item-content {
-    @apply p-4 rounded-md transition-all duration-150 flex flex-col gap-3;
+    @apply p-3 rounded-md transition-all duration-150;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: 
+      "text text"
+      "tags tools";
+    gap: 0.5rem;
   }
 
   .note-text {
-    @apply w-full text-lg;
+    grid-area: text;
+    @apply w-full text-base break-words;
+  }
+
+  .note-tags {
+    grid-area: tags;
+    @apply flex flex-wrap gap-1;
   }
 
   .note-tools {
-    @apply flex justify-end items-center gap-2 pt-2 border-t border-border/30;
+    grid-area: tools;
+    @apply flex items-center gap-1;
+  }
+
+  /* Mobile specific adjustments */
+  @media (max-width: 640px) {
+    .note-item-content {
+      @apply p-2;
+    }
+    
+    .note-tools {
+      @apply gap-0.5;
+    }
+    
+    .note-tools button {
+      @apply p-1;
+    }
   }
 
   .selected-note {
