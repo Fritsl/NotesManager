@@ -445,8 +445,9 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         const { note: foundParent } = findNoteAndPath(parent.id, updatedNotes);
 
         if (foundParent) {
-          newNote.position = foundParent.children.length;
-          foundParent.children.push(newNote);
+          // Add the new note at the beginning of the children array (position 0)
+          newNote.position = 0;
+          foundParent.children.unshift(newNote);
 
           // Clean positions for this parent's children
           foundParent.children = cleanNotePositions(foundParent.children);
