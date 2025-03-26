@@ -236,6 +236,8 @@ export default function HeaderWithSearch() {
           
           if (result) {
             console.log("Project name updated successfully in database");
+            // Update the context state to keep names in sync
+            setCurrentProjectName(editedProjectName);
             // Trigger a refresh of any project listings
             window.dispatchEvent(new Event('project-updated'));
           } else {
