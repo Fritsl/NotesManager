@@ -398,7 +398,7 @@ export default function HeaderWithSearch() {
                   <TooltipTrigger asChild>
                     <button
                       onClick={toggleFullscreen}
-                      className={`absolute bottom-0 right-6 p-1 rounded-full hover:bg-black/20 transition-colors text-gray-400 ${
+                      className={`ml-2 p-1 rounded-full hover:bg-black/20 transition-colors text-gray-400 ${
                         isFullscreen ? 'opacity-20 hover:opacity-60' : 'opacity-50 hover:opacity-100'
                       } py-2`}
                       aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
@@ -721,7 +721,7 @@ export default function HeaderWithSearch() {
                     <span>Edit Project Description</span>
                   </DropdownMenuItem>
 
-                  
+
                   <DropdownMenuItem onClick={()=> {/*Add SearchBar here*/}}>
                     <span>Search</span>
                   </DropdownMenuItem>
