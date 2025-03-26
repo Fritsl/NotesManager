@@ -27,7 +27,7 @@ interface NotesContextType {
   breadcrumbs: Note[];
   addNote: (parent: Note | null, insertPosition?: number) => void;
   updateNote: (updatedNote: Note) => void;
-  deleteNote: (noteId: string) => void;
+  deleteNote: (noteId: string, deleteChildren?: boolean) => void;
   moveNote: (noteId: string, targetParentId: string | null, position: number) => void;
   importNotes: (data: NotesData, projectName?: string, projectId?: string | null) => void;
   exportNotes: () => NotesData;

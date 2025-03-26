@@ -1193,6 +1193,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                   title="Delete"
                   onClick={(e) => {
                     e.stopPropagation();
+                    setDeleteChildren(false); // Reset checkbox to unchecked by default
                   }}
                 >
                   <Trash2 size={16} />
