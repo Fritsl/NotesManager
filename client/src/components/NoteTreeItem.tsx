@@ -480,6 +480,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         defaultValue={note.content} // Initialize with note content, but don't update during typing
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
+        // No autoFocus attribute to prevent stealing focus from other fields
       />
 
       {/* Images Section */}
@@ -622,9 +623,15 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
             value={editTimeSet || ''}
             onChange={(e) => {
-              e.preventDefault();
+              e.preventDefault(); 
               e.stopPropagation();
+              // Store the current focused element
+              const currentFocus = document.activeElement;
               setEditTimeSet(e.target.value ? e.target.value : null);
+              // Ensure focus remains on the time input after state update
+              if (currentFocus === e.target) {
+                setTimeout(() => e.target.focus(), 0);
+              }
             }}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
@@ -659,7 +666,13 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             onChange={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              // Store the current focused element
+              const currentFocus = document.activeElement;
               setEditYoutubeUrl(e.target.value || null);
+              // Ensure focus remains on this field after state update
+              if (currentFocus === e.target) {
+                setTimeout(() => e.target.focus(), 0);
+              }
             }}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
@@ -677,7 +690,13 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             onChange={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              // Store the current focused element
+              const currentFocus = document.activeElement;
               setEditUrl(e.target.value || null);
+              // Ensure focus remains on this field after state update
+              if (currentFocus === e.target) {
+                setTimeout(() => e.target.focus(), 0);
+              }
             }}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
@@ -695,7 +714,13 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             onChange={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              // Store the current focused element
+              const currentFocus = document.activeElement;
               setEditUrlDisplayText(e.target.value || null);
+              // Ensure focus remains on this field after state update
+              if (currentFocus === e.target) {
+                setTimeout(() => e.target.focus(), 0);
+              }
             }}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
@@ -795,7 +820,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                   defaultValue={note.content} // Initialize with note content, but don't track changes
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
-                  autoFocus
+                  // Removed autoFocus to prevent it from stealing focus from other fields
                 />
 
                 {/* Properties section (compact, single-line items) */}
