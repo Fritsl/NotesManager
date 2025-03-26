@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import AuthModal from "@/components/AuthModal";
+import { Toaster } from "@/components/ui/toaster";
 
 // Authentication guard component
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -112,6 +113,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router urlParams={urlParams} />
+        <Toaster />
       </AuthProvider>
     </QueryClientProvider>
   );
