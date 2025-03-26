@@ -125,22 +125,6 @@ export default function NoteTree() {
     <div className="p-2">
       {hasActiveProject && (
         <div className="relative">
-          {/* Undo button - only show when undo is available */}
-          {canUndo && (
-            <div className="mb-2 flex justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs flex items-center gap-1 text-gray-400 hover:text-gray-200 border-gray-800"
-                onClick={() => undoLastAction()}
-                title={getUndoDescription()}
-              >
-                <RotateCcw className="h-3 w-3" />
-                <span>Undo Move (Ctrl+Z)</span>
-              </Button>
-            </div>
-          )}
-          
           {/* First drop zone for moving items to beginning */}
           {notes.length > 0 && <DropZone index={0} />}
           
