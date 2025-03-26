@@ -339,37 +339,30 @@ export default function HeaderWithSearch() {
                 )}
               </div>
 
-            </div>
-            <div className="flex items-center">
-              {/* Level Controls */}
-              <div className="hidden sm:flex items-center mr-2 border-r pr-3 border-gray-700 flex-wrap">
-                {/* Create buttons for L0 through maxDepth */}
+              {/* Level Controls (added to top menu) */}
+              <div className="flex items-center gap-1 ml-4">
                 {Array.from({ length: Math.min(maxDepth + 1, 9) }, (_, i) => i).map(level => {
-                  // Get the color theme for this level - directly using the level as index
                   const colorTheme = levelColors[Math.min(level, levelColors.length - 1)];
                   return (
                     <Button 
                       key={level}
                       variant="outline" 
                       size="sm"
-                      onClick={() => {
-                        expandToLevel(level);
-                      }}
+                      onClick={() => expandToLevel(level)}
                       className={cn(
                         "h-7 w-7 p-0 font-bold text-white",
-                        level > 0 ? "ml-1" : "", 
+                        level > 0 ? "ml-1" : "",
                         `${colorTheme.bg} border ${colorTheme.border}`,
-                        currentLevel === level 
-                          ? `${colorTheme.highlight} border-2 shadow-md` 
-                          : `opacity-70 hover:opacity-100 hover:${colorTheme.highlight} hover:border-2`
+                        currentLevel === level ? 'ring-2 ring-white' : ''
                       )}
                     >
-                      {colorTheme.label} 
+                      {level}
                     </Button>
                   );
                 })}
               </div>
-
+            </div>
+            <div className="flex items-center">
               {/* Viewer Button */}
               <TooltipProvider>
                 <Tooltip>
@@ -416,7 +409,7 @@ export default function HeaderWithSearch() {
                 </Tooltip>
               </TooltipProvider>
 
-              {/* Consolidated Hamburger Menu */}
+              {/* Consolidated Hamburger Menu - Removed mobile level controls */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8 touch-target">
@@ -424,62 +417,6 @@ export default function HeaderWithSearch() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  {/* Mobile-only Level Controls */}
-                  <div className="sm:hidden p-2 border-b border-gray-700">
-                    <div className="text-xs text-gray-400 mb-1">Level Controls</div>
-                    <div className="flex flex-wrap gap-1">
-                      {Array.from({ length: Math.min(maxDepth + 1, 9) }, (_, i) => i).slice(0, 5).map(level => {
-                        const colorTheme = levelColors[Math.min(level, levelColors.length - 1)];
-                        return (
-                          <Button 
-                            key={level}
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => {
-                              expandToLevel(level);
-                              document.body.click();
-                            }}
-                            className={cn(
-                              "h-8 w-8 p-0 font-bold text-white",
-                              `${colorTheme.bg} border ${colorTheme.border}`,
-                              currentLevel === level 
-                                ? `${colorTheme.highlight} border-2 shadow-md` 
-                                : `opacity-70 hover:opacity-100 hover:${colorTheme.highlight} hover:border-2`
-                            )}
-                          >
-                            {colorTheme.label}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                    <div className="flex justify-between mt-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          collapseAll();
-                          document.body.click();
-                        }}
-                        className="h-8 px-2 text-xs"
-                      >
-                        <ChevronUp className="h-3 w-3 mr-1" />
-                        Collapse All
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          expandAll();
-                          document.body.click();
-                        }}
-                        className="h-8 px-2 text-xs"
-                      >
-                        <ChevronDown className="h-3 w-3 mr-1" />
-                        Expand All
-                      </Button>
-                    </div>
-                  </div>
-
                   {/* File Operations */}
                   <DropdownMenuItem onClick={() => {
                     createNewProject('New Project');
