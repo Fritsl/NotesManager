@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, FolderUp, FolderDown, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { levelColors } from "@/lib/level-colors";
+import { useToast } from "@/hooks/use-toast";
 
 interface MoveNoteModalProps {
   isOpen: boolean;
@@ -31,7 +32,8 @@ interface Destination {
 }
 
 export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteModalProps) {
-  const { notes, moveNote } = useNotes();
+  const { notes, moveNote, scrollToNote } = useNotes();
+  const { toast } = useToast();
   const [destinations, setDestinations] = useState<Destination[]>([]);
   
   // When in full-screen mode, we'll track the currently focused destination
@@ -176,6 +178,9 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
   const handleMoveNote = (destinationId: string | null) => {
     if (!noteToMove) return;
     
+    // Save the noteId for later reference
+    const movedNoteId = noteToMove.id;
+    
     // Determine the position (by default, add to the end)
     let position = 0;
     
@@ -203,8 +208,22 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
     }
     
     // Execute the move
-    moveNote(noteToMove.id, destinationId, position);
+    moveNote(movedNoteId, destinationId, position);
+    
+    // Close the modal first
     onClose();
+    
+    // Show success toast
+    toast({
+      title: "Note moved",
+      description: "Note has been moved to the selected location",
+    });
+    
+    // Add a small delay to allow DOM to update
+    setTimeout(() => {
+      // Highlight and scroll to the note in its new position
+      scrollToNote(movedNoteId);
+    }, 300);
   };
   
   // Format breadcrumb navigation path
