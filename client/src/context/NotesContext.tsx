@@ -83,6 +83,8 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
   const [pendingNoteMoves, setPendingNoteMoves] = useState<boolean>(false);
   // State for undo history
   const [undoHistory, setUndoHistory] = useState<UndoHistoryItem[]>([]);
+  // Ref for auto-save timeout
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   // Auto-load the last accessed project on initial mount
@@ -482,11 +484,29 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
     // Make sure the selected note also has the images preserved
     setSelectedNote(formattedNote);
 
+    // Auto-save to database when notes are updated
+    if (currentProjectId) {
+      // Use a timeout to avoid saving on every keystroke
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+      
+      autoSaveTimeoutRef.current = setTimeout(() => {
+        saveProject()
+          .then(() => {
+            console.log('Project auto-saved after note update');
+          })
+          .catch(err => {
+            console.error('Failed to auto-save after note update:', err);
+          });
+      }, 1000); // 1 second debounce
+    }
+
     toast({
       title: "Note Updated",
       description: "Your changes have been saved",
     });
-  }, [toast]);
+  }, [toast, currentProjectId, saveProject]);
 
   // Delete a note
   const deleteNote = useCallback((noteId: string) => {
