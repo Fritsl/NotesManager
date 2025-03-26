@@ -43,7 +43,11 @@ import UserMenu from "@/components/UserMenu";
 import SearchBar from "@/components/SearchBar";
 import FilterMenu, { FilterType } from "@/components/FilterMenu";
 import { Note } from "@/types/notes";
-import { moveProjectToTrash, updateProject } from "@/lib/projectService";
+import { 
+  moveProjectToTrash, 
+  updateProject, 
+  generateUniqueProjectName 
+} from "@/lib/projectService";
 import {
   DropdownMenu,
   DropdownMenuContent,
