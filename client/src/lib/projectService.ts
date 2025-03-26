@@ -2,6 +2,14 @@ import { supabase } from './supabase';
 import { Note, NotesData, NoteImage } from '../types/notes';
 import { v4 as uuidv4 } from 'uuid';
 import { isValidUrl, isValidYoutubeUrl } from './utils';
+import { 
+  normalizeImagePath, 
+  normalizeImageUrl,
+  addImageToNote,
+  removeImageFromNote,
+  updateImagePosition,
+  migrateLocalImages as migrateImages
+} from './imageService';
 
 export interface Project {
   id: string;
