@@ -841,10 +841,11 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           <label className="text-xs text-gray-400 w-20" htmlFor={`url-text-${note.id}`}>Link text:</label>
           <input 
             id={`url-text-${note.id}`}
+            ref={urlDisplayTextInputRef}
             type="text" 
             className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
             placeholder="Display text for URL..."
-            value={editUrlDisplayText || ''}
+            defaultValue={editUrlDisplayText || ''}
             onChange={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -852,13 +853,6 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               // Mark that we're actively typing to prevent focus jumps
               isTypingRef.current = true;
               lastTouchedFieldRef.current = `url-text-${note.id}`;
-              
-              // Use a separate variable to track state change
-              const newValue = e.target.value || null;
-              setEditUrlDisplayText(newValue);
-              
-              // Mark this field as the active one
-              document.body.dataset.activeField = `url-text-${note.id}`;
               
               // Store this input's ID as the last focused element
               setLastFocusedElementId(`url-text-${note.id}`);
