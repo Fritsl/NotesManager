@@ -69,8 +69,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { levelColors } from "@/lib/level-colors";
+import screenfull from 'screenfull';
 
-export default function Header() {
+export default function HeaderWithSearch() {
   const { 
     notes,
     expandAll, 
@@ -257,6 +258,31 @@ export default function Header() {
     }
   };
 
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(screenfull.isFullscreen);
+    };
+
+    if (screenfull.isEnabled) {
+      screenfull.on('change', handleFullscreenChange);
+    }
+
+    return () => {
+      if (screenfull.isEnabled) {
+        screenfull.off('change', handleFullscreenChange);
+      }
+    };
+  }, []);
+
+  const toggleFullscreen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (screenfull.isEnabled) {
+      screenfull.toggle();
+    }
+  };
+
   return (
     <header className="bg-gray-950 border-b border-gray-800 py-2 px-2 sm:px-4">
       {hasActiveProject ? (
@@ -370,17 +396,19 @@ export default function Header() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mr-2 text-gray-400 hover:text-white"
-                      onClick={() => {
-                        window.dispatchEvent(new Event('toggle-fullscreen'));
-                      }}
+                    <button
+                      onClick={toggleFullscreen}
+                      className={`absolute bottom-0 right-6 p-1 rounded-full hover:bg-black/20 transition-colors text-gray-400 ${
+                        isFullscreen ? 'opacity-20 hover:opacity-60' : 'opacity-50 hover:opacity-100'
+                      } py-2`}
+                      aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
                     >
-                      <Maximize2 className="h-4 w-4 mr-1" />
-                      <span className="hidden sm:inline">Fullscreen</span>
-                    </Button>
+                      {isFullscreen ? (
+                        <Minimize2 className="w-4 h-4" />
+                      ) : (
+                        <Maximize2 className="w-4 h-4" />
+                      )}
+                    </button>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Toggle Fullscreen Mode</p>
@@ -506,9 +534,9 @@ export default function Header() {
                     <PlusCircle className="h-4 w-4 mr-2" />
                     <span>Add Note (Root level)</span>
                   </DropdownMenuItem>
-                  
+
                   <DropdownMenuSeparator />
-                  
+
                   {/* Import/Export */}
                   <DropdownMenuItem onClick={() => setShowImportModal(true)}>
                     <FileUp className="h-4 w-4 mr-2" />
@@ -631,7 +659,7 @@ export default function Header() {
                     <span>Projects</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  
+
                   {/* Note Actions */}
                   <DropdownMenuItem 
                     onClick={() => {
@@ -650,7 +678,7 @@ export default function Header() {
                     <PlusCircle className="h-4 w-4 mr-2" />
                     <span>Add Note (Root level)</span>
                   </DropdownMenuItem>
-                  
+
                   {/* Undo Action - only shown when actions are available to undo */}
                   {canUndo && (
                     <DropdownMenuItem 
@@ -666,7 +694,7 @@ export default function Header() {
                       <span>{getUndoDescription()}</span>
                     </DropdownMenuItem>
                   )}
-                  
+
                   <DropdownMenuSeparator />
 
                   {/* Import/Export */}
