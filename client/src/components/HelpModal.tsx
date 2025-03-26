@@ -129,6 +129,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   <li>Add time markers to notes to track when events should occur</li>
                   <li>Include links to external resources directly in your notes</li>
                   <li>Projects are automatically saved as you make changes</li>
+                  <li>Use Ctrl+Z or the Undo option in the menu to undo note movements</li>
                   <li>You can export your notes as JSON for backup</li>
                   <li>Import previously exported JSON to restore your notes</li>
                   <li>Regularly check the trash to ensure you haven't deleted something important</li>

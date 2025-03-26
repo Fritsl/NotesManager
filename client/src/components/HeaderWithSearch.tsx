@@ -634,15 +634,16 @@ export default function HeaderWithSearch() {
                   {canUndo && (
                     <DropdownMenuItem 
                       onClick={() => {
+                        const undoDesc = getUndoDescription();
                         undoLastAction();
                         toast({
-                          title: "Undo Successful",
-                          description: "Previous action has been undone"
+                          title: "Undo Complete",
+                          description: `Undid: ${undoDesc}`
                         });
                       }}
                     >
                       <RotateCcw className="h-4 w-4 mr-2" />
-                      <span>{getUndoDescription()}</span>
+                      <span>{getUndoDescription()} (Ctrl+Z)</span>
                     </DropdownMenuItem>
                   )}
 
@@ -812,64 +813,6 @@ export default function HeaderWithSearch() {
             <AlertDialogCancel className="bg-gray-800 text-gray-300 hover:bg-gray-700 border-gray-700">
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (newProjectName.trim() !== '') {
-                  createNewProject(newProjectName.trim());
-                }
-              }}
-              className="bg-primary hover:bg-primary/90"
-            >
-              Create Project
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* New Project Dialog */}
-      <AlertDialog open={showNewProjectDialog} onOpenChange={setShowNewProjectDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Create New Project</AlertDialogTitle>
-            <AlertDialogDescription>
-              Enter a name for your new project. Project names must be unique.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="py-4">
-            <Input
-              ref={newProjectInputRef}
-              value={newProjectName}
-              onChange={(e) => {
-                // Filter out non-ASCII characters and problematic characters
-                const rawInput = e.target.value;
-                const filteredInput = rawInput.replace(/[^\x00-\x7F]|[<>{}[\]\\\/]/g, '');
-                
-                // Show a warning if characters were filtered out
-                if (filteredInput !== rawInput) {
-                  toast({
-                    title: 'Character Removed',
-                    description: 'Some characters are not allowed in project names due to database constraints.',
-                    duration: 3000
-                  });
-                }
-                
-                setNewProjectName(filteredInput);
-              }}
-              className="w-full"
-              placeholder="Project name"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  if (newProjectName.trim() !== '') {
-                    createNewProject(newProjectName.trim());
-                    setShowNewProjectDialog(false);
-                  }
-                }
-              }}
-              autoFocus
-            />
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (newProjectName.trim() !== '') {
