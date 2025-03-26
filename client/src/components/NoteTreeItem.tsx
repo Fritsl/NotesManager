@@ -470,10 +470,10 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
       {/* Content editor with more height - Using completely uncontrolled component */}
       <Textarea 
         ref={contentEditRef}
-        rows={Math.min(isMobile ? 10 : 6, note.content.split('\n').length + 1)}
+        rows={Math.min(isMobile ? 3 : 6, note.content.split('\n').length + 1)}
         className={cn(
           "w-full p-2 text-sm bg-gray-850 border border-gray-700 focus:border-primary focus:ring-1 focus:ring-primary resize-none mb-3",
-          isMobile && "h-48 min-h-[8rem]" // Taller textarea on mobile
+          isMobile && "min-h-[4.5rem]" // Shorter textarea on mobile (3 lines)
         )}
         placeholder="Enter note content..."
         defaultValue={note.content} // Initialize with note content, but don't update during typing
@@ -689,23 +689,14 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
     <Dialog open={isEditing && isMobile} onOpenChange={(open) => {
       if (!open) setIsEditing(false);
     }}>
-      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto top-[5%] translate-y-0">
         <DialogHeader>
           <DialogTitle>Edit Note</DialogTitle>
         </DialogHeader>
         <div onClick={(e) => e.stopPropagation()}>
           {renderEditForm()}
         </div>
-        <DialogFooter className="flex justify-between gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-9 px-4"
-            onClick={handleCancelEdit}
-          >
-            <X size={16} className="mr-1" />
-            Cancel
-          </Button>
+        <DialogFooter className="flex justify-end gap-2">
           <Button
             size="sm"
             className="h-9 px-4"
