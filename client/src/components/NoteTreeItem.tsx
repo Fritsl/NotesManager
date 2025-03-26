@@ -203,6 +203,16 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           // Check if in the top zone (Above, same level)
           else if (isTopZone) {
             console.log("PLACING ABOVE", note.id, "at position", index);
+            
+            // Add moving animation to the source note
+            const sourceElement = document.getElementById(`note-${draggedItemId}`);
+            if (sourceElement) {
+              sourceElement.classList.add('note-moving');
+              setTimeout(() => {
+                sourceElement.classList.remove('note-moving');
+              }, 1000);
+            }
+            
             // For "Above" - place it at the same level (sibling) regardless of original level
             moveNote(draggedItemId, parentId, index);
             return; // Return to ensure we don't continue to other checks
@@ -210,6 +220,16 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           // Check if in the bottom zone (Below, same level)
           else if (isBottomZone) {
             console.log("PLACING BELOW", note.id, "at position", index + 1);
+            
+            // Add moving animation to the source note
+            const sourceElement = document.getElementById(`note-${draggedItemId}`);
+            if (sourceElement) {
+              sourceElement.classList.add('note-moving');
+              setTimeout(() => {
+                sourceElement.classList.remove('note-moving');
+              }, 1000);
+            }
+            
             // For "Below" - place it at the same level (sibling) regardless of original level
             moveNote(draggedItemId, parentId, index + 1);
             return; // Return to ensure we don't continue to other checks
@@ -294,6 +314,21 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         // Get the client offset to determine drop position
         const clientOffset = monitor.getClientOffset();
 
+        // Add animation to highlight the target note
+        const targetElement = document.getElementById(`note-${note.id}`);
+        if (targetElement) {
+          targetElement.classList.add('note-highlight');
+        }
+        
+        // Add moving animation to the source note
+        const sourceElement = document.getElementById(`note-${draggedItemId}`);
+        if (sourceElement) {
+          sourceElement.classList.add('note-moving');
+          setTimeout(() => {
+            sourceElement.classList.remove('note-moving');
+          }, 1000);
+        }
+        
         // When dropping directly in the child area (not on a specific child),
         // We now ALWAYS add it at the END of the children list
         moveNote(draggedItemId, note.id, note.children.length);

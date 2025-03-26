@@ -234,10 +234,20 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
           "flex items-center justify-between p-3 mb-2 rounded-md cursor-pointer fade-in-note",
           "hover:bg-gray-800 border border-gray-800 hover:border-gray-700",
           "transition-all duration-150 hover:shadow-md",
-          !isRoot && `border-l-[4px] ${itemColor.border}`
+          isRoot ? "bg-gray-900 border-gray-700 border-dashed" : `border-l-[4px] ${itemColor.border}`
         )}
         onClick={() => {
-          if (dest.hasChildren) {
+          if (isRoot) {
+            // Always move directly to root level when root is clicked
+            handleMoveNote(null);
+            
+            // Add animation effect when clicked
+            const element = document.getElementById(`dest-${dest.id || 'root'}`);
+            if (element) {
+              element.classList.add('note-highlight');
+            }
+          }
+          else if (dest.hasChildren) {
             // Navigate into this folder
             setSelectedParentId(dest.id);
           } else {
@@ -255,7 +265,7 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
       >
         <div className="flex items-center gap-2 max-w-[85%]">
           {isRoot ? (
-            <FolderUp className="h-5 w-5 text-gray-400 flex-shrink-0" />
+            <FolderUp className="h-5 w-5 text-primary flex-shrink-0" />
           ) : (
             <FolderDown className={cn(
               "h-5 w-5 flex-shrink-0",
@@ -266,9 +276,9 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
           <div className="flex flex-col">
             <span className={cn(
               "text-sm font-medium truncate max-w-[600px]",
-              !isRoot && itemColor.text
+              isRoot ? "text-primary font-bold" : itemColor.text
             )}>
-              {dest.label}
+              {isRoot ? "Move to Root Level (Top Level)" : dest.label}
             </span>
             
             {!isRoot && dest.path.length > 2 && (
@@ -279,7 +289,7 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
           </div>
         </div>
         
-        {dest.hasChildren && (
+        {!isRoot && dest.hasChildren && (
           <ChevronRight className="h-4 w-4 text-gray-400" />
         )}
       </div>
@@ -300,26 +310,19 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
           </DialogTitle>
         </DialogHeader>
         
-        {/* Navigation breadcrumb */}
-        <div className="flex items-center gap-2 mb-4 text-sm">
-          <div className="flex items-center gap-1 overflow-x-auto py-2 no-scrollbar">
-            {getCurrentPath().map((item, index) => (
-              <div key={item.id || 'root'} className="flex items-center">
-                {index > 0 && <ChevronRight className="h-3 w-3 text-gray-500 flex-shrink-0" />}
-                <button
-                  onClick={() => setSelectedParentId(item.id)}
-                  className={cn(
-                    "px-2 py-1 rounded-md whitespace-nowrap",
-                    "hover:bg-gray-800 transition-colors",
-                    index === getCurrentPath().length - 1 
-                      ? "bg-gray-800 text-primary" 
-                      : "text-gray-300"
-                  )}
-                >
-                  {index === 0 ? "Root" : item.label.substring(0, 20) + (item.label.length > 20 ? "..." : "")}
-                </button>
-              </div>
-            ))}
+        {/* Navigation breadcrumb - simplified */}
+        <div className="flex items-center justify-between mb-4 text-sm">
+          <div className="text-sm font-medium text-gray-300">
+            {selectedParentId === null ? (
+              <span className="text-primary font-bold">Browse Locations</span>
+            ) : (
+              <span>
+                Current folder: <span className="text-primary font-medium">
+                  {getCurrentPath()[getCurrentPath().length - 1]?.label?.substring(0, 30) || "Location"}
+                  {getCurrentPath()[getCurrentPath().length - 1]?.label?.length > 30 ? "..." : ""}
+                </span>
+              </span>
+            )}
           </div>
           
           {/* Back button for navigation */}
@@ -327,7 +330,7 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
             <Button
               variant="outline"
               size="sm"
-              className="ml-auto border-gray-700 text-gray-300"
+              className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-primary"
               onClick={() => {
                 // Go to parent folder
                 const currentPath = getCurrentPath();
@@ -339,7 +342,7 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
               }}
             >
               <ChevronLeft className="h-4 w-4 mr-1" />
-              Back
+              Back to Previous Level
             </Button>
           )}
         </div>
