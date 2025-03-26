@@ -441,7 +441,7 @@ export default function NoteEditor() {
               id="noteContentFullscreen" 
               ref={contentRef}
               className="flex-1 w-full p-4 text-base bg-gray-950 border-none focus:border-none focus:ring-0 resize-none"
-              placeholder="Enter note content..."
+              placeholder="Type your note here..."
               value={content}
               onChange={handleContentChange}
               onBlur={handleBlur}
@@ -714,7 +714,7 @@ export default function NoteEditor() {
                   ref={contentRef}
                   rows={6} 
                   className="w-full p-2 text-sm bg-gray-850 border-gray-700 focus:border-primary"
-                  placeholder="Enter note content..."
+                  placeholder="Type your note here..."
                   value={content}
                   onChange={handleContentChange}
                   onBlur={handleBlur}
