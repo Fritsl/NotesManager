@@ -721,18 +721,7 @@ export default function HeaderWithSearch() {
                     <span>Edit Project Description</span>
                   </DropdownMenuItem>
 
-                  {/* Toggle Fullscreen Mode Menu Item */}
-                  <DropdownMenuItem 
-                    onClick={() => {
-                      window.dispatchEvent(new Event('toggle-fullscreen'));
-                    }}
-                    disabled={!hasActiveProject}
-                  >
-                    <Maximize2 className="h-4 w-4 mr-2" />
-                    <span>Toggle Fullscreen</span>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuSeparator />
+                  
                   <DropdownMenuItem onClick={()=> {/*Add SearchBar here*/}}>
                     <span>Search</span>
                   </DropdownMenuItem>
