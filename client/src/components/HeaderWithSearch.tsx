@@ -84,7 +84,10 @@ export default function Header() {
     createNewProject,
     saveProject,
     currentProjectId,
-    addNote
+    addNote,
+    undoLastAction,
+    canUndo,
+    getUndoDescription
   } = useNotes();
 
   // For filter functionality

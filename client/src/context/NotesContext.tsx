@@ -644,13 +644,14 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         
         // Auto-save after undoing
         if (currentProjectId) {
-          await saveProject();
+          // Instead of calling saveProject directly, set a flag for later save
+          setPendingNoteMoves(true);
         }
       };
       
       performUndo();
     }
-  }, [undoHistory, findNoteAndParent, findNoteAndPath, cleanNotePositions, currentProjectId, saveProject]);
+  }, [undoHistory, findNoteAndParent, findNoteAndPath, cleanNotePositions, currentProjectId]);
   
   // Move a note in the tree
   const moveNote = useCallback(async (noteId: string, targetParentId: string | null, position: number) => {
@@ -683,6 +684,35 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       
       // Create a deep copy of the note to move (to avoid reference issues)
       const noteToMove = JSON.parse(JSON.stringify(foundNote));
+      
+      // Record the move for undo history before applying the change
+      // Only if this is not an undo operation itself
+      const sourceParentId = sourceParent ? sourceParent.id : null;
+      const sourcePosition = foundNote.position;
+      
+      // If we have a target parent ID, get its title for display
+      let targetParentName: string | null = null;
+      if (targetParentId) {
+        const { note: targetParent } = findNoteAndPath(targetParentId, updatedNotes);
+        if (targetParent) {
+          targetParentName = truncateNoteContent(targetParent.content);
+        }
+      }
+      
+      // Add to the undo history (only keep the 20 most recent actions)
+      const undoItem: UndoHistoryItem = {
+        type: 'move',
+        noteId: noteId,
+        noteName: truncateNoteContent(foundNote.content),
+        previousParentId: sourceParentId,
+        previousPosition: sourcePosition,
+        targetParentId: targetParentId,
+        targetParentName: targetParentName,
+        timestamp: Date.now()
+      };
+      
+      // Add to the start of the array, keep only the 20 most recent moves
+      setUndoHistory(prev => [undoItem, ...prev.slice(0, 19)]);
       
       // Check if trying to move a note to one of its own descendants (which would create a cycle)
       const isTargetADescendantOfSource = (sourceId: string, targetParentId: string | null): boolean => {
@@ -775,7 +805,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       
       return resultNotes;
     });
-  }, [findNoteAndParent, cleanNotePositions]);
+  }, [findNoteAndParent, findNoteAndPath, cleanNotePositions, truncateNoteContent]);
 
   // Toggle expansion for a single node
   const toggleExpand = useCallback((noteId: string) => {
@@ -1392,7 +1422,12 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         setCurrentProjectId,
         uploadImage,
         removeImage,
-        reorderImage
+        reorderImage,
+        // Undo functionality
+        undoHistory,
+        canUndo,
+        undoLastAction,
+        getUndoDescription
       }}
     >
       {children}
