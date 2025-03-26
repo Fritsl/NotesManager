@@ -95,12 +95,14 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
       return;
     }
 
-    // Check for truly problematic characters
-    const hasSpecialChars = /[<>{}[\]\\\/]/.test(newProjectName);
-    if (hasSpecialChars) {
+    // Check for characters that will be rejected by database
+    const hasProblematicChars = /[<>{}[\]\\\/]/.test(newProjectName);
+    const hasNonAsciiChars = /[^\x00-\x7F]/.test(newProjectName); // Detect non-ASCII characters like ÆØÅæøå
+    
+    if (hasProblematicChars || hasNonAsciiChars) {
       toast({
         title: 'Warning',
-        description: 'Project name contains characters like brackets or slashes that are not allowed. These characters will be removed.',
+        description: 'Some characters in the project name are not allowed by the database. Non-ASCII characters (like ÆØÅ) and special characters will be removed.',
         duration: 5000,
       });
     }
@@ -157,12 +159,14 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
 
       // Check for special characters when updating project name
       if (newName) {
-        // Only check for truly problematic characters
-        const hasSpecialChars = /[<>{}[\]\\\/]/.test(newName);
-        if (hasSpecialChars) {
+        // Check for characters that will be rejected by database
+        const hasProblematicChars = /[<>{}[\]\\\/]/.test(newName);
+        const hasNonAsciiChars = /[^\x00-\x7F]/.test(newName); // Detect non-ASCII characters like ÆØÅæøå
+        
+        if (hasProblematicChars || hasNonAsciiChars) {
           toast({
             title: 'Warning',
-            description: 'Project name contains characters like brackets or slashes that are not allowed. These characters will be removed.',
+            description: 'Some characters in the project name are not allowed by the database. Non-ASCII characters (like ÆØÅ) and special characters will be removed.',
             duration: 5000,
           });
         }
@@ -347,9 +351,10 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                   onChange={(e) => setNewProjectName(e.target.value)}
                   className="bg-gray-850 border-gray-700"
                 />
-                {/[<>{}[\]\\\/]/.test(newProjectName) && (
+                {(/[<>{}[\]\\\/]/.test(newProjectName) || /[^\x00-\x7F]/.test(newProjectName)) && (
                   <p className="text-xs text-amber-400 mt-1">
-                    Note: Special characters like brackets and slashes are not allowed and will be removed.
+                    Note: Some characters in the project name are not allowed by the database. 
+                    Non-ASCII characters (like ÆØÅ) and special characters will be removed.
                   </p>
                 )}
               </div>
@@ -407,9 +412,10 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                               onChange={(e) => setEditName(e.target.value)}
                               className="bg-gray-800 border-gray-700"
                             />
-                            {/[<>{}[\]\\\/]/.test(editName) && (
+                            {(/[<>{}[\]\\\/]/.test(editName) || /[^\x00-\x7F]/.test(editName)) && (
                               <p className="text-xs text-amber-400 mt-1">
-                                Note: Special characters like brackets and slashes are not allowed and will be removed.
+                                Note: Some characters in the project name are not allowed by the database. 
+                                Non-ASCII characters (like ÆØÅ) and special characters will be removed.
                               </p>
                             )}
                           </div>

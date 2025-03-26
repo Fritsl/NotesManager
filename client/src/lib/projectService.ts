@@ -556,17 +556,19 @@ function sanitizeProjectName(name: string): string {
     return 'Untitled Project';
   }
 
-  // MODIFIED: We're now allowing Nordic characters (ÆØÅæøå) and apostrophes
-  // Only restrict truly problematic characters for databases
-  // For example, keep basic input validation to avoid SQL injection
+  // UPDATED: Database has a title_characters_check constraint
+  // We need to ensure we meet the database's requirements
+  // This appears to require ASCII-only characters
   const hasProblematicChars = /[<>{}[\]\\\/]/.test(sanitized);
+  const hasNonAsciiChars = /[^\x00-\x7F]/.test(sanitized); // Detect non-ASCII characters like ÆØÅæøå
   
-  if (hasProblematicChars) {
-    console.warn('Project name contains characters that may cause issues:', sanitized);
+  if (hasProblematicChars || hasNonAsciiChars) {
+    console.warn('Project name contains characters that may cause database constraints:', sanitized);
     
-    // Remove only truly problematic characters (brackets, slashes, etc.)
+    // Remove problematic characters (brackets, slashes, etc.)
     sanitized = sanitized
       .replace(/[<>{}[\]\\\/]/g, '') // Remove brackets, slashes
+      .replace(/[^\x00-\x7F]/g, '') // Remove non-ASCII characters to meet database constraints
       .trim();
       
     // If removing these characters made the name empty, use a default
