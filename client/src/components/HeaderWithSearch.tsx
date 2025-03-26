@@ -94,7 +94,8 @@ export default function HeaderWithSearch() {
     undoLastAction,
     canUndo,
     getUndoDescription,
-    exportNotes
+    exportNotes,
+    exportCurrentLevelAsText
   } = useNotes();
 
   // For filter functionality
@@ -267,6 +268,35 @@ export default function HeaderWithSearch() {
       saveProjectName();
     } else if (e.key === 'Escape') {
       cancelEditing();
+    }
+  };
+  
+  // Handle exporting the current level as text
+  const handleExportAsText = () => {
+    if (hasActiveProject) {
+      const text = exportCurrentLevelAsText();
+      // Use the Clipboard API to copy text to clipboard
+      navigator.clipboard.writeText(text)
+        .then(() => {
+          toast({
+            title: "Copied to Clipboard",
+            description: `All visible notes exported as text (${text.length} characters)`
+          });
+        })
+        .catch(err => {
+          console.error('Failed to copy text: ', err);
+          toast({
+            title: "Export Failed",
+            description: "Could not copy to clipboard. Try again or use a different browser.",
+            variant: "destructive"
+          });
+        });
+    } else {
+      toast({
+        title: "No Active Project",
+        description: "Please create or open a project first",
+        variant: "destructive"
+      });
     }
   };
 
