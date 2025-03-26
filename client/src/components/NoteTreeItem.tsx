@@ -71,6 +71,10 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   // References
   const ref = useRef<HTMLDivElement>(null);
   const contentEditRef = useRef<HTMLTextAreaElement>(null);
+  const timeInputRef = useRef<HTMLInputElement>(null);
+  const youtubeUrlInputRef = useRef<HTMLInputElement>(null);
+  const urlInputRef = useRef<HTMLInputElement>(null);
+  const urlDisplayTextInputRef = useRef<HTMLInputElement>(null);
 
   // Dialog states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -621,9 +625,14 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           <label className="text-xs text-gray-400 w-14" htmlFor={`time-${note.id}`}>Time:</label>
           <input 
             id={`time-${note.id}`}
+            ref={timeInputRef}
             type="time" 
             className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
-            value={editTimeSet || ''}
+            defaultValue={editTimeSet || ''}
+            onFocus={(e) => {
+              e.stopPropagation();
+              setLastFocusedElementId(`time-${note.id}`);
+            }}
             onChange={(e) => {
               e.preventDefault(); 
               e.stopPropagation();
@@ -632,15 +641,11 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               isTypingRef.current = true;
               lastTouchedFieldRef.current = `time-${note.id}`;
               
-              // Use a separate variable to track state change
-              const newValue = e.target.value ? e.target.value : null;
-              setEditTimeSet(newValue);
-              
-              // Mark this field as the active one
-              document.body.dataset.activeField = `time-${note.id}`;
-              
               // Store this input's ID as the last focused element
               setLastFocusedElementId(`time-${note.id}`);
+              
+              // We don't update state until save button is clicked
+              // This prevents React re-renders during typing
               
               // Clear typing status after a delay
               setTimeout(() => {
@@ -723,10 +728,12 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           <label className="text-xs text-gray-400 w-20" htmlFor={`youtube-${note.id}`}>YouTube:</label>
           <input 
             id={`youtube-${note.id}`}
+            ref={youtubeUrlInputRef}
             type="url" 
             className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
             placeholder="https://youtube.com/watch?v=..."
-            value={editYoutubeUrl || ''}
+            defaultValue={editYoutubeUrl || ''}
+            // Focus handler is defined below
             onChange={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -734,13 +741,6 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               // Mark that we're actively typing to prevent focus jumps
               isTypingRef.current = true;
               lastTouchedFieldRef.current = `youtube-${note.id}`;
-              
-              // Use a separate variable to track state change
-              const newValue = e.target.value || null;
-              setEditYoutubeUrl(newValue);
-              
-              // Mark this field as the active one
-              document.body.dataset.activeField = `youtube-${note.id}`;
               
               // Store this input's ID as the last focused element
               setLastFocusedElementId(`youtube-${note.id}`);
