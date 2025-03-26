@@ -103,7 +103,10 @@ export default function UserMenu() {
         <DropdownMenuContent align="end">
           {user ? (
             <>
-              <DropdownMenuLabel>
+              <DropdownMenuLabel className="font-bold">
+                Who's Signed In
+              </DropdownMenuLabel>
+              <DropdownMenuLabel className="pt-0">
                 {user.email}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
