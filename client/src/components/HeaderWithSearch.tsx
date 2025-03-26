@@ -506,15 +506,7 @@ export default function HeaderWithSearch() {
                     <Trash2 className="h-4 w-4 mr-2" />
                     <span>Delete Project</span>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-
-                  {/* Toggle Fullscreen Mode Menu Item */}
-                  <DropdownMenuItem onClick={() => {
-                    window.dispatchEvent(new Event('toggle-fullscreen'));
-                  }}>
-                    <Maximize2 className="h-4 w-4 mr-2" />
-                    <span>Toggle Fullscreen</span>
-                  </DropdownMenuItem>
+                  
 
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={()=> {/*Add SearchBar here*/}}>
