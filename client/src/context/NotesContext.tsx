@@ -1173,8 +1173,8 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         return;
       }
 
-      // Show "Saving..." toast first
-      const savingToastId = toast({
+      // Show "Saving..." toast
+      toast({
         title: "Saving...",
         description: "Saving your changes",
       });
@@ -1219,16 +1219,14 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
 
       // Show a different toast based on whether this was a manual save or auto-save after note movement
       if (!pendingNoteMoves) {
-        // Manual save via button - update the "Saving..." toast to "Saved"
+        // Manual save via button - show a new toast instead of updating
         toast({
-          id: savingToastId,
           title: "Project Saved",
           description: `"${currentProjectName}" has been saved`,
         });
       } else {
         // Auto-save after note movement - also show confirmation but with different message
         toast({
-          id: savingToastId,
           title: "Changes Saved",
           description: "Your note changes have been saved successfully",
         });
@@ -1239,9 +1237,8 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
 
     } catch (error) {
       console.error('Error saving project:', error);
-      // Update the saving toast to show the error
+      // Show error toast
       toast({
-        id: savingToastId,
         title: "Error Saving Project",
         description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive",
