@@ -663,9 +663,10 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             }}
             onFocus={(e) => {
               e.stopPropagation();
-              // Mark active to prevent other elements from stealing focus
-              document.body.dataset.activeField = `time-${note.id}`;
-              setLastFocusedElementId(e.target.id);
+              // Track this field as initialized to prevent focus jump on second click
+              const fieldId = `time-${note.id}`;
+              document.body.dataset.activeField = fieldId;
+              setLastFocusedElementId(fieldId);
             }}
             onBlur={(e) => {
               // Clear typing state after a brief delay
@@ -760,9 +761,10 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             }}
             onFocus={(e) => {
               e.stopPropagation();
-              // Mark active to prevent other elements from stealing focus
-              document.body.dataset.activeField = `youtube-${note.id}`;
-              setLastFocusedElementId(e.target.id);
+              // Track this field as initialized to prevent focus jump on second click
+              const fieldId = `youtube-${note.id}`;
+              document.body.dataset.activeField = fieldId;
+              setLastFocusedElementId(fieldId);
             }}
             onBlur={(e) => {
               // Clear typing state after a brief delay
@@ -816,9 +818,10 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             }}
             onFocus={(e) => {
               e.stopPropagation();
-              // Mark active to prevent other elements from stealing focus
-              document.body.dataset.activeField = `url-${note.id}`;
-              setLastFocusedElementId(e.target.id);
+              // Track this field as initialized to prevent focus jump on second click
+              const fieldId = `url-${note.id}`;
+              document.body.dataset.activeField = fieldId;
+              setLastFocusedElementId(fieldId);
             }}
             onBlur={(e) => {
               // Clear typing state after a brief delay
@@ -872,9 +875,10 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             }}
             onFocus={(e) => {
               e.stopPropagation();
-              // Mark active to prevent other elements from stealing focus
-              document.body.dataset.activeField = `url-text-${note.id}`;
-              setLastFocusedElementId(e.target.id);
+              // Track this field as initialized to prevent focus jump on second click
+              const fieldId = `url-text-${note.id}`;
+              document.body.dataset.activeField = fieldId;
+              setLastFocusedElementId(fieldId);
             }}
             onBlur={(e) => {
               // Clear typing state after a brief delay
@@ -902,24 +906,52 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   const isTypingRef = React.useRef(false);
   const lastTouchedFieldRef = React.useRef<string | null>(null);
   
-  // Use effect to maintain focus on the last focused input - but ONLY when not actively typing
+  // Variable to track if we've handled the initial field setup
+  const [initialFieldSetupComplete, setInitialFieldSetupComplete] = React.useState<{[key: string]: boolean}>({});
+  
+  // Add a stable reference to prevent rerenders when focusing on a field
+  const stableLastFocusedRef = React.useRef<string | null>(null);
+  
+  // Ensure we only run focus logic when truly needed and not on every render
   React.useEffect(() => {
-    if (isEditing && isMobile && lastFocusedElementId && !isTypingRef.current) {
+    if (isEditing && isMobile && lastFocusedElementId) {
+      // Update our stable ref so we can check it elsewhere
+      stableLastFocusedRef.current = lastFocusedElementId;
+      
+      // Skip if we're actively typing as that will break cursor position
+      if (isTypingRef.current) return;
+      
       // Check if we need to refocus at all
       const activeElement = document.activeElement;
       const isFocusingCorrectField = activeElement && activeElement.id === lastFocusedElementId;
       
-      // Only do this if we're not currently focused on the correct element
-      if (!isFocusingCorrectField) {
-        const element = document.getElementById(lastFocusedElementId);
-        if (element) {
-          // Add a small delay to ensure the focus happens after React's rendering
-          setTimeout(() => {
-            // Don't set focus if we're typing in another field
-            if (isTypingRef.current && lastTouchedFieldRef.current !== lastFocusedElementId) {
-              return;
-            }
-            
+      // Skip if we're already focusing on the correct element
+      if (isFocusingCorrectField) return;
+      
+      // Check if we've already completed initial setup for this field
+      const fieldInitialized = initialFieldSetupComplete[lastFocusedElementId];
+      
+      // If we haven't initialized this field yet, mark it as initialized 
+      // but don't actually focus it, as this causes the jump
+      if (!fieldInitialized) {
+        setInitialFieldSetupComplete({
+          ...initialFieldSetupComplete,
+          [lastFocusedElementId]: true
+        });
+        return;
+      }
+      
+      // Otherwise, focus on the correct element
+      const element = document.getElementById(lastFocusedElementId);
+      if (element) {
+        // Use requestAnimationFrame to ensure DOM updates have completed
+        requestAnimationFrame(() => {
+          // Double-check we're not typing in another field
+          if (isTypingRef.current && lastTouchedFieldRef.current !== lastFocusedElementId) {
+            return;
+          }
+          
+          try {
             // Set caret position to the end of the text for text inputs
             if (element instanceof HTMLInputElement && element.type !== 'time') {
               const valueLength = element.value.length;
@@ -928,11 +960,14 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             
             // Focus the element
             element.focus();
-          }, 50); // Increased delay for more reliable focus restoration
-        }
+          } catch (err) {
+            // Ignore focus errors, which can occur if the element was removed
+            console.log('Focus error:', err);
+          }
+        });
       }
     }
-  }, [isEditing, isMobile, lastFocusedElementId]); // Don't include the edit state variables here
+  }, [isEditing, isMobile, lastFocusedElementId, initialFieldSetupComplete]); // Don't include edit state variables
 
   // Mobile Dialog for fullscreen editing
   const MobileEditDialog = () => (
@@ -947,11 +982,24 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           </DialogDescription>
         </DialogHeader>
         <div 
+          className="form-container"
           onClick={(e) => e.stopPropagation()}
           onFocus={(e) => {
             // Check if the focused element is one of our inputs and has an ID
-            if (e.target.tagName === 'INPUT' && e.target.id) {
-              setLastFocusedElementId(e.target.id);
+            if (e.target instanceof HTMLElement && e.target.id) {
+              // Store the ID of the focused element
+              const fieldId = e.target.id;
+              
+              // Add this field to our initialization tracking if needed,
+              // but don't actually set focus to prevent the jump on first click
+              if (!initialFieldSetupComplete[fieldId]) {
+                setInitialFieldSetupComplete({
+                  ...initialFieldSetupComplete,
+                  [fieldId]: true 
+                });
+              }
+              
+              setLastFocusedElementId(fieldId);
             }
           }}
         >
