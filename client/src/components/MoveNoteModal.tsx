@@ -300,7 +300,7 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
         <div className="flex items-center gap-2 mb-4 text-sm">
           <div className="flex items-center gap-1 overflow-x-auto py-2 no-scrollbar">
             {getCurrentPath().map((item, index) => (
-              <React.Fragment key={item.id || 'root'}>
+              <div key={item.id || 'root'} className="flex items-center">
                 {index > 0 && <ChevronRight className="h-3 w-3 text-gray-500 flex-shrink-0" />}
                 <button
                   onClick={() => setSelectedParentId(item.id)}
@@ -314,7 +314,7 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
                 >
                   {index === 0 ? "Root" : item.label.substring(0, 20) + (item.label.length > 20 ? "..." : "")}
                 </button>
-              </React.Fragment>
+              </div>
             ))}
           </div>
           
