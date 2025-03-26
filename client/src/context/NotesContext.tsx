@@ -31,6 +31,7 @@ interface NotesContextType {
   moveNote: (noteId: string, targetParentId: string | null, position: number) => void;
   importNotes: (data: NotesData, projectName?: string, projectId?: string | null) => void;
   exportNotes: () => NotesData;
+  exportCurrentLevelAsText: () => string;
   expandedNodes: Set<string>;
   setExpandedNodes: React.Dispatch<React.SetStateAction<Set<string>>>;
   toggleExpand: (noteId: string) => void;
@@ -320,6 +321,41 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
 
     return { notes: formatNotesForExport(notes) };
   }, [notes]);
+
+  // Export visible notes in the current level as indented text
+  const exportCurrentLevelAsText = useCallback((): string => {
+    // Helper function to recursively process notes with indentation
+    const processNotesWithIndentation = (
+      noteList: Note[], 
+      level: number = 0, 
+      maxLevel: number = currentLevel,
+      indent: string = '  ', // Two spaces per level
+      result: string[] = []
+    ): string[] => {
+      // Sort notes by position to ensure correct order
+      const sortedNotes = [...noteList].sort((a, b) => a.position - b.position);
+      
+      for (const note of sortedNotes) {
+        // Calculate indentation based on current level
+        const indentation = indent.repeat(level);
+        
+        // Add note content with bullet point and proper indentation
+        result.push(`${indentation}• ${note.content}`);
+        
+        // Process children only if the note is expanded or we're still within the max level
+        const isExpanded = expandedNodes.has(note.id);
+        if (isExpanded && note.children.length > 0 && level < maxLevel) {
+          processNotesWithIndentation(note.children, level + 1, maxLevel, indent, result);
+        }
+      }
+      
+      return result;
+    };
+
+    // Process and join the formatted text
+    const textLines = processNotesWithIndentation(notes);
+    return textLines.join('\n');
+  }, [notes, expandedNodes, currentLevel]);
 
   // Find a note and its path by ID
   const findNoteAndPath = useCallback((
@@ -1418,6 +1454,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         moveNote,
         importNotes,
         exportNotes,
+        exportCurrentLevelAsText,
         expandedNodes,
         setExpandedNodes,
         toggleExpand,
