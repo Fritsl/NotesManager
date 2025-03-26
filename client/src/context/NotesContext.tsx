@@ -58,6 +58,8 @@ interface NotesContextType {
   canUndo: boolean;
   undoLastAction: () => void;
   getUndoDescription: () => string;
+  // Scroll to note for highlighting after move
+  scrollToNote: (noteId: string) => void;
 }
 
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
