@@ -124,16 +124,19 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
       )
     : destinations;
   
+  // Root item with unique key for search results vs. normal navigation
+  const rootItem = {
+    id: null,
+    label: "Root Level",
+    content: "Root Level",
+    level: 0,
+    path: ["Root"],
+    hasChildren: notes.length > 0
+  };
+  
   // Only apply parent filter when NOT searching
   const currentLevelDestinations = useSearchResults
-    ? filteredDestinations.concat([{
-        id: null,
-        label: "Root Level",
-        content: "Root Level",
-        level: 0,
-        path: ["Root"],
-        hasChildren: notes.length > 0
-      }])
+    ? filteredDestinations.concat([rootItem]) 
     : selectedParentId === undefined
       ? filteredDestinations
       : filteredDestinations.filter(dest => {
@@ -242,7 +245,7 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
     
     return (
       <div 
-        key={dest.id || 'root'} 
+        key={`${useSearchResults ? 'search-' : ''}${dest.id || 'root'}`} 
         className={cn(
           "flex items-center justify-between p-3 mb-2 rounded-md cursor-pointer fade-in-note",
           "hover:bg-gray-800 border border-gray-800 hover:border-gray-700",
