@@ -38,7 +38,7 @@ self.addEventListener('activate', event => {
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.filter(cacheName => {
-          return cacheName !== CACHE_NAME;
+          return cacheName !== CACHE_NAME && cacheName !== DATA_CACHE_NAME;
         }).map(cacheName => {
           return caches.delete(cacheName);
         })
@@ -74,19 +74,47 @@ self.addEventListener('fetch', event => {
         .then(response => {
           // Cache the response for future use
           const responseClone = response.clone();
-          caches.open(CACHE_NAME).then(cache => {
+          caches.open(DATA_CACHE_NAME).then(cache => {
             cache.put(event.request, responseClone);
           });
           return response;
         })
         .catch(() => {
           // If network fails, try to serve from cache
-          return caches.match(event.request);
+          return caches.match(event.request).then(cachedResponse => {
+            if (cachedResponse) {
+              return cachedResponse;
+            }
+            // If not in default cache, check data cache
+            return caches.open(DATA_CACHE_NAME).then(cache => {
+              return cache.match(event.request);
+            });
+          });
         })
     );
   } 
-  else if (isProjectsRequest || isStaticAsset) {
-    // For project data and static assets, use cache-first strategy
+  else if (isProjectsRequest) {
+    // For project data, use cache-first strategy with data cache
+    event.respondWith(
+      caches.match(event.request)
+        .then(cachedResponse => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          return fetch(event.request)
+            .then(response => {
+              // Cache the fetched response
+              const responseClone = response.clone();
+              caches.open(DATA_CACHE_NAME).then(cache => {
+                cache.put(event.request, responseClone);
+              });
+              return response;
+            });
+        })
+    );
+  }
+  else if (isStaticAsset) {
+    // For static assets, use cache-first strategy with static cache
     event.respondWith(
       caches.match(event.request)
         .then(cachedResponse => {
