@@ -565,7 +565,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
   }, [toast, currentProjectId]);
 
   // Delete a note
-  const deleteNote = useCallback((noteId: string) => {
+  const deleteNote = useCallback((noteId: string, deleteChildren: boolean = true) => {
     setNotes((prevNotes) => {
       const updatedNotes = [...prevNotes];
       // Create a variable to keep track of the parent note that had a child removed
