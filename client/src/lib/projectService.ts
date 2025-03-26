@@ -556,18 +556,17 @@ function sanitizeProjectName(name: string): string {
     return 'Untitled Project';
   }
 
-  // Check for special characters that might cause database issues
-  // This is based on the "title_characters_check" constraint in the database
-  const hasProblematicChars = /[ÆØÅæøå]|'/.test(sanitized);
+  // MODIFIED: We're now allowing Nordic characters (ÆØÅæøå) and apostrophes
+  // Only restrict truly problematic characters for databases
+  // For example, keep basic input validation to avoid SQL injection
+  const hasProblematicChars = /[<>{}[\]\\\/]/.test(sanitized);
   
   if (hasProblematicChars) {
-    // For now, we'll just log this. In the UI, we'll show a warning
-    console.warn('Project name contains special characters that may cause issues:', sanitized);
+    console.warn('Project name contains characters that may cause issues:', sanitized);
     
-    // Remove problematic characters to avoid database constraint errors
+    // Remove only truly problematic characters (brackets, slashes, etc.)
     sanitized = sanitized
-      .replace(/[ÆØÅæøå]/g, '') // Remove Nordic letters
-      .replace(/'/g, '') // Remove apostrophes
+      .replace(/[<>{}[\]\\\/]/g, '') // Remove brackets, slashes
       .trim();
       
     // If removing these characters made the name empty, use a default

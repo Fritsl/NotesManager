@@ -95,12 +95,13 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
       return;
     }
 
-    // Check for special characters that may cause database issues
-    const hasSpecialChars = /[ÆØÅæøå]|'/.test(newProjectName);
+    // Check for truly problematic characters
+    const hasSpecialChars = /[<>{}[\]\\\/]/.test(newProjectName);
     if (hasSpecialChars) {
       toast({
         title: 'Warning',
-        description: 'Special characters like ÆØÅ or apostrophes may be removed for database compatibility.',
+        description: 'Project name contains characters like brackets or slashes that are not allowed. These characters will be removed.',
+        duration: 5000,
       });
     }
 
@@ -156,11 +157,13 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
 
       // Check for special characters when updating project name
       if (newName) {
-        const hasSpecialChars = /[ÆØÅæøå]|'/.test(newName);
+        // Only check for truly problematic characters
+        const hasSpecialChars = /[<>{}[\]\\\/]/.test(newName);
         if (hasSpecialChars) {
           toast({
             title: 'Warning',
-            description: 'Special characters like ÆØÅ or apostrophes may be removed for database compatibility.',
+            description: 'Project name contains characters like brackets or slashes that are not allowed. These characters will be removed.',
+            duration: 5000,
           });
         }
       }
@@ -344,9 +347,9 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                   onChange={(e) => setNewProjectName(e.target.value)}
                   className="bg-gray-850 border-gray-700"
                 />
-                {/[ÆØÅæøå]|'/.test(newProjectName) && (
+                {/[<>{}[\]\\\/]/.test(newProjectName) && (
                   <p className="text-xs text-amber-400 mt-1">
-                    Note: Special characters (ÆØÅ, apostrophes) may be removed for database compatibility.
+                    Note: Special characters like brackets and slashes are not allowed and will be removed.
                   </p>
                 )}
               </div>
@@ -404,9 +407,9 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                               onChange={(e) => setEditName(e.target.value)}
                               className="bg-gray-800 border-gray-700"
                             />
-                            {/[ÆØÅæøå]|'/.test(editName) && (
+                            {/[<>{}[\]\\\/]/.test(editName) && (
                               <p className="text-xs text-amber-400 mt-1">
-                                Note: Special characters (ÆØÅ, apostrophes) may be removed for database compatibility.
+                                Note: Special characters like brackets and slashes are not allowed and will be removed.
                               </p>
                             )}
                           </div>
