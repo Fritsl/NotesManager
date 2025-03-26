@@ -155,6 +155,8 @@ export default function HeaderWithSearch() {
   const [newProjectName, setNewProjectName] = useState('');
   const projectNameInputRef = useRef<HTMLInputElement>(null);
   const newProjectInputRef = useRef<HTMLInputElement>(null);
+  
+
 
   // Update local state when context project name changes
   useEffect(() => {
