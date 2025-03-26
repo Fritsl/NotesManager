@@ -742,11 +742,26 @@ export async function createProject(name: string, notesData: NotesData): Promise
   }
 }
 
+// Helper function to sanitize project names
+function sanitizeProjectName(name: string): string {
+  // Convert to ASCII-only characters to avoid database constraint issues
+  // This is a simple approach - you may want to customize this based on your needs
+  const sanitized = name.replace(/[^\x00-\x7F]/g, '_');
+  return sanitized;
+}
+
 export async function updateProject(id: string, name: string, notesData: NotesData, description: string = ''): Promise<Project | null> {
   try {
     console.log('--- updateProject: Starting to update project ---');
     console.log('Project ID:', id);
     console.log('Project name:', name);
+    
+    // Store the original name for return value 
+    const originalName = name;
+    
+    // For now, don't sanitize the project name as it seems to be working
+    // with special characters. If issues arise later, we can enable sanitization.
+    const sanitizedName = name; // No sanitization for now
     
     // Check if notesData has image information to preserve
     let hasImages = false;
@@ -812,7 +827,7 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
         },
         body: JSON.stringify({
           id: id,
-          name: name,
+          name: name, // Using original name for display in UI
           userId: userData.user.id,
           data: validNotesData,
           description: description
