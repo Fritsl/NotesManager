@@ -258,24 +258,27 @@ export default function NoteEditor() {
   };
 
   const handleUrlDisplayTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("URL display text change:", e.target.value);
     const newText = e.target.value;
     setUrlDisplayText(newText);
     setHasChanges(true);
 
-    // Use longer delay for autosave to prevent focus loss issues
-    // This prevents the UI from jumping around while editing
+    // Track the active element before setting timeout
+    const activeElement = document.activeElement;
+    console.log("Active element before timeout:", activeElement?.id);
+
+    // Completely remove the auto-save for URL fields - only save on blur
     if (saveDebounceTimeout) {
       clearTimeout(saveDebounceTimeout);
     }
     
-    const timeout = setTimeout(() => {
-      saveDirectly();
-    }, 1500); // Use a longer 1.5 second delay to match content edits
-    
-    setSaveDebounceTimeout(timeout);
+    // Don't auto-save, only mark as changed
+    // We'll save when the field loses focus instead
+    console.log("URL display text changed but no auto-save scheduled");
   };
 
   const handleDiscussionChange = (checked: boolean | "indeterminate") => {
+    console.log("Discussion checkbox changed:", checked);
     // Store current content in a variable to preserve it
     const currentContent = contentRef.current?.value || content;
 
@@ -285,26 +288,25 @@ export default function NoteEditor() {
     setIsDiscussion(newValue);
     setHasChanges(true);
 
-    // Use longer delay for autosave to prevent focus loss issues
+    // Clear any auto-save timeout
     if (saveDebounceTimeout) {
       clearTimeout(saveDebounceTimeout);
     }
     
-    // Ensure content is preserved and then save
-    const timeout = setTimeout(() => {
-      if (contentRef.current && contentRef.current.value !== currentContent) {
-        contentRef.current.value = currentContent;
-        setContent(currentContent);
-      }
-      
-      // Call the direct save function with a longer delay
-      saveDirectly();
-    }, 1500); // Use a longer 1.5 second delay to match content edits
+    // No need to auto-save on checkbox changes
+    // Just update the in-memory state and preserve content
+    if (contentRef.current && contentRef.current.value !== currentContent) {
+      contentRef.current.value = currentContent;
+      setContent(currentContent);
+    }
     
-    setSaveDebounceTimeout(timeout);
+    // Only update in-memory to keep focus
+    console.log("Discussion status updated in memory, saving on next blur");
+    saveDirectly();
   };
 
   const handleTimeChange = (value: string | null) => {
+    console.log("Time picker change:", value);
     // Store time as HH:MM with no seconds
     let formattedTime = null;
     if (value) {
@@ -322,17 +324,18 @@ export default function NoteEditor() {
     setTimeSet(formattedTime);
     setHasChanges(true);
 
-    // Use longer delay for autosave to prevent focus loss issues
-    // This prevents the UI from jumping around while editing
+    // Track the active element before setting timeout
+    const activeElement = document.activeElement;
+    console.log("Active element before time change:", activeElement?.id);
+
+    // Clear any auto-save timeout
     if (saveDebounceTimeout) {
       clearTimeout(saveDebounceTimeout);
     }
     
-    const timeout = setTimeout(() => {
-      saveDirectly();
-    }, 1500); // Use a longer 1.5 second delay to match content edits
-    
-    setSaveDebounceTimeout(timeout);
+    // Only update in-memory - this prevents focus jumps in the time picker
+    console.log("Time updated in memory only, saving on next blur");
+    saveDirectly();
   };
 
   // Handler for Apply button in the time picker
