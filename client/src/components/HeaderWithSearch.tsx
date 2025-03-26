@@ -26,7 +26,8 @@ import {
   Maximize2,    
   Minimize2,
   PlusCircle,
-  FilePlus
+  FilePlus,
+  RotateCcw
 } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { useAuth } from "@/context/AuthContext";
@@ -649,6 +650,22 @@ export default function Header() {
                     <PlusCircle className="h-4 w-4 mr-2" />
                     <span>Add Note (Root level)</span>
                   </DropdownMenuItem>
+                  
+                  {/* Undo Action - only shown when actions are available to undo */}
+                  {canUndo && (
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        undoLastAction();
+                        toast({
+                          title: "Undo Successful",
+                          description: "Previous action has been undone"
+                        });
+                      }}
+                    >
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      <span>{getUndoDescription()}</span>
+                    </DropdownMenuItem>
+                  )}
                   
                   <DropdownMenuSeparator />
 
