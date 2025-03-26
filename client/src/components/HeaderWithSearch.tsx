@@ -605,10 +605,20 @@ export default function HeaderWithSearch() {
                     <span>Help</span>
                   </DropdownMenuItem>
                   {user ? (
-                    <DropdownMenuItem onClick={handleSignOut}>
-                      <LogOut className="h-4 w-4 mr-2" />
-                      <span>Sign Out</span>
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="cursor-default">
+                        <span className="text-gray-300 text-xs font-semibold">Who's Signed In</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="cursor-default pb-2">
+                        <span className="text-xs">{user.email}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleSignOut}>
+                        <LogOut className="h-4 w-4 mr-2" />
+                        <span>Sign Out</span>
+                      </DropdownMenuItem>
+                    </>
                   ) : (
                     <DropdownMenuItem onClick={() => setShowAuthModal(true)}>
                       <LogIn className="h-4 w-4 mr-2" />
@@ -756,10 +766,20 @@ export default function HeaderWithSearch() {
                   </DropdownMenuItem>
 
                   {user ? (
-                    <DropdownMenuItem onClick={handleSignOut}>
-                      <LogOut className="h-4 w-4 mr-2" />
-                      <span>Sign Out</span>
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="cursor-default">
+                        <span className="text-gray-300 text-xs font-semibold">Who's Signed In</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="cursor-default pb-2">
+                        <span className="text-xs">{user.email}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleSignOut}>
+                        <LogOut className="h-4 w-4 mr-2" />
+                        <span>Sign Out</span>
+                      </DropdownMenuItem>
+                    </>
                   ) : (
                     <DropdownMenuItem onClick={() => setShowAuthModal(true)}>
                       <LogIn className="h-4 w-4 mr-2" />
