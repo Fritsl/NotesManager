@@ -127,7 +127,7 @@ export default function NoteEditor() {
   }, [selectedNote, currentProjectId, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, timeSet, updateNote]);
 
   // Auto-save when a field loses focus and there are changes
-  const handleBlur = useCallback(async (e: React.FocusEvent) => {
+  const handleBlur = useCallback(async (e: React.FocusEvent<HTMLTextAreaElement | HTMLInputElement>) => {
     if (selectedNote && hasChanges && contentRef.current) {
       const targetId = (e.target as HTMLElement).id || "unknown";
       console.log(`⚠️ Blur event detected on: ${targetId}, fullscreen mode: ${isFullscreenEditMode}`);
@@ -201,10 +201,10 @@ export default function NoteEditor() {
           } catch (error) {
             console.error("❌ Failed to save note to database after blur:", error);
           }
-        }
-      }, 800); // Slightly longer delay to ensure we're not in a field transition
+        }, 800); // Slightly longer delay to ensure we're not in a field transition
+      }
     }
-  }, [selectedNote, hasChanges, saveDirectly, saveProject]);
+  }, [selectedNote, hasChanges, saveDirectly, saveProject, isFullscreenEditMode, contentRef, setContent, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, timeSet, updateNote, blurSaveTimerRef, setHasChanges]);
 
   // Auto-save after 5 seconds of inactivity in text fields
   useEffect(() => {
