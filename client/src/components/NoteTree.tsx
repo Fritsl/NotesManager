@@ -3,7 +3,7 @@ import { useNotes } from "@/context/NotesContext";
 import NoteTreeItem from "./NoteTreeItem";
 import DropZone from "./DropZone";
 import { Button } from "@/components/ui/button";
-import { Plus, FilePlus } from "lucide-react";
+import { Plus, FilePlus, RotateCcw } from "lucide-react";
 
 export default function NoteTree() {
   const { 
@@ -17,7 +17,10 @@ export default function NoteTree() {
     currentLevel,
     currentProjectName,
     hasActiveProject,
-    maxDepth
+    maxDepth,
+    canUndo,
+    undoLastAction,
+    getUndoDescription
   } = useNotes();
   
   // Debug current project name
@@ -99,6 +102,15 @@ export default function NoteTree() {
         e.preventDefault();
         const level = parseInt(e.key);
         expandToLevel(level);
+      }
+      
+      // Ctrl+Z for undo
+      if (e.ctrlKey && e.key === 'z') {
+        e.preventDefault();
+        if (canUndo) {
+          console.log('Undoing last action');
+          undoLastAction();
+        }
       }
     };
     
