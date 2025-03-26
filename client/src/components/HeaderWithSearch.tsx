@@ -43,7 +43,7 @@ import UserMenu from "@/components/UserMenu";
 import SearchBar from "@/components/SearchBar";
 import FilterMenu, { FilterType } from "@/components/FilterMenu";
 import { Note } from "@/types/notes";
-import { moveProjectToTrash } from "@/lib/projectService";
+import { moveProjectToTrash, updateProject } from "@/lib/projectService";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -89,7 +89,8 @@ export default function HeaderWithSearch() {
     addNote,
     undoLastAction,
     canUndo,
-    getUndoDescription
+    getUndoDescription,
+    exportNotes
   } = useNotes();
 
   // For filter functionality
@@ -217,31 +218,33 @@ export default function HeaderWithSearch() {
     // Log the name change for debugging
     console.log(`Project name changed from "${currentProjectName}" to "${editedProjectName}"`);
 
-    // Trigger the auto-save functionality
+    // Save the project name directly to the database
     if (currentProjectId) {
-      setTimeout(async () => {
+      // Use the exportNotes function we already have
+      const notesData = exportNotes();
+      
+      console.log("Directly saving project name change to database");
+      
+      (async () => {
         try {
-          await saveProject();
-          console.log("Project auto-saved after name change");
-
-          // The toast was already removed as requested
-          /*
-          toast({
-            title: "Project Renamed",
-            description: "The project name has been updated and saved",
-          });
-          */
+          // Call updateProject directly to update the database
+          const result = await updateProject(
+            currentProjectId,
+            editedProjectName,
+            notesData
+          );
+          
+          if (result) {
+            console.log("Project name updated successfully in database");
+            // Trigger a refresh of any project listings
+            window.dispatchEvent(new Event('project-updated'));
+          } else {
+            console.error("Failed to update project name in database");
+          }
         } catch (error) {
-          console.error("Failed to auto-save after name change:", error);
-          /*
-          toast({
-            title: "Error Saving Project Name",
-            description: "The name was changed but couldn't be saved to the database",
-            variant: "destructive",
-          });
-          */
+          console.error("Error updating project name in database:", error);
         }
-      }, 0);
+      })();
     }
   };
 
