@@ -1,11 +1,11 @@
 {
   "id": "0e785690-ec48-416d-b4b0-c4951b308877",
-  "name": "english name",
+  "name": "german name",
   "user_id": "2df0798b-b535-4015-8c5e-15ed98a09481",
   "data": {
     "notes": [
       {
-        "id": "a61868f8-b897-4270-8106-da763ddb6949",
+        "id": "c01b13de-2af5-45d9-87fc-5c14fa83d61e",
         "content": "Introduktion",
         "position": 0,
         "is_discussion": false,
@@ -16,7 +16,7 @@
         "images": [],
         "children": [
           {
-            "id": "e633142d-b408-4284-a1e6-e9c040d8dd4e",
+            "id": "ac62d3fc-c659-4000-8620-2ab518844a20",
             "content": "Introduktion og hvordan bruger I kunstig intelligens idag?",
             "position": 0,
             "is_discussion": true,
@@ -28,7 +28,7 @@
             "children": []
           },
           {
-            "id": "c1faca3e-bdfa-4b34-a8b0-f732a9d32daa",
+            "id": "8509d749-cb2b-40d2-87c4-1ead9777f747",
             "content": "Obstructive technologies ",
             "position": 1,
             "is_discussion": false,
@@ -39,7 +39,7 @@
             "images": [],
             "children": [
               {
-                "id": "fe1f4b19-8874-4ca2-85e4-4688c94cd1ae",
+                "id": "ac702176-9365-4378-8be8-4e3e589ad9ab",
                 "content": "Frits Lyneborg Karriere",
                 "position": 0,
                 "is_discussion": false,
@@ -50,7 +50,7 @@
                 "images": [],
                 "children": [
                   {
-                    "id": "68c61536-6b55-4ae5-93f4-383426462122",
+                    "id": "7231a08d-b71d-4111-8487-db07e02c8b6a",
                     "content": "Coming up: Quantum computing",
                     "position": 0,
                     "is_discussion": false,
@@ -62,7 +62,7 @@
                     "children": []
                   },
                   {
-                    "id": "cca555d5-1cc7-4653-9e04-b737b2d95b89",
+                    "id": "5d4f3c04-5d7e-4c03-bcea-52319c869f6a",
                     "content": "2025: Vibe coding",
                     "position": 1,
                     "is_discussion": false,
@@ -74,7 +74,7 @@
                     "children": []
                   },
                   {
-                    "id": "c38c8f7a-e2af-4834-81ed-65e25bece9cb",
+                    "id": "39c46857-b727-4dfd-933b-51d1737aadfe",
                     "content": "2024: Agenter",
                     "position": 2,
                     "is_discussion": false,
@@ -86,7 +86,7 @@
                     "children": []
                   },
                   {
-                    "id": "5f303747-0c10-425f-8a39-d00be0054007",
+                    "id": "f0c5c52a-594f-43cb-816c-1687e6c64a99",
                     "content": "2022: LLM AI ",
                     "position": 3,
                     "is_discussion": false,
@@ -98,7 +98,7 @@
                     "children": []
                   },
                   {
-                    "id": "cb4ba829-fb30-4bc2-b5dc-f34417e9f4ff",
+                    "id": "7d364d3b-5d3b-4ada-835b-948a86a60139",
                     "content": "2022: Nord Stream",
                     "position": 4,
                     "is_discussion": false,
@@ -110,7 +110,7 @@
                     "children": []
                   },
                   {
-                    "id": "b15c9607-61aa-49c7-a179-a1202274d5e7",
+                    "id": "9c95078e-c377-4f84-9a7b-513a23d47299",
                     "content": "2017: Unity, Unreal, Blender",
                     "position": 5,
                     "is_discussion": false,
@@ -122,7 +122,7 @@
                     "children": []
                   },
                   {
-                    "id": "fcff6f99-040e-4829-ae63-ab7b554f1c79",
+                    "id": "c3bbb3f5-2017-42b7-8969-3c01da6abf38",
                     "content": "11 år senere..",
                     "position": 6,
                     "is_discussion": false,
@@ -134,7 +134,7 @@
                     "children": []
                   },
                   {
-                    "id": "afbbd0e3-a2c8-4719-a8ea-36a8f8fdfc25",
+                    "id": "390579e5-5cca-47aa-92a2-9c4bf9f39f06",
                     "content": "2011: Droner",
                     "position": 7,
                     "is_discussion": false,
@@ -146,7 +146,7 @@
                     "children": []
                   },
                   {
-                    "id": "eff28a50-b2de-4743-a94f-2bd7bf7c0976",
+                    "id": "1733796b-7eae-4732-9727-27530fe219d0",
                     "content": "2009: Smartphones",
                     "position": 8,
                     "is_discussion": false,
@@ -158,7 +158,7 @@
                     "children": []
                   },
                   {
-                    "id": "e1145973-ceb7-41f2-86ee-f3d99d5a3e8b",
+                    "id": "6d2715fd-b749-4756-8e60-be9b25200316",
                     "content": "2008: STEM / LetsMakeRobots.com",
                     "position": 9,
                     "is_discussion": false,
@@ -170,7 +170,7 @@
                     "children": []
                   },
                   {
-                    "id": "e098969a-622e-4447-b0e4-1131da6a3dc0",
+                    "id": "4e595809-8ac7-4a94-82e3-37ee42fbfa53",
                     "content": "2007: Recession ",
                     "position": 10,
                     "is_discussion": false,
@@ -182,7 +182,7 @@
                     "children": []
                   },
                   {
-                    "id": "9f89249a-c36e-4247-9aa4-c25bb9a30210",
+                    "id": "9648cca2-d7bf-43aa-82b1-bf9dd3b07d46",
                     "content": "2002: Web 2.0 / folket er stemmen",
                     "position": 11,
                     "is_discussion": false,
@@ -194,7 +194,7 @@
                     "children": []
                   },
                   {
-                    "id": "915dcb61-042d-4a4d-ae93-ad9f5a9f1047",
+                    "id": "7e330428-a4cb-4ee0-ad26-5eaf6941ffdc",
                     "content": "2001: Open source / Gratis software ",
                     "position": 12,
                     "is_discussion": false,
@@ -206,7 +206,7 @@
                     "children": []
                   },
                   {
-                    "id": "f6c03f46-4a65-4ba2-ad53-ffde1c0a0fb9",
+                    "id": "7708120e-e801-4a88-a2d3-8dd294a154c6",
                     "content": "2000: dot com boblen sprang",
                     "position": 13,
                     "is_discussion": false,
@@ -218,7 +218,7 @@
                     "children": []
                   },
                   {
-                    "id": "f0cf7fbb-e296-4e78-ae4b-d8cad1567832",
+                    "id": "5126c9b8-9e9b-4e4a-88f4-594b08a882cf",
                     "content": "1999: IT-chef uden IT uddannelse ",
                     "position": 14,
                     "is_discussion": false,
@@ -230,7 +230,7 @@
                     "children": []
                   },
                   {
-                    "id": "b3c992f8-2bc1-494e-b52d-2be7f2ca735b",
+                    "id": "ff4b10d6-a362-4a69-a7ba-a4d3e7fd8a7e",
                     "content": "1997: Pladeselskab",
                     "position": 15,
                     "is_discussion": false,
@@ -242,7 +242,7 @@
                     "children": []
                   },
                   {
-                    "id": "7fe40cc7-82fe-4dba-a3c8-7da8ba4bd234",
+                    "id": "8826c59d-7689-4cdc-b8c8-14b321d25046",
                     "content": "1995: Universitet uddanner forældet",
                     "position": 16,
                     "is_discussion": false,
@@ -254,7 +254,7 @@
                     "children": []
                   },
                   {
-                    "id": "3a0b6033-6577-4ea0-b09b-d15dd0bd8e6f",
+                    "id": "68e7f48b-7ae7-4763-8452-f3a9e0ace5ae",
                     "content": "1989: Multimedia og tekstbehandling",
                     "position": 17,
                     "is_discussion": false,
@@ -266,7 +266,7 @@
                     "children": []
                   },
                   {
-                    "id": "012335a5-e2f1-401f-8a21-acdc5cef0ba4",
+                    "id": "55a4b548-68c4-42f6-8077-2e3339a142b9",
                     "content": "1983: Computer",
                     "position": 18,
                     "is_discussion": false,
@@ -282,7 +282,7 @@
             ]
           },
           {
-            "id": "f3ed55ca-d199-417a-96f3-dcba18562c80",
+            "id": "1142eb84-763b-400c-ad4d-a2817990e09b",
             "content": "Forventningsafstemning",
             "position": 2,
             "is_discussion": false,
@@ -293,7 +293,7 @@
             "images": [],
             "children": [
               {
-                "id": "202f7f9c-b629-4a83-8f82-65aa837ff77f",
+                "id": "6b2fcc9a-1541-4929-8189-26de75776b97",
                 "content": "Vi kan ikke nå det hele, I bliver ikke AI eksperter",
                 "position": 0,
                 "is_discussion": false,
@@ -304,7 +304,7 @@
                 "images": [],
                 "children": [
                   {
-                    "id": "7727fffc-7e0a-42c9-879c-16f322709fb3",
+                    "id": "17e5c38b-e8a1-48d6-a695-39776868b9fe",
                     "content": "Retning og strategi - \"Hvad gør vi, og hvad skal vi være opmærksomme på?\"",
                     "position": 0,
                     "is_discussion": true,
@@ -316,7 +316,7 @@
                     "children": []
                   },
                   {
-                    "id": "f9a8d5bc-1686-4ffe-aa80-23d3b1bc9c45",
+                    "id": "e0e45cd9-11d2-4f6e-a36f-4f3be0dea31e",
                     "content": "Inspiration - \"Hvordan kan vi udnytte det her?\"",
                     "position": 1,
                     "is_discussion": true,
@@ -328,7 +328,7 @@
                     "children": []
                   },
                   {
-                    "id": "aad2ef61-6571-4cbf-bc4a-02cfcedad4ac",
+                    "id": "be625140-2159-43d1-b321-323b575b8823",
                     "content": "Forståelse - \"Hvad er det der sker?\"",
                     "position": 2,
                     "is_discussion": true,
@@ -344,7 +344,7 @@
             ]
           },
           {
-            "id": "595b0e9c-e8df-426b-ae12-3cd9cd1c3c60",
+            "id": "ce28557c-153a-42df-8056-704f75e3743d",
             "content": "10 Minutters pause ",
             "position": 3,
             "is_discussion": false,
@@ -358,7 +358,7 @@
         ]
       },
       {
-        "id": "09456a49-2de4-484c-9704-9b40df4a974f",
+        "id": "e9b69600-536a-47ae-b4fc-1c064e07d065",
         "content": "Teori og viden",
         "position": 1,
         "is_discussion": false,
@@ -369,7 +369,7 @@
         "images": [],
         "children": [
           {
-            "id": "a2872939-2518-47e1-9dfb-f7d065d4321d",
+            "id": "c0e08b4c-a2c8-4e05-833a-c44e1ba3fa18",
             "content": "Driftsomkostninger for LLM",
             "position": 0,
             "is_discussion": false,
@@ -380,7 +380,7 @@
             "images": [],
             "children": [
               {
-                "id": "2ea43d78-6c6b-4476-a56f-fa9a7c417b97",
+                "id": "1b14d764-9ce8-49cb-9597-5107157e53e6",
                 "content": "Tokens?",
                 "position": 0,
                 "is_discussion": false,
@@ -392,7 +392,7 @@
                 "children": []
               },
               {
-                "id": "18edbed8-ebf9-4426-aeb9-29c3d9bf0219",
+                "id": "e8b9138b-0b9b-4c03-9121-66dd46b4a72f",
                 "content": "Grafikkort?!",
                 "position": 1,
                 "is_discussion": false,
@@ -404,7 +404,7 @@
                 "children": []
               },
               {
-                "id": "904611e3-350e-4dbf-bc19-f6edfe1c6bdc",
+                "id": "9d4187de-2402-411e-9048-c7dcacea48f2",
                 "content": "Hvad betyder prisen for de gratis eller billige output?",
                 "position": 2,
                 "is_discussion": false,
@@ -418,7 +418,7 @@
             ]
           },
           {
-            "id": "a40d9610-9557-4fe4-ad56-248fe644883a",
+            "id": "bce00b24-3244-48d2-a93a-8dd340b2ea95",
             "content": "Multi Modal AI",
             "position": 1,
             "is_discussion": false,
@@ -430,7 +430,7 @@
             "children": []
           },
           {
-            "id": "7e88cf01-b680-4164-aa22-6b65759d96aa",
+            "id": "d9ef8b54-83f6-4619-8665-4180c744b55c",
             "content": "Frokostpause",
             "position": 2,
             "is_discussion": false,
@@ -442,7 +442,7 @@
             "children": []
           },
           {
-            "id": "92c55e88-0394-41ea-a119-dd784396d98f",
+            "id": "b0eb5c83-bf9c-4f66-a6c8-13047b6a60f2",
             "content": "LLM Enterprise",
             "position": 3,
             "is_discussion": false,
@@ -453,7 +453,7 @@
             "images": [],
             "children": [
               {
-                "id": "4eb34212-d05f-464b-8362-76a970938836",
+                "id": "affdd4e7-f9b9-4229-9019-f57cd29e992b",
                 "content": "Time compression",
                 "position": 0,
                 "is_discussion": false,
@@ -467,7 +467,7 @@
             ]
           },
           {
-            "id": "0f173928-a8e5-4195-a1ac-bbf1eaa95818",
+            "id": "ff8b9a5d-d6d1-48c8-8927-6fc61b10d731",
             "content": "AGI - Artificial General Intelligence",
             "position": 4,
             "is_discussion": false,
@@ -479,7 +479,7 @@
             "children": []
           },
           {
-            "id": "78e109d4-d142-483b-bb88-797336193141",
+            "id": "3cdf3866-8c5e-449b-a5f6-f3c2a45219db",
             "content": "Data persistence",
             "position": 5,
             "is_discussion": false,
@@ -491,7 +491,7 @@
             "children": []
           },
           {
-            "id": "08ac8e2b-dd88-4627-bdff-86318c65f68d",
+            "id": "1ecfc09b-4f7e-4dd6-b25a-5259f60b8735",
             "content": "De 3 vigtigste spørgsmål",
             "position": 6,
             "is_discussion": false,
@@ -502,7 +502,7 @@
             "images": [],
             "children": [
               {
-                "id": "93ebcf1e-c1bd-4ca6-8685-03e31b1d8b1d",
+                "id": "2f91b48f-29e7-47bc-b5bb-155420c86331",
                 "content": "Hvordan automatiseres med AI?",
                 "position": 0,
                 "is_discussion": false,
@@ -514,7 +514,7 @@
                 "children": []
               },
               {
-                "id": "53607ee3-6885-4d17-b7a8-394db37f8140",
+                "id": "421c7cbe-d104-478c-9c3a-8cb253b64dfc",
                 "content": "Hvad kan automatiseres med AI?",
                 "position": 1,
                 "is_discussion": false,
@@ -526,7 +526,7 @@
                 "children": []
               },
               {
-                "id": "25a19807-a792-47b7-8b58-caadee9db5b5",
+                "id": "cfa0c583-aee4-40d1-8919-30c7d17fdcd5",
                 "content": "Hvad kan ikke automatiseres med AI?",
                 "position": 2,
                 "is_discussion": false,
@@ -537,7 +537,7 @@
                 "images": [],
                 "children": [
                   {
-                    "id": "f5c37cdb-a67b-4528-8f5e-2bc31d8a3917",
+                    "id": "2ef92e5c-f48a-4ecb-9dd3-167524c61493",
                     "content": "Opgaver der kræver Kreativitet, Håndværk, Security, Omsorg, Etik og moral, Fysisk interaktion, Ledelse og strategi, Emotionel intelligens.. \n\n.. skriv det ned.",
                     "position": 0,
                     "is_discussion": true,
@@ -553,7 +553,7 @@
             ]
           },
           {
-            "id": "91f85257-7f54-4e33-ab33-28c669515c12",
+            "id": "f9b52fbc-c636-4c2b-9579-3d3e5074e3ac",
             "content": "Forbundne systemer, API og webhook",
             "position": 7,
             "is_discussion": false,
@@ -564,7 +564,7 @@
             "images": [],
             "children": [
               {
-                "id": "39702b16-5d0e-403b-84ed-9a2630384656",
+                "id": "bd41a047-4398-4024-b925-48e9070cbe6d",
                 "content": "MCP",
                 "position": 0,
                 "is_discussion": false,
@@ -576,7 +576,7 @@
                 "children": []
               },
               {
-                "id": "ccafe5d5-49ee-43b1-9e78-f4c07ed0607a",
+                "id": "6c0ffa24-fe92-46f5-9977-c3fbe3f2f0d4",
                 "content": "CSV",
                 "position": 1,
                 "is_discussion": false,
@@ -588,7 +588,7 @@
                 "children": []
               },
               {
-                "id": "1c64ea15-e5e9-4b70-a44f-9557b15d8d8b",
+                "id": "093e50e1-fb7b-4e10-9b80-ba1612e31b4f",
                 "content": "JSON",
                 "position": 2,
                 "is_discussion": false,
@@ -600,7 +600,7 @@
                 "children": []
               },
               {
-                "id": "fe501ce5-a4b9-45d6-ad6d-8fa84222c8d9",
+                "id": "f9125436-7c02-4b84-a462-01bb861827e5",
                 "content": "XML",
                 "position": 3,
                 "is_discussion": false,
@@ -614,7 +614,7 @@
             ]
           },
           {
-            "id": "66ff1970-f061-46ff-b1a5-fcb148767e49",
+            "id": "925d0711-e0cc-4755-aff1-de8bfdfcd3a6",
             "content": "Agentic AI",
             "position": 8,
             "is_discussion": false,
@@ -626,7 +626,7 @@
             "children": []
           },
           {
-            "id": "8a80a129-984f-4008-a7e4-812b6102d05d",
+            "id": "b21705b0-de15-49af-8d0b-7d5ae3d79c4c",
             "content": "Hvad er kunstig intelligens?",
             "position": 9,
             "is_discussion": false,
@@ -637,7 +637,7 @@
             "images": [],
             "children": [
               {
-                "id": "500d1700-e398-4d2f-8832-c4da43e6ed69",
+                "id": "a6cc0933-6351-4bc4-9ad2-f67661f8ed79",
                 "content": "Generative AI",
                 "position": 0,
                 "is_discussion": false,
@@ -649,7 +649,7 @@
                 "children": []
               },
               {
-                "id": "86cd9bf4-c574-4f84-a0d6-8f092709cbd8",
+                "id": "d6fcb072-38fb-4fc9-9cee-6b03f45cb5e5",
                 "content": "Large Language Model",
                 "position": 1,
                 "is_discussion": false,
@@ -661,7 +661,7 @@
                 "children": []
               },
               {
-                "id": "fe2a3b97-a42f-42a0-9f11-8b2acff95243",
+                "id": "2b17453a-b3c1-4430-ac33-33d356bffbf6",
                 "content": "Ekspert systemer",
                 "position": 2,
                 "is_discussion": false,
@@ -673,7 +673,7 @@
                 "children": []
               },
               {
-                "id": "b1b78cec-5dde-42f4-b842-753b3584cd46",
+                "id": "a137177e-b3c5-42c8-91c8-0fde081a7773",
                 "content": "Finite State Machine (FSM)",
                 "position": 3,
                 "is_discussion": false,
@@ -687,7 +687,7 @@
             ]
           },
           {
-            "id": "38390f88-c4c8-4ce3-a566-bce10a06a5ac",
+            "id": "c4936f0c-41a8-4312-9e05-15cdfccc7c1b",
             "content": "Sikkerhed",
             "position": 10,
             "is_discussion": false,
@@ -698,7 +698,7 @@
             "images": [],
             "children": [
               {
-                "id": "e7d72644-84e6-44fd-969f-efcdc5c2dad0",
+                "id": "6dcf39ea-b0e0-4ed7-931e-b5796b455d07",
                 "content": "Skal man køre sin egen LLM?",
                 "position": 0,
                 "is_discussion": false,
@@ -712,7 +712,7 @@
             ]
           },
           {
-            "id": "d994a58c-1ebc-47f2-8597-fa8b02c93f54",
+            "id": "d81c4d8f-e40a-48b3-a1dd-0ca607bb90e1",
             "content": "Definition af \"En App\"",
             "position": 11,
             "is_discussion": false,
@@ -724,7 +724,7 @@
             "children": []
           },
           {
-            "id": "ab8a8bed-ca01-4f46-baba-a3173a6d8d36",
+            "id": "d2396992-480e-4e54-ab2a-eb8e977ef32c",
             "content": "Hvad er Python",
             "position": 12,
             "is_discussion": false,
@@ -738,7 +738,7 @@
         ]
       },
       {
-        "id": "a843e655-05d1-4e6b-85b2-e599d44b3868",
+        "id": "837f37e6-6716-4752-b6f8-9db89829af2b",
         "content": "Implementering",
         "position": 2,
         "is_discussion": false,
@@ -749,7 +749,7 @@
         "images": [],
         "children": [
           {
-            "id": "1f874e7b-df41-4a7e-8517-d27bd9c48c4d",
+            "id": "fe83dde9-995e-4545-8bf7-ce36b97c4eb9",
             "content": "Hvad betyder det hele i kroner og dollar?",
             "position": 0,
             "is_discussion": true,
@@ -761,7 +761,7 @@
             "children": []
           },
           {
-            "id": "c6806c01-95ac-4741-9d73-e09ce95053d1",
+            "id": "dce84d55-30d0-4979-99d2-391ab0c8dfea",
             "content": "Sikkerhedsrisikoen ved at overlade hele processerne udelukkende til AI",
             "position": 1,
             "is_discussion": false,
@@ -772,7 +772,7 @@
             "images": [],
             "children": [
               {
-                "id": "208de951-6ff8-4e58-891a-39ea9161b348",
+                "id": "1247c6df-9c85-4fdd-81a7-04bc3784657b",
                 "content": "\"Let it aim the missile\" - \"You press Fire\"",
                 "position": 0,
                 "is_discussion": false,
@@ -784,7 +784,7 @@
                 "children": []
               },
               {
-                "id": "ca961f96-1a6c-44be-a5c5-aa1d91342ea7",
+                "id": "250bc73d-9c69-42c7-9a2f-f14a7a75d78c",
                 "content": "\"Let it write the letter\" - \"You press Send\"",
                 "position": 1,
                 "is_discussion": false,
@@ -796,7 +796,7 @@
                 "children": []
               },
               {
-                "id": "88cd71e9-e6d6-4348-bb81-531bb36c96d1",
+                "id": "d738297f-0f43-4d1b-8759-8c180235ed11",
                 "content": "Løsningen er delegering – mennesket i loopet",
                 "position": 2,
                 "is_discussion": false,
@@ -810,7 +810,7 @@
             ]
           },
           {
-            "id": "da4cd37a-fd81-4d34-a905-11ba5cf07fdc",
+            "id": "a5030d8c-3057-4cf5-9ddd-2da66cddfc3a",
             "content": "Fremlægning og diskussion ",
             "position": 2,
             "is_discussion": true,
@@ -821,7 +821,7 @@
             "images": [],
             "children": [
               {
-                "id": "1b4113c8-1202-42c9-aaf2-26453007b5b0",
+                "id": "b48164dd-ced2-4b5b-bc76-2d39c72a7efd",
                 "content": "Hvem kan erstatte eksperter? (Hvem skal du hyre, hvordan skal du træne og udvikle dit hold)?",
                 "position": 0,
                 "is_discussion": false,
@@ -832,7 +832,7 @@
                 "images": [],
                 "children": [
                   {
-                    "id": "c91340e0-1f36-4795-b35e-8901890ad809",
+                    "id": "2e07ce0a-8e46-4d5f-8c9e-6ab5a4fb83f7",
                     "content": "2) System arkitekter, produktudviklere, nytænkende",
                     "position": 0,
                     "is_discussion": false,
@@ -844,7 +844,7 @@
                     "children": []
                   },
                   {
-                    "id": "908ce01d-c07b-4e58-b087-1d574cfffe45",
+                    "id": "cb2c2f68-1cc8-4b6b-a884-fb5051280c0e",
                     "content": "1) Generalister med adgang til konfirmeret viden",
                     "position": 1,
                     "is_discussion": false,
@@ -858,7 +858,7 @@
                 ]
               },
               {
-                "id": "ddde5f3f-76ae-4628-a179-4481b52bf0f9",
+                "id": "6e897733-9e22-4451-8499-805ec7488464",
                 "content": "Hvordan vælges hvor der skal sættes ind?",
                 "position": 1,
                 "is_discussion": true,
@@ -870,7 +870,7 @@
                 "children": []
               },
               {
-                "id": "90e2513f-6018-4ae7-834e-9503ab10cfac",
+                "id": "91120107-b171-4dc4-aa7c-bd11ad5f60bc",
                 "content": "Feedback loop i virksomhedens viden ",
                 "position": 2,
                 "is_discussion": false,
@@ -882,7 +882,7 @@
                 "children": []
               },
               {
-                "id": "a5e541dc-cd12-4fae-8396-5e1d3e793ec8",
+                "id": "bb02344d-e76b-4b0e-914e-c4455cca27e1",
                 "content": "Headcount: Ingen vil tale om det..",
                 "position": 3,
                 "is_discussion": false,
@@ -893,7 +893,7 @@
                 "images": [],
                 "children": [
                   {
-                    "id": "f347f36b-d0c8-41b8-9be4-f9f364654356",
+                    "id": "980f0082-fe2c-4e4d-9357-418791ca1d47",
                     "content": "Hvem saver Musk af?",
                     "position": 0,
                     "is_discussion": true,
@@ -909,7 +909,7 @@
             ]
           },
           {
-            "id": "19be210b-e020-4321-894c-9b7d61aa8ac7",
+            "id": "5b0b635d-a254-49b8-b676-75fecd6ead1d",
             "content": "Gruppeøvelse: 1 menneske, en afdeling, en industri ",
             "position": 3,
             "is_discussion": true,
@@ -920,7 +920,7 @@
             "images": [],
             "children": [
               {
-                "id": "45d6deff-985d-4fad-b3a4-b9f1db083034",
+                "id": "27553b53-4efb-4e55-b5d0-9ea8f7b3e964",
                 "content": "Gå sammen 2-3 stykker, 1 terning hver:\nAlle slår en terning i hver runde \nSlå lige og du har Ja hatten på, ulige og du har Nej hatten på. \nPå omgang \"er man den\", og vælger 1 emne fra makkerens sæt\n\n30 minutters ja/nej hat samtaler om emnet kan automatiseres",
                 "position": 0,
                 "is_discussion": false,
@@ -932,7 +932,7 @@
                 "children": []
               },
               {
-                "id": "2bc6ff88-0cfd-4a1c-8b1c-d79cc005c1ec",
+                "id": "2e83544e-1089-42dc-abec-d6c2761b3572",
                 "content": "5 minutter: skriv så mange titler, funktioner, afdelinger og hele forretninger ned som muligt ",
                 "position": 1,
                 "is_discussion": false,
@@ -948,7 +948,7 @@
         ]
       },
       {
-        "id": "b16bd78c-f2f2-4453-8206-e32341582897",
+        "id": "95f4e406-cd1d-4dee-9669-b40908a4c83a",
         "content": "Eksempler",
         "position": 3,
         "is_discussion": false,
@@ -959,7 +959,7 @@
         "images": [],
         "children": [
           {
-            "id": "02dd5960-9bd0-4cb0-ba0b-34f0e852e598",
+            "id": "a6822942-f7af-43e5-9c78-530c3749d4b5",
             "content": "Din digitale avatar",
             "position": 0,
             "is_discussion": false,
@@ -971,7 +971,7 @@
             "children": []
           },
           {
-            "id": "764cc0d0-b34b-497d-8afb-f69d1b21ad18",
+            "id": "a72c1ada-cda0-40fe-98c5-dea4bd2d0c21",
             "content": "10 minutters pause",
             "position": 1,
             "is_discussion": false,
@@ -983,7 +983,7 @@
             "children": []
           },
           {
-            "id": "c4836d33-2176-47c7-8c5c-82e44e8f2139",
+            "id": "23011d24-9a98-458c-82ed-fd9bcac699e2",
             "content": "Google on screen help",
             "position": 2,
             "is_discussion": false,
@@ -994,7 +994,7 @@
             "images": [],
             "children": [
               {
-                "id": "aa69bf77-ce97-4c0a-bd73-f94b8d35fee2",
+                "id": "2ceecc92-024b-460a-870f-7153753c1a47",
                 "content": "(Alle kan alt)",
                 "position": 0,
                 "is_discussion": false,
@@ -1008,7 +1008,7 @@
             ]
           },
           {
-            "id": "ee55094b-b845-4584-b4c0-d0a72bc8cc63",
+            "id": "4ab81b60-57a6-4b75-bf99-91c3361de5b3",
             "content": "Bolt.new, Lovable.dev, Replit.com, Co.dev..",
             "position": 3,
             "is_discussion": false,
@@ -1019,7 +1019,7 @@
             "images": [],
             "children": [
               {
-                "id": "c693266d-69a4-490c-a275-3b8a57511d0d",
+                "id": "ddfb1e6c-e1fe-47ac-8b5d-a3d542b59635",
                 "content": "Hvad gør versionsstyring ved udviklingsprocesser - når brugt med AI?",
                 "position": 0,
                 "is_discussion": false,
@@ -1030,7 +1030,7 @@
                 "images": [],
                 "children": [
                   {
-                    "id": "81c04639-170c-4963-96cd-a358e1c874a3",
+                    "id": "e1c8da7f-d0a7-4441-96ce-15e57c14f1e0",
                     "content": "\"Hmm, nej, jeg har fortrudt\"",
                     "position": 0,
                     "is_discussion": false,
@@ -1042,7 +1042,7 @@
                     "children": []
                   },
                   {
-                    "id": "49c18b43-6e96-42c0-b22f-e73b45d372c8",
+                    "id": "4ee0e72b-e28c-4f91-94c1-0954d6423b07",
                     "content": "\"Prøv lige at udføre 10 måneders arbejde\"",
                     "position": 1,
                     "is_discussion": false,
@@ -1058,7 +1058,7 @@
             ]
           },
           {
-            "id": "7b2b0c69-b2f6-4cf1-a00c-6342e58fffcc",
+            "id": "273af182-c64f-4007-a70b-8790c934127b",
             "content": "Automation workflow n8n.io, make.com etc",
             "position": 4,
             "is_discussion": false,
@@ -1070,7 +1070,7 @@
             "children": []
           },
           {
-            "id": "f49ee4a3-cac6-4a7f-9b78-e4c49b578180",
+            "id": "16d2ff8c-260f-4eba-a72a-f0878f5ec8ac",
             "content": "Denne slide",
             "position": 5,
             "is_discussion": false,
@@ -1081,7 +1081,7 @@
             "images": [],
             "children": [
               {
-                "id": "c38d7b38-e28a-4724-92e5-6ca4bb821743",
+                "id": "0ee8f44b-7f0f-4a1b-b1fb-3f81b657e7eb",
                 "content": "Vibe coding",
                 "position": 0,
                 "is_discussion": false,
@@ -1095,7 +1095,7 @@
             ]
           },
           {
-            "id": "1c7011a1-d454-4603-a666-07b674010f26",
+            "id": "1f11b86a-d068-4c48-b1a4-67bb28afaaa9",
             "content": "Manusai.ai",
             "position": 6,
             "is_discussion": false,
@@ -1109,7 +1109,7 @@
         ]
       },
       {
-        "id": "fe36af33-f72f-4253-b166-95d023416989",
+        "id": "0111cc72-902b-406d-a273-d8d392548cef",
         "content": "Værktøjer at tage med hjem",
         "position": 4,
         "is_discussion": false,
@@ -1120,7 +1120,7 @@
         "images": [],
         "children": [
           {
-            "id": "cb48cc20-4efe-4cc9-8ee9-6ada898d7b1e",
+            "id": "d065abf8-2910-4b7d-93b8-65ed291a1f37",
             "content": "Din liste af \"hvad kan ikke automatiseres\" som lakmus test af alle processer",
             "position": 0,
             "is_discussion": false,
@@ -1132,7 +1132,7 @@
             "children": []
           },
           {
-            "id": "6290513f-31a3-4ecd-8411-d1aa152d4bec",
+            "id": "2986717f-b851-419f-9065-a517ac9e9c86",
             "content": "AI First",
             "position": 1,
             "is_discussion": false,
@@ -1143,7 +1143,7 @@
             "images": [],
             "children": [
               {
-                "id": "45b711ce-f995-4ad1-986f-8bff364c6c57",
+                "id": "7933319f-b634-49cc-8383-f1ec7994ef95",
                 "content": "Når man har ansat 6 mand til at varetage en opgave, og derefter er der en som nævner at \"det kan automatiseres\".. !",
                 "position": 0,
                 "is_discussion": false,
@@ -1157,7 +1157,7 @@
             ]
           },
           {
-            "id": "f19674ce-0ce2-4e9d-b656-03a23277e34e",
+            "id": "d4694341-092e-4520-b5db-0faab50d9acf",
             "content": "Den typiske \"AI specialist\" .. Hr \"Vi sætter strøm på din virksomhed med AI\" .. ved nok mindre end dig, og vil typisk optimere - fordi det er et lettere salg end automatisering.",
             "position": 2,
             "is_discussion": false,
@@ -1169,7 +1169,7 @@
             "children": []
           },
           {
-            "id": "0b8b137b-1bd6-4c9f-9f84-9f8214dd62ab",
+            "id": "95fabf7b-9bf4-4b6c-a15f-33a71d2b7ed2",
             "content": " Værktøjer til automatisering - ikke optimering ",
             "position": 3,
             "is_discussion": false,
@@ -1180,7 +1180,7 @@
             "images": [],
             "children": [
               {
-                "id": "61629994-d4a2-45e6-9132-2aa0ecb57127",
+                "id": "9a7e9fbc-4f03-40c0-895d-63682d8991e7",
                 "content": "Brug værktøjer til optimering når du betjener dig af værktøjer til automatisering",
                 "position": 0,
                 "is_discussion": false,
@@ -1196,7 +1196,7 @@
         ]
       },
       {
-        "id": "0e4afe84-df9f-4015-9441-76d8782d670d",
+        "id": "434e4058-3fe2-49b8-a425-cd51a2f2f0c8",
         "content": "Afrunding",
         "position": 5,
         "is_discussion": false,
@@ -1207,7 +1207,7 @@
         "images": [],
         "children": [
           {
-            "id": "6c07c9bf-6694-4ed3-beae-23e7a6092c2c",
+            "id": "566fa12b-d284-4d6b-938c-7e6ec78c90c5",
             "content": "Spørgsmål og kommentarer ",
             "position": 0,
             "is_discussion": true,
@@ -1223,6 +1223,6 @@
     ]
   },
   "description": "",
-  "updated_at": "2025-03-26T08:35:16.948Z",
-  "created_at": "2025-03-26T08:35:16.948Z"
+  "updated_at": "2025-03-26T08:43:21.625Z",
+  "created_at": "2025-03-26T08:43:21.625Z"
 }
