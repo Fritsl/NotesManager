@@ -148,6 +148,62 @@
     background-color: #0a0a0a;
   }
   
+  /* Note movement animations */
+  .note-moving {
+    position: relative;
+    animation: note-pulse 1s ease-in-out;
+    z-index: 10;
+  }
+  
+  @keyframes note-pulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(var(--primary), 0.4); }
+    20% { transform: scale(1.01); box-shadow: 0 0 0 5px rgba(var(--primary), 0.2); }
+    40% { transform: scale(1.01); box-shadow: 0 0 0 0 rgba(var(--primary), 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(var(--primary), 0); }
+  }
+  
+  .fade-in-note {
+    animation: fadeIn 0.4s ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .note-highlight {
+    position: relative;
+  }
+  
+  .note-highlight::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(var(--primary), 0.2);
+    border-radius: 0.375rem;
+    animation: highlight-fade 1.5s ease-out forwards;
+    pointer-events: none;
+    z-index: 5;
+  }
+  
+  @keyframes highlight-fade {
+    0% { opacity: 1; }
+    80% { opacity: 0.4; }
+    100% { opacity: 0; }
+  }
+  
+  .highlight-search-result {
+    animation: highlight-search 2s ease-out;
+  }
+  
+  @keyframes highlight-search {
+    0% { background-color: rgba(var(--primary), 0.3); }
+    100% { background-color: transparent; }
+  }
+  
   /* Heading styles for note hierarchy - following standard web typography patterns */
   .heading-h1 {
     font-size: 1.5rem !important; /* 24px */
