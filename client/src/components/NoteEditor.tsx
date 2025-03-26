@@ -129,29 +129,78 @@ export default function NoteEditor() {
   // Auto-save when a field loses focus and there are changes
   const handleBlur = useCallback(async (e: React.FocusEvent) => {
     if (selectedNote && hasChanges && contentRef.current) {
-      console.log("⚠️ Blur event detected on:", (e.target as HTMLElement).id || "unknown element");
+      const targetId = (e.target as HTMLElement).id || "unknown";
+      console.log(`⚠️ Blur event detected on: ${targetId}, fullscreen mode: ${isFullscreenEditMode}`);
+      
+      // Verify if we're in the mobile fullscreen editor
+      const isMobileEditor = targetId === "noteContentFullscreen" || isFullscreenEditMode;
       
       // Clear any existing blur timer
       if (blurSaveTimerRef.current) {
         clearTimeout(blurSaveTimerRef.current);
       }
 
-      // Set a short delay to prevent saving while moving between fields
-      blurSaveTimerRef.current = setTimeout(async () => {
-        console.log("Blur auto-save triggered for note:", selectedNote.id);
-
-        // First update the in-memory state
-        saveDirectly();
-
-        // Then save to database, but only when focus has LEFT the field
-        // This is where we actually persist to the database
-        console.log("🔄 Saving note to database after blur");
+      // For mobile editor, we need to be especially careful about focus
+      if (isMobileEditor) {
+        console.log("📱 Mobile editor blur detected - handling specially");
         
-        try {
-          await saveProject();
-          console.log("✅ Note saved to database after blur");
-        } catch (error) {
-          console.error("❌ Failed to save note to database after blur:", error);
+        // Get the current content directly from the DOM reference (most reliable)
+        const currentContent = contentRef.current.value;
+        
+        // Check if there's an actual change to save
+        if (currentContent !== selectedNote.content) {
+          console.log("📝 Content changed in mobile editor, preparing save");
+          
+          // Update the in-memory state first to ensure UI consistency
+          setContent(currentContent);
+          
+          // Create the updated note object
+          const updatedNote = {
+            ...selectedNote,
+            content: currentContent,
+            youtube_url: youtubeUrl || null,
+            url: externalUrl || null,
+            url_display_text: externalUrl ? (urlDisplayText || null) : null,
+            is_discussion: isDiscussion,
+            time_set: timeSet,
+          };
+          
+          // Update note in context (memory only)
+          console.log("💾 Updating note in memory:", updatedNote.id);
+          updateNote(updatedNote);
+          
+          // Now save to the database
+          try {
+            console.log("🔄 Saving mobile note changes to database");
+            await saveProject();
+            console.log("✅ Mobile note changes saved successfully to database");
+            
+            // Reset changes after successful save
+            setHasChanges(false);
+          } catch (error) {
+            console.error("❌ Failed to save mobile note to database:", error);
+          }
+        } else {
+          console.log("ℹ️ No actual content changes in mobile editor, skipping save");
+        }
+      } else {
+        // Regular editor blur handling with short delay
+        blurSaveTimerRef.current = setTimeout(async () => {
+          console.log("Blur auto-save triggered for note:", selectedNote.id);
+
+          // First update the in-memory state
+          saveDirectly();
+
+          // Then save to database, but only when focus has LEFT the field
+          // This is where we actually persist to the database
+          console.log("🔄 Saving note to database after blur");
+          
+          try {
+            await saveProject();
+            console.log("✅ Note saved to database after blur");
+          } catch (error) {
+            console.error("❌ Failed to save note to database after blur:", error);
+          }
         }
       }, 800); // Slightly longer delay to ensure we're not in a field transition
     }
@@ -199,6 +248,16 @@ export default function NoteEditor() {
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     // Update the state with new content
     const newContent = e.target.value;
+    
+    // Track the active element and cursor position before the update
+    const activeElement = document.activeElement;
+    const selectionStart = (e.target as HTMLTextAreaElement).selectionStart;
+    const selectionEnd = (e.target as HTMLTextAreaElement).selectionEnd;
+    
+    console.log("🔍 Content change - Active element:", (activeElement as HTMLElement)?.id || "none", 
+                "Selection:", selectionStart, selectionEnd);
+    
+    // Update state without triggering a save
     setContent(newContent);
     setHasChanges(true);
 
@@ -207,11 +266,15 @@ export default function NoteEditor() {
       clearTimeout(saveDebounceTimeout);
     }
 
-    // Save after a short delay to avoid too many saves while typing
+    // IMPORTANT: Don't use saveDirectly during rapid typing
+    // This prevents focus jumps by avoiding any potential re-renders
+    
+    // For fullscreen mobile editor, we'll only update in-memory
+    // Only set a timer to mark the current state, but don't trigger saves
     const timeout = setTimeout(() => {
-      // Use the direct save function to avoid circular dependency
-      saveDirectly();
-    }, 1500); // 1.5 second debounce
+      console.log("✏️ Content updated in memory only, no auto-save during typing");
+      // We'll save on blur or manual save button only
+    }, 300);
 
     // Save the timeout ID so we can clear it if needed
     setSaveDebounceTimeout(timeout);
