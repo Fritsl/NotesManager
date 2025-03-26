@@ -112,22 +112,35 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
     setDestinations(destinationsList);
   }, [isOpen, noteToMove, notes]);
   
-  // Filtered destinations based on search text
-  const filteredDestinations = searchText.length > 0
+  // When searching, show ALL matching destinations regardless of hierarchy
+  // Otherwise, only show destinations at the current level
+  const useSearchResults = searchText.length > 0;
+  
+  // Filtered destinations based on search text - now includes all matches across all levels
+  const filteredDestinations = useSearchResults
     ? destinations.filter(dest => 
         dest.content.toLowerCase().includes(searchText.toLowerCase()) ||
         dest.path.some(p => p.toLowerCase().includes(searchText.toLowerCase()))
       )
     : destinations;
   
-  // Filter destinations by parent ID for hierarchical navigation
-  const currentLevelDestinations = selectedParentId === undefined
-    ? filteredDestinations
-    : filteredDestinations.filter(dest => {
-        // Root level items
-        if (selectedParentId === null) {
-          return dest.level === 1 || dest.id === null;
-        }
+  // Only apply parent filter when NOT searching
+  const currentLevelDestinations = useSearchResults
+    ? filteredDestinations.concat([{
+        id: null,
+        label: "Root Level",
+        content: "Root Level",
+        level: 0,
+        path: ["Root"],
+        hasChildren: notes.length > 0
+      }])
+    : selectedParentId === undefined
+      ? filteredDestinations
+      : filteredDestinations.filter(dest => {
+          // Root level items
+          if (selectedParentId === null) {
+            return dest.level === 1 || dest.id === null;
+          }
         
         // Find the parent item's level
         const parentItem = filteredDestinations.find(d => d.id === selectedParentId);
@@ -281,9 +294,15 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
               {isRoot ? "Move to Root Level (Top Level)" : dest.label}
             </span>
             
-            {!isRoot && dest.path.length > 2 && (
+            {!isRoot && (
               <span className="text-xs text-gray-500 truncate max-w-[600px]">
-                Path: {dest.path.slice(1, -1).join(" › ")}
+                {useSearchResults ? (
+                  // In search results, always show full path for context
+                  <>Path: <span className="text-primary-400">{dest.path.slice(1).join(" › ")}</span></>
+                ) : dest.path.length > 2 ? (
+                  // In normal navigation, only show path when it's a deeper note
+                  <>Path: {dest.path.slice(1, -1).join(" › ")}</>
+                ) : null}
               </span>
             )}
           </div>
@@ -313,7 +332,14 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
         {/* Navigation breadcrumb - simplified */}
         <div className="flex items-center justify-between mb-4 text-sm">
           <div className="text-sm font-medium text-gray-300">
-            {selectedParentId === null ? (
+            {useSearchResults ? (
+              <span>
+                <span className="text-primary font-bold">Search Results</span>
+                <span className="ml-1 text-xs bg-gray-800 rounded-full px-2 py-0.5">
+                  {filteredDestinations.length} match{filteredDestinations.length !== 1 ? 'es' : ''} across all levels
+                </span>
+              </span>
+            ) : selectedParentId === null ? (
               <span className="text-primary font-bold">Browse Locations</span>
             ) : (
               <span>
@@ -325,8 +351,8 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
             )}
           </div>
           
-          {/* Back button for navigation */}
-          {selectedParentId !== null && (
+          {/* Back button for navigation - only show when not searching */}
+          {!useSearchResults && selectedParentId !== null && (
             <Button
               variant="outline"
               size="sm"
