@@ -60,6 +60,8 @@ interface NotesContextType {
   getUndoDescription: () => string;
   // Scroll to note for highlighting after move
   scrollToNote: (noteId: string) => void;
+  // Save status tracking
+  setPendingNoteMoves: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
@@ -1209,16 +1211,21 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
 
       console.log('Project saved successfully:', updatedProject);
 
-      // Only show toast when manually saved via button (not auto-saves)
+      // Show a different toast based on whether this was a manual save or auto-save after note movement
       if (!pendingNoteMoves) {
+        // Manual save via button
         toast({
           title: "Project Saved",
           description: `"${currentProjectName}" has been saved`,
         });
-      }
-
-      // Clear the pending flag if it was set
-      if (pendingNoteMoves) {
+      } else {
+        // Auto-save after note movement - also show confirmation but with different message
+        toast({
+          title: "Changes Saved",
+          description: "Your note changes have been saved successfully",
+        });
+        
+        // Clear the pending flag 
         setPendingNoteMoves(false);
       }
 
@@ -1545,7 +1552,9 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         undoLastAction,
         getUndoDescription,
         // Note focusing
-        scrollToNote
+        scrollToNote,
+        // Save status tracking
+        setPendingNoteMoves
       }}
     >
       {children}

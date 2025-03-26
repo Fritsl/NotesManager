@@ -32,7 +32,7 @@ interface Destination {
 }
 
 export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteModalProps) {
-  const { notes, moveNote, scrollToNote } = useNotes();
+  const { notes, moveNote, scrollToNote, setPendingNoteMoves } = useNotes();
   const { toast } = useToast();
   const [destinations, setDestinations] = useState<Destination[]>([]);
   
@@ -209,6 +209,9 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
     
     // Execute the move
     moveNote(movedNoteId, destinationId, position);
+    
+    // Set the pending flag to trigger auto-save
+    setPendingNoteMoves(true);
     
     // Close the modal first
     onClose();
