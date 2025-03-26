@@ -548,7 +548,7 @@ export async function createProject(name: string, notesData: NotesData): Promise
 }
 
 function sanitizeProjectName(name: string): string {
-  // Replace problematic characters that might cause issues in database or UI
+  // Start by trimming whitespace
   let sanitized = name.trim();
   
   // If name is empty after trimming, use a default name
@@ -556,25 +556,24 @@ function sanitizeProjectName(name: string): string {
     return 'Untitled Project';
   }
 
-  // UPDATED: Database has a title_characters_check constraint
-  // We need to ensure we meet the database's requirements
-  // This appears to require ASCII-only characters
-  const hasProblematicChars = /[<>{}[\]\\\/]/.test(sanitized);
-  const hasNonAsciiChars = /[^\x00-\x7F]/.test(sanitized); // Detect non-ASCII characters like ÆØÅæøå
+  // The database has a title_characters_check constraint that requires ASCII-only characters
+  // So we need to filter out non-ASCII characters and problematic ones in a single pass
+  const originalName = sanitized;
   
-  if (hasProblematicChars || hasNonAsciiChars) {
-    console.warn('Project name contains characters that may cause database constraints:', sanitized);
-    
-    // Remove problematic characters (brackets, slashes, etc.)
-    sanitized = sanitized
-      .replace(/[<>{}[\]\\\/]/g, '') // Remove brackets, slashes
-      .replace(/[^\x00-\x7F]/g, '') // Remove non-ASCII characters to meet database constraints
-      .trim();
+  // Remove problematic characters in a single pass for efficiency
+  sanitized = sanitized
+    .replace(/[^\x00-\x7F]|[<>{}[\]\\\/]/g, '') // Remove both non-ASCII and problematic characters
+    .trim();
+  
+  // Log a warning if we had to modify the name
+  if (originalName !== sanitized) {
+    console.warn('Project name contains characters that may cause database constraints:', originalName);
+    console.log('Sanitized project name:', sanitized);
+  }
       
-    // If removing these characters made the name empty, use a default
-    if (!sanitized) {
-      return 'Untitled Project';
-    }
+  // If removing these characters made the name empty, use a default
+  if (!sanitized) {
+    return 'Untitled Project';
   }
   
   // Limit length to 100 characters (arbitrary but reasonable limit)
@@ -582,7 +581,7 @@ function sanitizeProjectName(name: string): string {
     sanitized = sanitized.substring(0, 100);
   }
   
-  console.log('Sanitized project name:', sanitized);
+  return sanitized;
   return sanitized;
 }
 

@@ -316,10 +316,26 @@ export default function HeaderWithSearch() {
                       <Input
                         ref={projectNameInputRef}
                         value={editedProjectName}
-                        onChange={(e) => setEditedProjectName(e.target.value)}
+                        onChange={(e) => {
+                          // Filter out non-ASCII characters and problematic characters that database restricts
+                          const rawInput = e.target.value;
+                          const filteredInput = rawInput.replace(/[^\x00-\x7F]|[<>{}[\]\\\/]/g, '');
+                          
+                          // Show a warning if characters were filtered out
+                          if (filteredInput !== rawInput) {
+                            toast({
+                              title: 'Character Removed',
+                              description: 'Some characters are not allowed in project names due to database constraints.',
+                              duration: 3000
+                            });
+                          }
+                          
+                          setEditedProjectName(filteredInput);
+                        }}
                         onKeyDown={handleKeyDown}
                         className="h-7 py-0 w-28 sm:w-auto text-sm sm:text-base font-semibold bg-gray-800 border-gray-700 focus-visible:ring-primary text-gray-100"
                         maxLength={50}
+                        placeholder="ASCII chars only"
                       />
                       <div className="flex ml-1">
                         <Button 
