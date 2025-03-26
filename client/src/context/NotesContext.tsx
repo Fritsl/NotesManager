@@ -570,11 +570,20 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       const updatedNotes = [...prevNotes];
       // Create a variable to keep track of the parent note that had a child removed
       let parentNote: Note | null = null;
+      // Store any children notes that need to be preserved
+      let childrenToPreserve: Note[] = [];
+      let noteIndex: number = -1;
 
       // Find and remove the note at any level in the tree
       const removeNoteFromTree = (nodes: Note[], parent: Note | null = null): boolean => {
         for (let i = 0; i < nodes.length; i++) {
           if (nodes[i].id === noteId) {
+            // If we're not deleting children, save them
+            if (!deleteChildren && nodes[i].children.length > 0) {
+              childrenToPreserve = [...nodes[i].children];
+              noteIndex = i;
+            }
+            
             nodes.splice(i, 1);
             // Keep track of parent that had a child removed
             parentNote = parent;
@@ -593,11 +602,19 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
 
       removeNoteFromTree(updatedNotes);
 
-      // If we deleted from a parent's children, clean those children's positions
+      // If we deleted from a parent's children, handle preserved children and clean positions
       if (parentNote) {
-        // Update the positions of the remaining children
         // Cast to Note to avoid type errors - we know this is a valid parent note
         const typedParent = parentNote as Note;
+        
+        // If we're preserving children (not deleting them), insert them at the position
+        // where the deleted note was
+        if (!deleteChildren && childrenToPreserve.length > 0) {
+          // Insert the preserved children at the same position where the deleted note was
+          typedParent.children.splice(noteIndex, 0, ...childrenToPreserve);
+        }
+        
+        // Clean up positions
         if (typedParent.children && typedParent.children.length > 0) {
           typedParent.children = typedParent.children.map((child: Note, index: number) => ({
             ...child,
@@ -605,7 +622,16 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           }));
         }
       } else {
-        // If we deleted from root level, clean root positions
+        // If we deleted from root level
+        
+        // If we're preserving children (not deleting them), insert them at the position
+        // where the deleted note was
+        if (!deleteChildren && childrenToPreserve.length > 0) {
+          // Insert the preserved children at root level where the deleted note was
+          updatedNotes.splice(noteIndex, 0, ...childrenToPreserve);
+        }
+        
+        // Clean root positions
         updatedNotes.forEach((note, index) => {
           note.position = index;
         });

@@ -74,6 +74,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   // Dialog states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [deleteChildren, setDeleteChildren] = useState(false);
 
   // Inline editing state
   const [isEditing, setIsEditing] = useState(false);
@@ -1202,17 +1203,38 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                   <AlertDialogTitle>Delete Note</AlertDialogTitle>
                   <AlertDialogDescription>
                     Are you sure you want to delete this note?
-                    {hasChildren && 
-                      <span className="font-medium text-red-500 block mt-2">
-                        Warning: This will also delete {note.children.length} child note{note.children.length !== 1 ? 's' : ''}!
-                      </span>
-                    }
+                    {hasChildren && (
+                      <>
+                        <div className="flex items-center mt-4 mb-2">
+                          <input 
+                            type="checkbox" 
+                            id="delete-children-checkbox"
+                            checked={deleteChildren} 
+                            onChange={(e) => setDeleteChildren(e.target.checked)} 
+                            className="form-checkbox h-4 w-4 mr-2 rounded border-gray-300 focus:ring-primary"
+                          />
+                          <label htmlFor="delete-children-checkbox" className="text-sm">
+                            Also delete children ({note.children.length} note{note.children.length !== 1 ? 's' : ''})
+                          </label>
+                        </div>
+                        {!deleteChildren && (
+                          <span className="text-sm text-gray-300 block mb-2">
+                            Children will be moved to the same level as this note
+                          </span>
+                        )}
+                        {deleteChildren && (
+                          <span className="font-medium text-red-500 block mb-2">
+                            Warning: This will permanently delete all child notes!
+                          </span>
+                        )}
+                      </>
+                    )}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction 
-                    onClick={() => deleteNote(note.id)}
+                    onClick={() => deleteNote(note.id, deleteChildren)}
                     className="bg-red-500 hover:bg-red-600"
                   >
                     Delete
