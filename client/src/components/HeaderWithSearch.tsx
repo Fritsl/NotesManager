@@ -457,22 +457,16 @@ export default function HeaderWithSearch() {
                   </DropdownMenuItem>
 
                   {/* Note Actions */}
-                  <DropdownMenuItem onClick={() => {
-                    if (hasActiveProject) {
-                      addNote(null);
-                    } else {
-                      toast({
-                        title: "No Active Project",
-                        description: "Please create or open a project first",
-                        variant: "destructive"
-                      });
-                    }
-                  }}>
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    <span>Add Note (Root level)</span>
-                  </DropdownMenuItem>
+                  {/* Only show Add Note in menu when there are already notes (not when on blank screen) */}
+                  {hasActiveProject && notes.length > 0 && (
+                    <DropdownMenuItem onClick={() => addNote(null)}>
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                      <span>Add Note (Root level)</span>
+                    </DropdownMenuItem>
+                  )}
 
-                  <DropdownMenuSeparator />
+                  {/* Only show the separator if we displayed the Add Note menu item */}
+                  {hasActiveProject && notes.length > 0 && <DropdownMenuSeparator />}
 
                   {/* Import/Export */}
                   <DropdownMenuItem onClick={() => setShowImportModal(true)}>
