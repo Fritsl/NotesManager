@@ -997,13 +997,14 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
     // Always reset expanded nodes first
     setExpandedNodes(new Set());
     
-    // Update the current level value regardless of level
-    setCurrentLevel(level);
-    
+    // Set current level to 0 for collapsed state
     if (targetLevel <= 0) {
-      // Level 0 means collapse all, just return with empty set of expanded nodes
+      setCurrentLevel(0);
       return;
     }
+    
+    // Otherwise update current level to match expansion
+    setCurrentLevel(targetLevel);
     
     const newExpandedNodes = new Set<string>();
     
