@@ -3,16 +3,37 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#5869ff" />
+    <meta name="description" content="A sophisticated hierarchical notes editor with advanced organization capabilities" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    
+    <!-- PWA support -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/png" href="/icons/icon-192x192.png" />
+    
+    <!-- Apple PWA Icons -->
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/icons/icon-152x152.png" />
+    
+    <!-- Font preloading -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <title>Notes Tree Editor</title>
+    
+    <title>Hierarchical Notes Editor</title>
   </head>
   <body>
     <div id="root"></div>
+    
+    <!-- Offline indicator, hidden by default -->
+    <div id="offline-indicator" style="display: none; position: fixed; bottom: 20px; left: 20px; background-color: #ff5959; color: white; padding: 10px 20px; border-radius: 4px; z-index: 9999; font-family: 'Inter', sans-serif;">
+      You are offline. Changes will sync when you reconnect.
+    </div>
+    
     <script type="module" src="/src/main.tsx"></script>
+    <script src="/pwa-register.js"></script>
   </body>
 </html>

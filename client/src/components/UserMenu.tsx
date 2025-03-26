@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { 
   DropdownMenu,
@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { Avatar, AvatarFallback } from './ui/avatar';
-import { User, LogIn, LogOut, FolderOpen, Save, Edit } from 'lucide-react';
+import { User, LogIn, LogOut, FolderOpen, Save, Edit, Download } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import AuthModal from './AuthModal';
 import ProjectsModal from './ProjectsModal';
@@ -18,13 +18,64 @@ import { useToast } from '../hooks/use-toast';
 import { useNotes } from '../context/NotesContext';
 import { createProject, updateProject } from '../lib/projectService';
 
+// Extend Window interface to include our PWA utility
+declare global {
+  interface Window {
+    pwa?: {
+      installPWA: () => void;
+    };
+  }
+}
+
 export default function UserMenu() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showProjectsModal, setShowProjectsModal] = useState(false);
   const [showPayoffModal, setShowPayoffModal] = useState(false);
+  const [isPwaInstallable, setIsPwaInstallable] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const { exportNotes } = useNotes();
+  
+  // Check if the app can be installed as a PWA
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      // Prevent Chrome 67 and earlier from automatically showing the prompt
+      e.preventDefault();
+      // The app can be installed as a PWA
+      setIsPwaInstallable(true);
+    };
+    
+    // Monitor online/offline status
+    const handleOnlineStatus = () => {
+      setIsOffline(!navigator.onLine);
+      if (navigator.onLine) {
+        toast({
+          title: "You're back online",
+          description: "Your changes will now sync to the server",
+        });
+      } else {
+        toast({
+          title: "You're offline",
+          description: "Changes will be saved locally and sync when you reconnect",
+          variant: "destructive",
+        });
+      }
+    };
+    
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('online', handleOnlineStatus);
+    window.addEventListener('offline', handleOnlineStatus);
+    
+    // Set initial offline state
+    setIsOffline(!navigator.onLine);
+    
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('online', handleOnlineStatus);
+      window.removeEventListener('offline', handleOnlineStatus);
+    };
+  }, [toast]);
 
   const getInitials = () => {
     if (!user?.email) return '?';
@@ -84,6 +135,28 @@ export default function UserMenu() {
       });
     }
   };
+  
+  // Handler for installing the PWA
+  const handleInstallPwa = () => {
+    // Access the deferredPrompt from the window object
+    // Note: We're using the window.pwa object defined in pwa-register.js
+    const pwa = window.pwa;
+    if (typeof window !== 'undefined' && pwa && pwa.installPWA) {
+      pwa.installPWA();
+      toast({
+        title: 'Installing App',
+        description: 'Notes Editor is being installed on your device',
+      });
+      // After install is triggered, reset the state
+      setIsPwaInstallable(false);
+    } else {
+      toast({
+        title: 'Cannot Install',
+        description: 'App installation is not available in this browser or it\'s already installed',
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <>
@@ -123,16 +196,45 @@ export default function UserMenu() {
                 Edit Profile Payoff
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              {isPwaInstallable && (
+                <DropdownMenuItem onClick={handleInstallPwa}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Install App
+                </DropdownMenuItem>
+              )}
+              {isOffline && (
+                <DropdownMenuItem className="text-amber-500">
+                  <span className="h-4 w-4 mr-2 rounded-full bg-amber-500"></span>
+                  Offline Mode
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Log Out
               </DropdownMenuItem>
             </>
           ) : (
-            <DropdownMenuItem onClick={() => setShowAuthModal(true)}>
-              <LogIn className="h-4 w-4 mr-2" />
-              Log In / Register
-            </DropdownMenuItem>
+            <>
+              <DropdownMenuItem onClick={() => setShowAuthModal(true)}>
+                <LogIn className="h-4 w-4 mr-2" />
+                Log In / Register
+              </DropdownMenuItem>
+              {isPwaInstallable && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleInstallPwa}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Install App
+                  </DropdownMenuItem>
+                </>
+              )}
+              {isOffline && (
+                <DropdownMenuItem className="text-amber-500">
+                  <span className="h-4 w-4 mr-2 rounded-full bg-amber-500"></span>
+                  Offline Mode
+                </DropdownMenuItem>
+              )}
+            </>
           )}
         </DropdownMenuContent>
       </DropdownMenu>
