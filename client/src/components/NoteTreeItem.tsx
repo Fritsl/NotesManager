@@ -617,21 +617,19 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
       )}>
         {/* Time settings */}
         <div className="flex items-center">
-          <label className="text-xs text-gray-400 w-14">Time:</label>
+          <label className="text-xs text-gray-400 w-14" htmlFor={`time-${note.id}`}>Time:</label>
           <input 
+            id={`time-${note.id}`}
             type="time" 
             className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
             value={editTimeSet || ''}
             onChange={(e) => {
               e.preventDefault(); 
               e.stopPropagation();
-              // Store the current focused element
-              const currentFocus = document.activeElement;
+              // Store this input's ID as the last focused element
+              setLastFocusedElementId(e.target.id);
+              // Set the new time value
               setEditTimeSet(e.target.value ? e.target.value : null);
-              // Ensure focus remains on the time input after state update
-              if (currentFocus === e.target) {
-                setTimeout(() => e.target.focus(), 0);
-              }
             }}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
@@ -730,6 +728,23 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
     </>
   );
 
+  // Track the last focused element in the mobile dialog to restore focus after state updates
+  const [lastFocusedElementId, setLastFocusedElementId] = React.useState<string | null>(null);
+  
+  // Use effect to maintain focus on the last focused input
+  React.useEffect(() => {
+    if (isEditing && isMobile && lastFocusedElementId) {
+      const element = document.getElementById(lastFocusedElementId);
+      if (element) {
+        // Add a small delay to ensure the focus happens after React's rendering
+        setTimeout(() => {
+          console.log('Restoring focus to:', lastFocusedElementId);
+          element.focus();
+        }, 10);
+      }
+    }
+  }, [isEditing, isMobile, lastFocusedElementId, editTimeSet, editYoutubeUrl, editUrl, editUrlDisplayText]);
+
   // Mobile Dialog for fullscreen editing
   const MobileEditDialog = () => (
     <Dialog open={isEditing && isMobile} onOpenChange={(open) => {
@@ -738,8 +753,20 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
       <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto top-[5%] translate-y-0">
         <DialogHeader>
           <DialogTitle>Edit Note</DialogTitle>
+          <DialogDescription className="text-xs text-blue-300">
+            Editing focused field: {lastFocusedElementId || 'None'}
+          </DialogDescription>
         </DialogHeader>
-        <div onClick={(e) => e.stopPropagation()}>
+        <div 
+          onClick={(e) => e.stopPropagation()}
+          onFocus={(e) => {
+            // Check if the focused element is one of our inputs and has an ID
+            if (e.target.tagName === 'INPUT' && e.target.id) {
+              console.log('Input focused:', e.target.id);
+              setLastFocusedElementId(e.target.id);
+            }
+          }}
+        >
           {renderEditForm()}
         </div>
         <DialogFooter className="flex justify-end gap-2">
