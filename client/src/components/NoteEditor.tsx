@@ -193,11 +193,17 @@ export default function NoteEditor() {
     setYoutubeUrl(newUrl);
     setHasChanges(true);
 
-    // Call the direct save function to avoid circular dependency 
-    // This is the only reliable way to save that works
-    setTimeout(() => {
+    // Use a longer delay for autosave to prevent focus loss issues
+    // This prevents the UI from jumping around while editing
+    if (saveDebounceTimeout) {
+      clearTimeout(saveDebounceTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
       saveDirectly();
-    }, 100);
+    }, 1500); // Use a longer 1.5 second delay to match content edits
+    
+    setSaveDebounceTimeout(timeout);
   };
 
   const handleExternalUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -205,11 +211,17 @@ export default function NoteEditor() {
     setExternalUrl(newUrl);
     setHasChanges(true);
 
-    // Call the direct save function to avoid circular dependency
-    // This is the only reliable way to save that works
-    setTimeout(() => {
+    // Use longer delay for autosave to prevent focus loss issues
+    // This prevents the UI from jumping around while editing
+    if (saveDebounceTimeout) {
+      clearTimeout(saveDebounceTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
       saveDirectly();
-    }, 100);
+    }, 1500); // Use a longer 1.5 second delay to match content edits
+    
+    setSaveDebounceTimeout(timeout);
   };
 
   const handleUrlDisplayTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -217,41 +229,46 @@ export default function NoteEditor() {
     setUrlDisplayText(newText);
     setHasChanges(true);
 
-    // Call the direct save function to avoid circular dependency
-    // This is the only reliable way to save that works
-    setTimeout(() => {
+    // Use longer delay for autosave to prevent focus loss issues
+    // This prevents the UI from jumping around while editing
+    if (saveDebounceTimeout) {
+      clearTimeout(saveDebounceTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
       saveDirectly();
-    }, 100);
+    }, 1500); // Use a longer 1.5 second delay to match content edits
+    
+    setSaveDebounceTimeout(timeout);
   };
 
   const handleDiscussionChange = (checked: boolean | "indeterminate") => {
-    console.log("Discussion checkbox changed");
-    console.log("Current discussion state:", isDiscussion);
-    console.log("Current content:", content);
-
     // Store current content in a variable to preserve it
     const currentContent = contentRef.current?.value || content;
-    console.log("Content to preserve:", currentContent);
 
     const newValue = checked === true;
-    console.log("New discussion state will be:", newValue);
 
     // Update state
     setIsDiscussion(newValue);
     setHasChanges(true);
 
-    // Ensure content is preserved
-    setTimeout(() => {
+    // Use longer delay for autosave to prevent focus loss issues
+    if (saveDebounceTimeout) {
+      clearTimeout(saveDebounceTimeout);
+    }
+    
+    // Ensure content is preserved and then save
+    const timeout = setTimeout(() => {
       if (contentRef.current && contentRef.current.value !== currentContent) {
-        console.log("Content was reset, restoring to:", currentContent);
         contentRef.current.value = currentContent;
         setContent(currentContent);
       }
-
-      console.log("Calling saveDirectly");
-      // Call the direct save function
+      
+      // Call the direct save function with a longer delay
       saveDirectly();
-    }, 50);
+    }, 1500); // Use a longer 1.5 second delay to match content edits
+    
+    setSaveDebounceTimeout(timeout);
   };
 
   const handleTimeChange = (value: string | null) => {
@@ -272,11 +289,17 @@ export default function NoteEditor() {
     setTimeSet(formattedTime);
     setHasChanges(true);
 
-    // Call the direct save function to avoid circular dependency
-    // This is the only reliable way to save that works
-    setTimeout(() => {
+    // Use longer delay for autosave to prevent focus loss issues
+    // This prevents the UI from jumping around while editing
+    if (saveDebounceTimeout) {
+      clearTimeout(saveDebounceTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
       saveDirectly();
-    }, 100);
+    }, 1500); // Use a longer 1.5 second delay to match content edits
+    
+    setSaveDebounceTimeout(timeout);
   };
 
   // Handler for Apply button in the time picker
