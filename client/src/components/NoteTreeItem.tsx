@@ -1142,20 +1142,21 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                 e.stopPropagation();
                 // If it's a root note, create another root note
                 if (isRoot) {
-                  addNote(null);
+                  // Create a root note at the current index + 1
+                  addNote(null, index + 1);
                 } else {
-                  // Create a sibling by using parent as the parent
+                  // Create a sibling right after the current note (at index + 1)
                   addNote(parentId ? { 
                     id: parentId, 
                     content: "", 
-                    position: 0,
+                    position: index + 1, // Place after current note
                     is_discussion: false,
                     time_set: null,
                     youtube_url: null,
                     url: null,
                     url_display_text: null,
                     children: [] 
-                  } as Note : null);
+                  } as Note : null, index + 1);
                 }
               }}
             >

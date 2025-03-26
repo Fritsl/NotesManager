@@ -25,7 +25,7 @@ interface NotesContextType {
   selectedNote: Note | null;
   selectNote: (note: Note | null) => void;
   breadcrumbs: Note[];
-  addNote: (parent: Note | null) => void;
+  addNote: (parent: Note | null, insertPosition?: number) => void;
   updateNote: (updatedNote: Note) => void;
   deleteNote: (noteId: string) => void;
   moveNote: (noteId: string, targetParentId: string | null, position: number) => void;
@@ -415,7 +415,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
   }, [notes]);
 
   // Add a new note
-  const addNote = useCallback((parent: Note | null) => {
+  const addNote = useCallback((parent: Note | null, insertPosition?: number) => {
     const newNote: Note = {
       id: uuidv4(),
       content: "", // Empty by default - no more "New note" text!
@@ -432,8 +432,18 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       // Add as root note
       setNotes((prevNotes) => {
         const updatedNotes = [...prevNotes];
-        newNote.position = updatedNotes.length;
-        updatedNotes.push(newNote);
+        
+        if (insertPosition !== undefined) {
+          // Insert at specific position if provided
+          newNote.position = insertPosition;
+          
+          // Insert at specific position, shifting others
+          updatedNotes.splice(insertPosition, 0, newNote);
+        } else {
+          // Otherwise add to the end (original behavior)
+          newNote.position = updatedNotes.length;
+          updatedNotes.push(newNote);
+        }
 
         // Clean positions at root level to ensure consistency
         return cleanNotePositions(updatedNotes);
@@ -445,9 +455,18 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         const { note: foundParent } = findNoteAndPath(parent.id, updatedNotes);
 
         if (foundParent) {
-          // Add the new note at the beginning of the children array (position 0)
-          newNote.position = 0;
-          foundParent.children.unshift(newNote);
+          if (insertPosition !== undefined) {
+            // Insert at specific position if provided
+            newNote.position = insertPosition;
+            
+            // Determine where to insert in the array
+            // For arrays, we want to insert at the exact position to maintain ordering
+            foundParent.children.splice(insertPosition, 0, newNote);
+          } else {
+            // Original behavior - add to beginning (position 0)
+            newNote.position = 0;
+            foundParent.children.unshift(newNote);
+          }
 
           // Clean positions for this parent's children
           foundParent.children = cleanNotePositions(foundParent.children);
