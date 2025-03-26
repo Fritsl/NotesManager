@@ -965,7 +965,28 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                 {/* Title line - larger and more prominent */}
                 <div className="flex flex-col gap-2">
                   <div 
-                    className={`heading-${level < 6 ? 'h' + (level + 1) : 'h6'} truncate`}
+                    className="truncate"
+                    style={{
+                      fontSize: level === 0 ? '24px' : 
+                               level === 1 ? '20px' : 
+                               level === 2 ? '18px' : 
+                               level === 3 ? '16px' : 
+                               level === 4 ? '14px' : '13px',
+                      fontWeight: level === 0 ? 700 : 
+                                level === 1 ? 600 : 
+                                level === 2 ? 600 : 
+                                level === 3 ? 500 : 
+                                level === 4 ? 500 : 400,
+                      lineHeight: level === 0 ? 1.2 : 
+                                 level === 1 ? 1.3 : 
+                                 level === 2 ? 1.35 : 
+                                 level === 3 ? 1.4 : 1.5,
+                      color: level === 0 ? 'rgba(255, 255, 255, 0.95)' : 
+                            level === 1 ? 'rgba(255, 255, 255, 0.9)' : 
+                            level === 2 ? 'rgba(255, 255, 255, 0.85)' : 
+                            level === 3 ? 'rgba(255, 255, 255, 0.8)' : 
+                            level === 4 ? 'rgba(255, 255, 255, 0.75)' : 'rgba(255, 255, 255, 0.7)'
+                    }}
                     onDoubleClick={(e) => {
                       e.stopPropagation();
                       setIsEditing(true);
