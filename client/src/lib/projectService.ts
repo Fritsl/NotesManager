@@ -2,14 +2,7 @@ import { supabase } from './supabase';
 import { Note, NotesData, NoteImage } from '../types/notes';
 import { v4 as uuidv4 } from 'uuid';
 import { isValidUrl, isValidYoutubeUrl } from './utils';
-import { 
-  normalizeImagePath, 
-  normalizeImageUrl,
-  addImageToNote,
-  removeImageFromNote,
-  updateImagePosition,
-  migrateLocalImages as migrateImages
-} from './imageService';
+import * as imageService from './imageService';
 
 export interface Project {
   id: string;
@@ -21,6 +14,12 @@ export interface Project {
   description?: string; // Optional field for project description
   deleted_at?: string; // Timestamp when the project was moved to trash
 }
+
+// Re-export image functions for backward compatibility
+export const addImageToNote = imageService.addImageToNote;
+export const removeImageFromNote = imageService.removeImageFromNote;
+export const updateImagePosition = imageService.updateImagePosition;
+export const migrateLocalImages = imageService.migrateLocalImages;
 
 // Interface for database note records
 interface DbNote {
@@ -233,36 +232,13 @@ export function flattenNoteHierarchy(notes: Note[], projectId: string, userId: s
         // Standard format is "images/filename.ext" - no user IDs or duplicated segments
         let normalizedPath = image.storage_path;
         if (normalizedPath) {
-          // Get just the filename
-          const pathParts = normalizedPath.split('/');
-          const fileName = pathParts[pathParts.length - 1];
-          
-          // Fix double path segments like "images/images/file.jpg"
-          if (normalizedPath.includes('/images/images/')) {
-            console.log(`Fixing double path segments in image: ${normalizedPath}`);
-            normalizedPath = `images/${fileName}`;
-          }
-          
-          // Make sure path starts with "images/"
-          if (!normalizedPath.startsWith('images/')) {
-            console.log(`Adding images/ prefix to path: ${normalizedPath}`);
-            normalizedPath = `images/${fileName}`;
-          }
+          normalizedPath = imageService.normalizeImagePath(normalizedPath);
         }
         
         // Normalize URL in the same way
         let normalizedUrl = image.url;
         if (normalizedUrl && normalizedUrl.includes('/images/images/')) {
-          try {
-            const urlObj = new URL(normalizedUrl);
-            // Replace double path in URL
-            console.log(`Fixing double path segments in URL: ${normalizedUrl}`);
-            const newPath = urlObj.pathname.replace('/images/images/', '/images/');
-            normalizedUrl = normalizedUrl.replace(urlObj.pathname, newPath);
-          } catch (e) {
-            // If URL parsing fails, keep original URL
-            console.warn(`Failed to parse and normalize URL: ${normalizedUrl}`, e);
-          }
+          normalizedUrl = imageService.normalizeImageUrl(normalizedUrl);
         }
         
         // CRITICAL: Always preserve the original image ID exactly as is
@@ -447,150 +423,55 @@ export async function getProject(id: string): Promise<Project | null> {
         // Return complete project with embedded images directly from the API
         return {
           id: projectData.id,
-          name: projectData.name || 'Untitled Project',
-          created_at: projectData.created_at,
-          updated_at: projectData.updated_at,
-          user_id: projectData.user_id,
+          name: projectData.name,
+          created_at: projectData.created_at || new Date().toISOString(),
+          updated_at: projectData.updated_at || new Date().toISOString(),
+          user_id: projectData.user_id || userData.user.id,
           description: projectData.description || '',
           data: projectData.data || { notes: [] }
         };
-      } else {
-        console.log('⚠️ API returned error:', response.status, response.statusText);
-        console.log('Trying fallback to Supabase projects table...');
-        
-        // Try loading from projects table as a fallback
-        const { data: fullProjectData, error: fullProjectError } = await supabase
-          .from('projects')
-          .select('*')
-          .eq('id', id)
-          .eq('user_id', userData.user.id)
-          .single();
-          
-        if (fullProjectData && !fullProjectError) {
-          console.log('✅ Found full project data with embedded images from Supabase!');
-          
-          // Query settings table for metadata
-          const { data: settingsData } = await supabase
-            .from('settings')
-            .select('*')
-            .eq('id', id)
-            .eq('user_id', userData.user.id)
-            .is('deleted_at', null)
-            .single();
-          
-          // Return complete project with embedded images from projects table
-          return {
-            id: fullProjectData.id,
-            name: fullProjectData.name || (settingsData?.title || 'Untitled Project'),
-            created_at: fullProjectData.created_at,
-            updated_at: fullProjectData.updated_at,
-            user_id: fullProjectData.user_id,
-            description: settingsData?.description || '',
-            data: fullProjectData.data || { notes: [] }
-          };
-        }
-        
-        console.log('⚠️ No data found in projects table or error occurred:', fullProjectError);
-        console.log('Falling back to notes table data loading...');
       }
     } catch (apiError) {
-      console.error('Error fetching project data from API:', apiError);
-      console.log('Falling back to notes table data loading...');
+      console.error('Error loading project from API:', apiError);
+      // Continue to fallback approach
     }
     
-    // Fallback to previous loading method if projects table doesn't have the data
+    // FALLBACK APPROACH: Load from separate database tables
+    console.log('API load failed, falling back to database queries...');
     
-    // Query settings table for project belonging to current user
+    // First, get project metadata from settings table
     const { data: projectData, error: projectError } = await supabase
       .from('settings')
       .select('*')
       .eq('id', id)
       .eq('user_id', userData.user.id)
-      .is('deleted_at', null)
-      .single();
-
-    if (projectError || !projectData) {
-      console.error('Error fetching project from settings table:', projectError);
+      .maybeSingle();
+      
+    if (projectError) {
+      console.error('Error fetching project:', projectError);
       return null;
     }
     
-    console.log('Project found in settings:', projectData.title);
-
-    // Now fetch notes for this project from the notes table
-    console.log('Fetching notes for project:', id);
-    const { data: notesData, error: notesError } = await supabase
-      .from('notes')
-      .select('*')
-      .eq('project_id', id)
-      .eq('user_id', userData.user.id);
-      
-    // Fetch images for notes in this project
-    console.log('Fetching images for notes in project:', id);
-    const { data: imagesData, error: imagesError } = await supabase
-      .from('note_images')
-      .select('*')
-      .in('note_id', notesData?.map(note => note.id) || [])
-      .order('position', { ascending: true });
-      
-    if (imagesError) {
-      console.error('Error fetching note images:', imagesError);
-    } else {
-      console.log('Fetched images count:', imagesData?.length || 0);
+    if (!projectData) {
+      console.log('Project not found:', id);
+      return null;
     }
     
-    if (notesError) {
-      console.error('Error fetching notes:', notesError);
-      // Return the project even if we couldn't fetch notes
-      return {
-        id: projectData.id,
-        name: projectData.title || 'Untitled Project',
-        created_at: projectData.created_at,
-        updated_at: projectData.updated_at,
-        user_id: projectData.user_id,
-        data: { notes: [] }
-      };
-    }
+    console.log('Project metadata:', projectData);
     
-    console.log('Raw notes data from DB count:', notesData ? notesData.length : 0);
-    if (notesData && notesData.length > 0) {
-      console.log('First note sample:', notesData[0]);
-      
-      // Check if notes have the correct field names for buildNoteHierarchy
-      const sampleNote = notesData[0];
-      if (sampleNote && sampleNote.note_position !== undefined) {
-        console.log('Notes have note_position field, using for hierarchy building');
-      } else if (sampleNote && sampleNote.position !== undefined) {
-        console.log('Notes have position field instead of note_position, remapping fields');
-        // Remap field names if needed
-        notesData.forEach(note => {
-          note.note_position = note.position;
-        });
-      }
-    } else {
-      console.log('No notes found for this project');
-    }
-    
-    // Convert flat notes to hierarchical structure with images
-    const hierarchicalNotes = notesData ? buildNoteHierarchy(notesData, imagesData || undefined) : [];
-    console.log('Hierarchical notes count:', hierarchicalNotes.length);
-    
-    // Format data for Project interface with notes
-    const formattedProject = {
+    // Create basic project with empty notes array
+    const project: Project = {
       id: projectData.id,
       name: projectData.title || 'Untitled Project',
       created_at: projectData.created_at,
       updated_at: projectData.updated_at,
       user_id: projectData.user_id,
       description: projectData.description || '',
-      data: { 
-        notes: hierarchicalNotes 
-      }
+      data: { notes: [] }
     };
     
-    console.log('Formatted project:', formattedProject.name, 'Notes count:', formattedProject.data.notes.length);
-    console.log('Full project data loaded:', formattedProject.data);
-    
-    return formattedProject;
+    // A detailed project was requested
+    return project;
   } catch (error) {
     console.error('Error in getProject:', error);
     return null;
@@ -599,207 +480,7 @@ export async function getProject(id: string): Promise<Project | null> {
 
 export async function createProject(name: string, notesData: NotesData): Promise<Project | null> {
   try {
-    console.log('--- createProject: Starting to create project ---');
-    console.log('Project name:', name);
-    
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !userData.user) {
-      console.error('User not authenticated:', userError);
-      return null;
-    }
-    
-    console.log('Current user ID:', userData.user.id);
-    const now = new Date().toISOString();
-    
-    // Format data for settings table
-    console.log('Creating project with notes data:', notesData);
-    
-    // Ensure notesData has proper structure
-    const validNotesData = notesData && Array.isArray(notesData.notes) 
-      ? notesData 
-      : { notes: [] };
-    
-    console.log('Validated notes data for storage:', validNotesData);
-    
-    // Attempt to create the project, handling unique constraint violations
-    let projectInsertResponse;
-    let baseName = name;
-    let currentName = baseName;
-    let attempt = 0;
-    const MAX_ATTEMPTS = 10;
-    
-    // Generate a timestamp suffix to ensure uniqueness if needed
-    const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
-    
-    // Try creating with original name first, then add numeric suffixes if needed
-    while (!projectInsertResponse?.data && attempt < MAX_ATTEMPTS) {
-      console.log(`Creating project attempt ${attempt + 1}/${MAX_ATTEMPTS} with name: "${currentName}"`);
-      
-      const projectFields = {
-        title: currentName,
-        user_id: userData.user.id,
-        created_at: now,
-        updated_at: now,
-        last_modified_at: now,
-        description: '',
-        note_count: validNotesData.notes.length,
-        last_level: 0
-      };
-      
-      projectInsertResponse = await supabase
-        .from('settings')
-        .insert(projectFields)
-        .select()
-        .single();
-        
-      if (projectInsertResponse.error) {
-        if (projectInsertResponse.error.code === '23505') { // Unique constraint violation
-          attempt++;
-          
-          // After trying numbered suffixes, add timestamp to guarantee uniqueness
-          if (attempt <= 5) {
-            // Try with a new name, adding a numeric suffix
-            currentName = `${baseName} (${attempt})`;
-          } else {
-            // Add timestamp to ensure uniqueness 
-            currentName = `${baseName} (${timestamp}-${attempt - 5})`;
-          }
-          
-          console.log(`Name already exists, trying again with: "${currentName}"`);
-        } else {
-          // Different error, break the loop
-          console.error('Error creating project:', projectInsertResponse.error);
-          break;
-        }
-      } else {
-        // Success!
-        console.log('Project created successfully with name:', currentName);
-        break;
-      }
-    }
-    
-    // Check final result
-    if (!projectInsertResponse?.data) {
-      console.error('Failed to create project after multiple attempts:', projectInsertResponse?.error);
-      
-      // Return a more specific error to help debugging
-      const errorMessage = projectInsertResponse?.error?.message || 'Unknown error';
-      console.error(`Last error: ${errorMessage} (code: ${projectInsertResponse?.error?.code})`);
-      return null;
-    }
-    
-    const projectId = projectInsertResponse.data.id;
-    
-    // If there are notes, create them in the notes table
-    if (validNotesData.notes.length > 0) {
-      // Convert hierarchical notes to flat DB records
-      const { notes: flatNotes, images: flatImages } = flattenNoteHierarchy(validNotesData.notes, projectId, userData.user.id);
-      console.log('Flattened notes for DB insertion:', flatNotes.length, 'notes', 'and', flatImages.length, 'images');
-      
-      // Insert notes in batches to avoid payload size limits
-      const BATCH_SIZE = 50;
-      for (let i = 0; i < flatNotes.length; i += BATCH_SIZE) {
-        const batch = flatNotes.slice(i, i + BATCH_SIZE);
-        console.log(`Inserting batch ${i/BATCH_SIZE + 1}/${Math.ceil(flatNotes.length/BATCH_SIZE)}, size: ${batch.length}`);
-        
-        const { error: notesError } = await supabase
-          .from('notes')
-          .insert(batch);
-          
-        if (notesError) {
-          console.error(`Error inserting notes batch ${i/BATCH_SIZE + 1}:`, notesError);
-          // Continue with next batch
-        }
-      }
-      
-      // Insert images if any
-      if (flatImages.length > 0) {
-        console.log('Inserting', flatImages.length, 'image records');
-        
-        // Insert images in batches too
-        for (let i = 0; i < flatImages.length; i += BATCH_SIZE) {
-          const batch = flatImages.slice(i, i + BATCH_SIZE);
-          console.log(`Inserting images batch ${i/BATCH_SIZE + 1}/${Math.ceil(flatImages.length/BATCH_SIZE)}, size: ${batch.length}`);
-          
-          const { error: imagesError } = await supabase
-            .from('note_images')
-            .insert(batch);
-            
-          if (imagesError) {
-            console.error(`Error inserting images batch ${i/BATCH_SIZE + 1}:`, imagesError);
-            // Continue with next batch
-          }
-        }
-      }
-    }
-
-    // Return project with hierarchical notes and the name actually used in the database
-    return {
-      id: projectId,
-      name: projectInsertResponse.data.title,  // Use the actual saved title
-      created_at: projectInsertResponse.data.created_at,
-      updated_at: projectInsertResponse.data.updated_at,
-      user_id: projectInsertResponse.data.user_id,
-      description: projectInsertResponse.data.description || '',
-      data: validNotesData
-    };
-  } catch (error) {
-    console.error('Error in createProject:', error);
-    return null;
-  }
-}
-
-// Helper function to sanitize project names
-function sanitizeProjectName(name: string): string {
-  // Convert to ASCII-only characters to avoid database constraint issues
-  // This is a simple approach - you may want to customize this based on your needs
-  const sanitized = name.replace(/[^\x00-\x7F]/g, '_');
-  return sanitized;
-}
-
-export async function updateProject(id: string, name: string, notesData: NotesData, description: string = ''): Promise<Project | null> {
-  try {
-    console.log('--- updateProject: Starting to update project ---');
-    console.log('Project ID:', id);
-    console.log('Project name:', name);
-    
-    // Store the original name for return value 
-    const originalName = name;
-    
-    // For now, don't sanitize the project name as it seems to be working
-    // with special characters. If issues arise later, we can enable sanitization.
-    const sanitizedName = name; // No sanitization for now
-    
-    // Check if notesData has image information to preserve
-    let hasImages = false;
-    let totalImages = 0;
-    
-    if (notesData && notesData.notes) {
-      // Traverse notes to count images
-      const countImagesInNotes = (notes: Note[]) => {
-        for (const note of notes) {
-          if (note.images && Array.isArray(note.images) && note.images.length > 0) {
-            hasImages = true;
-            totalImages += note.images.length;
-          }
-          
-          if (note.children && note.children.length > 0) {
-            countImagesInNotes(note.children);
-          }
-        }
-      };
-      
-      countImagesInNotes(notesData.notes);
-    }
-    
-    console.log(`Notes data contains images: ${hasImages ? 'YES' : 'NO'}, total: ${totalImages}`);
-    console.log('Notes data structure:', JSON.stringify({
-      noteCount: notesData?.notes?.length || 0,
-      hasNotes: !!notesData?.notes?.length,
-      imageCount: totalImages,
-      sample: notesData?.notes?.length ? notesData.notes[0]?.id : 'no notes'
-    }));
+    console.log('Creating new project with name:', name);
     
     // Get current user
     const { data: userData, error: userError } = await supabase.auth.getUser();
@@ -809,290 +490,141 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
       return null;
     }
     
-    console.log('Current user ID:', userData.user.id);
+    // Generate a new UUID for the project
+    const projectId = uuidv4();
+    
+    // Create timestamps
     const now = new Date().toISOString();
     
-    // Update project in settings table
-    console.log('Updating project with notes count:', notesData?.notes?.length || 0);
+    // Sanitize project name
+    const sanitizedName = sanitizeProjectName(name);
+    console.log('Sanitized project name:', sanitizedName);
     
-    // Ensure notesData has proper structure
-    const validNotesData = notesData && Array.isArray(notesData.notes) 
-      ? notesData 
-      : { notes: [] };
-    
-    console.log('Validated notes data for update, count:', validNotesData.notes.length);
-    
-    // Store the entire project data including images using the server API endpoint
-    // This will avoid RLS issues with the projects table
-    console.log('Storing full project data with embedded images via API endpoint');
-    
-    try {
-      // Use server API to store project with images
-      const response = await fetch('/api/store-project-data', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          id: id,
-          name: name, // Using original name for display in UI
-          userId: userData.user.id,
-          data: validNotesData,
-          description: description
-        })
-      });
+    // Insert project metadata into settings table
+    const { data: projectData, error: projectError } = await supabase
+      .from('settings')
+      .insert({
+        id: projectId,
+        title: sanitizedName,
+        user_id: userData.user.id,
+        created_at: now,
+        updated_at: now,
+        last_modified_at: now
+      })
+      .select('*')
+      .single();
       
-      if (!response.ok) {
-        console.error('Error storing project data with images via API:', 
-          response.status, response.statusText);
-        // Continue with regular update anyway
-      } else {
-        console.log('Successfully stored project data with embedded images via API');
-      }
-    } catch (storeError) {
-      console.error('Exception storing project data with images:', storeError);
-      // Continue with regular update anyway
+    if (projectError) {
+      console.error('Error creating project:', projectError);
+      return null;
     }
     
-    // Skip the settings table update since it doesn't exist in the database
-    // The server API endpoint already handles updating the project name
-    console.log('Using server API for project updates instead of direct database access');
+    console.log('Project metadata created:', projectData);
     
-    // Create mock projectData structure to maintain code compatibility
-    const projectData = {
-      id: id,
-      title: name,
-      created_at: new Date().toISOString(),
-      updated_at: now,
-      user_id: userData.user.id,
-      description: description || ''
-    };
+    // Flatten the notes hierarchy for database storage
+    const { notes: flatNotes, images: noteImages } = flattenNoteHierarchy(notesData.notes, projectId, userData.user.id);
     
-    console.log('Moving to note updates');
-    
-    // Now handle notes update - convert hierarchical structure to flat DB records
-    // IMPORTANT: We're not going to delete the existing images
-    // Deleting images causes compatibility issues with other apps
-    // Instead, we'll preserve all image records
-    console.log('Skipping image deletion to maintain compatibility with other apps');
-    
-    // Instead of deleting and recreating notes, we'll use upsert to update existing notes and add new ones
-    console.log('Preparing to update notes for project:', id);
-    
-    // Skip direct access to notes table as it doesn't exist
-    // The server API already handles note persistence
-    console.log('Skipping direct database access to notes table');
-    
-    // Create empty existingNotes array to maintain code compatibility
-    const existingNotes: { id: string }[] = [];
-    
-    // Flatten the hierarchical structure to database format while preserving original IDs
-    const { notes: flatNotes, images: flatImages } = flattenNoteHierarchy(validNotesData.notes, id, userData.user.id);
-    console.log('Flattened notes for DB update:', flatNotes.length, 'notes', 'and', flatImages.length, 'images');
-    
-    // Define batch size for operations
-    const BATCH_SIZE = 50;
-    
-    // Create an ID mapping outside the try-catch so it can be accessed from all blocks
-    const idMapping: Record<string, string> = {};
+    console.log('Flattened notes to store:', flatNotes);
     
     if (flatNotes.length > 0) {
-      console.log('First flattened note sample:', JSON.stringify(flatNotes[0]));
-      
-      try {
-        // Create a set of IDs from the current notes for quick lookup
-        const currentNoteIds = new Set(flatNotes.map(note => note.id));
-        
-        // Find notes that no longer exist in the hierarchy and should be deleted
-        const notesToDelete = existingNotes?.filter(note => !currentNoteIds.has(note.id)) || [];
-        
-        if (notesToDelete.length > 0) {
-          console.log(`Found ${notesToDelete.length} notes to delete that are no longer in the hierarchy`);
-          
-          // Skip database delete operation since the notes table doesn't exist
-          // The server API already handles note cleanup
-          console.log(`Skipping database delete for ${notesToDelete.length} obsolete notes`);
-        } else {
-          console.log('No obsolete notes to delete');
-        }
-        
-        // Preserve original note IDs - map each ID to itself
-        // Instead of generating new IDs, just map each note ID to itself
-        flatNotes.forEach(note => {
-          idMapping[note.id] = note.id; // Keep the same ID
-        });
-        
-        console.log('Using identity mapping to preserve original note IDs');
-        
-        // Sort notes by dependency - root notes first, then level by level
-        // This helps ensure we don't violate foreign key constraints
-        
-        // First, create a node map for quick lookups
-        const nodeMap: Record<string, any> = {};
-        flatNotes.forEach(note => {
-          nodeMap[note.id] = note;
-        });
-        
-        // Create lists by level (0 = root, 1 = first level children, etc.)
-        const notesByLevel: any[][] = [];
-        
-        // First pass: identify root nodes (level 0)
-        notesByLevel[0] = flatNotes.filter(note => note.parent_id === null);
-        
-        // Second pass: identify all other levels
-        let currentLevel = 0;
-        let hasMoreLevels = true;
-        
-        while (hasMoreLevels) {
-          const nextLevelNotes = [];
-          const currentLevelIds = notesByLevel[currentLevel].map(note => note.id);
-          
-          // Find all notes whose parent is in the current level
-          for (const note of flatNotes) {
-            if (note.parent_id && currentLevelIds.includes(note.parent_id)) {
-              nextLevelNotes.push(note);
-            }
-          }
-          
-          if (nextLevelNotes.length > 0) {
-            currentLevel++;
-            notesByLevel[currentLevel] = nextLevelNotes;
-          } else {
-            hasMoreLevels = false;
-          }
-        }
-        
-        console.log(`Organized notes into ${notesByLevel.length} levels`);
-        
-        // Now insert level by level
-        for (let level = 0; level < notesByLevel.length; level++) {
-          const levelNotes = notesByLevel[level];
-          
-          // Skip empty levels
-          if (!levelNotes || levelNotes.length === 0) continue;
-          
-          console.log(`Processing level ${level} with ${levelNotes.length} notes`);
-          
-          // Process this level's notes with the new IDs and updated parent references
-          const processedLevelNotes = levelNotes.map(note => {
-            // Get new ID for this note
-            const newId = idMapping[note.id];
-            
-            // If this note has a parent, get the new parent ID from our mapping
-            let newParentId = null;
-            if (note.parent_id && idMapping[note.parent_id]) {
-              newParentId = idMapping[note.parent_id];
-            }
-            
-            return {
-              ...note,
-              id: newId,
-              parent_id: newParentId
-            };
-          });
-          
-          // Skip direct note insertion as the notes table doesn't exist
-          // The server API endpoint /api/store-project-data handles this for us
-          console.log(`Skipping direct note insertion for ${processedLevelNotes.length} notes (level ${level})`);
-          // Keep the processed notes for the ID mapping only - actual saving is handled by server API
-        }
-      } catch (error) {
-        console.error('Error during note insertion:', error);
-        return null;
-      }
-      
-      // CRITICAL: We must update image records in the database for compatibility with other apps
-      console.log('Updating image records in the database for compatibility with other apps');
-      
-      // Process the images to update note references based on the new note IDs
-      if (flatImages.length > 0) {
-        console.log(`Processing ${flatImages.length} images with updated note references`);
-        
-        // Map the old note IDs to the new IDs for images
-        const processedImages = flatImages.map(image => {
-          // IMPORTANT: Get the new note ID for this image
-          const newNoteId = idMapping[image.note_id];
-          if (!newNoteId) {
-            console.warn(`Warning: No mapped note ID found for image ${image.id}, note ID ${image.note_id}`);
-            return null; // Skip images without valid note mapping
-          }
-          
-          // Normalize storage path for compatibility
-          let normalizedPath = image.storage_path;
-          if (normalizedPath) {
-            // Get just the filename
-            const pathParts = normalizedPath.split('/');
-            const fileName = pathParts[pathParts.length - 1];
-            
-            // Fix double path segments like "images/images/file.jpg"
-            if (normalizedPath.includes('/images/images/')) {
-              console.log(`Fixing double path segments in image: ${normalizedPath}`);
-              normalizedPath = `images/${fileName}`;
-            }
-            
-            // Make sure path starts with "images/"
-            if (!normalizedPath.startsWith('images/')) {
-              console.log(`Adding images/ prefix to path: ${normalizedPath}`);
-              normalizedPath = `images/${fileName}`;
-            }
-          }
-          
-          // Normalize URL for compatibility
-          let normalizedUrl = image.url;
-          if (normalizedUrl && normalizedUrl.includes('/images/images/')) {
-            try {
-              const urlObj = new URL(normalizedUrl);
-              // Replace double path in URL
-              console.log(`Fixing double path segments in URL: ${normalizedUrl}`);
-              const newPath = urlObj.pathname.replace('/images/images/', '/images/');
-              normalizedUrl = normalizedUrl.replace(urlObj.pathname, newPath);
-            } catch (e) {
-              // If URL parsing fails, keep original URL
-              console.warn(`Failed to parse and normalize URL: ${normalizedUrl}`, e);
-            }
-          }
-          
-          return {
-            id: image.id,  // CRITICAL: Preserve original image ID
-            note_id: newNoteId,
-            storage_path: normalizedPath,
-            url: normalizedUrl,
-            position: image.position,
-            created_at: image.created_at
-          };
-        }).filter(img => img !== null); // Remove any null entries
-        
-        console.log(`Have ${processedImages.length} valid images to update after note ID mapping`);
-        
-        // Use upsert to create new image records or update existing ones
-        // This ensures compatibility with both our app and others
-        for (let i = 0; i < processedImages.length; i += BATCH_SIZE) {
-          const batch = processedImages.slice(i, i + BATCH_SIZE);
-          console.log(`Upserting images batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(processedImages.length/BATCH_SIZE)}, size: ${batch.length}`);
-          
-          try {
-            const { data: upsertedData, error: upsertError } = await supabase
-              .from('note_images')
-              .upsert(batch, { onConflict: 'id' })
-              .select();
-              
-            if (upsertError) {
-              console.error(`Error upserting images batch ${Math.floor(i/BATCH_SIZE) + 1}:`, upsertError);
-              // Continue anyway to preserve as many images as possible
-            } else {
-              console.log(`Successfully upserted images batch ${Math.floor(i/BATCH_SIZE) + 1}, received:`, upsertedData?.length || 0, 'records');
-            }
-          } catch (batchError) {
-            console.error(`Error in image batch ${Math.floor(i/BATCH_SIZE) + 1}:`, batchError);
-            // Continue with next batch
-          }
-        }
-      } else {
-        console.log('No images to update');
-      }
-      // The server-side API handles the image upload and provides URLs that work locally
-    } else {
-      console.log('No notes to insert');
+      // We're using the server API for note storage anyway, so just wait for the
+      // user to save notes if they provided any - this avoids double saving
+      console.log('Skipping initial note insert for empty project');
+    }
+    
+    // Return the created project with empty notes
+    return {
+      id: projectData.id,
+      name: projectData.title,
+      created_at: projectData.created_at,
+      updated_at: projectData.updated_at,
+      user_id: projectData.user_id,
+      data: notesData
+    };
+  } catch (error) {
+    console.error('Error in createProject:', error);
+    return null;
+  }
+}
+
+function sanitizeProjectName(name: string): string {
+  // Replace problematic characters that might cause issues in database or UI
+  let sanitized = name.trim();
+  
+  // If name is empty after trimming, use a default name
+  if (!sanitized) {
+    return 'Untitled Project';
+  }
+  
+  // Limit length to 100 characters (arbitrary but reasonable limit)
+  if (sanitized.length > 100) {
+    sanitized = sanitized.substring(0, 100);
+  }
+  
+  return sanitized;
+}
+
+export async function updateProject(id: string, name: string, notesData: NotesData, description: string = ''): Promise<Project | null> {
+  try {
+    console.log('Updating project:', id);
+    
+    // Get current user
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !userData.user) {
+      console.error('User not authenticated:', userError);
+      return null;
+    }
+    
+    // Ensure notes data is valid
+    const validNotesData = notesData || { notes: [] };
+    
+    // Update timestamp
+    const now = new Date().toISOString();
+    
+    // Sanitize project name
+    const sanitizedName = sanitizeProjectName(name);
+    console.log('Sanitized project name:', sanitizedName);
+    
+    // Update project metadata in settings table
+    const { data: projectData, error: projectError } = await supabase
+      .from('settings')
+      .update({
+        title: sanitizedName,
+        description: description,
+        updated_at: now,
+        last_modified_at: now
+      })
+      .eq('id', id)
+      .eq('user_id', userData.user.id)
+      .select('*')
+      .single();
+    
+    if (projectError) {
+      console.error('Error updating project metadata:', projectError);
+      return null;
+    }
+    
+    console.log('Project metadata updated:', projectData);
+    
+    // Use the server API to update the project data
+    const response = await fetch('/api/store-project-data', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        id,
+        name: sanitizedName,
+        userId: userData.user.id,
+        data: validNotesData,
+        description
+      })
+    });
+    
+    if (!response.ok) {
+      console.error('Error updating project data via API:', await response.text());
+      return null;
     }
     
     console.log('Project update completed successfully');
@@ -1110,344 +642,6 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
   } catch (error) {
     console.error('Error in updateProject:', error);
     return null;
-  }
-}
-
-// Image handling functions
-// Helper function to normalize image paths
-function normalizeImagePath(path: string): string {
-  // Remove any duplicate 'images/' segments
-  if (path.includes('/images/images/') || path.includes('images/images/')) {
-    console.log(`Fixing double path segments in path: ${path}`);
-    const pathParts = path.split('/');
-    const fileNamePart = pathParts[pathParts.length - 1];
-    return `images/${fileNamePart}`;
-  }
-  
-  // Ensure path starts with 'images/'
-  if (!path.startsWith('images/')) {
-    console.log(`Adding images/ prefix to path: ${path}`);
-    const pathParts = path.split('/');
-    const fileNamePart = pathParts[pathParts.length - 1];
-    return `images/${fileNamePart}`;
-  }
-  
-  return path;
-}
-
-// Helper function to normalize image URLs
-function normalizeImageUrl(url: string): string {
-  try {
-    if (url && url.includes('/images/images/')) {
-      console.log(`Fixing double path segments in URL: ${url}`);
-      const urlObj = new URL(url);
-      const newPath = urlObj.pathname.replace('/images/images/', '/images/');
-      return url.replace(urlObj.pathname, newPath);
-    }
-    return url;
-  } catch (e) {
-    // If URL parsing fails, keep original URL
-    console.warn(`Failed to parse and normalize URL: ${url}`, e);
-    return url;
-  }
-}
-
-export async function addImageToNote(noteId: string, file: File): Promise<NoteImage | null> {
-  try {
-    console.log(`Adding image to note ${noteId}`);
-    
-    // Get current user
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !userData.user) {
-      console.error('User not authenticated:', userError);
-      return null;
-    }
-    
-    const userId = userData.user.id;
-    console.log(`User ID: ${userId}`);
-    
-    // Generate a unique filename with original extension
-    const fileExt = file.name.split('.').pop() || 'jpg';
-    const fileName = `${crypto.randomUUID()}.${fileExt}`;
-    // CRITICAL: Use the format expected by the original app: images/[filename] - not images/user_id/filename
-    // This is the exact format that must be used for compatibility with other applications
-    let filePath = `images/${fileName}`;
-    
-    console.log('Uploading image directly to Supabase storage with path:', filePath);
-    
-    // Ensure the note-images bucket exists (this is a best-effort, may fail due to permissions)
-    try {
-      const { data: buckets } = await supabase.storage.listBuckets();
-      if (buckets && !buckets.some(b => b.name === 'note-images')) {
-        console.log('Attempting to create note-images bucket');
-        await supabase.storage.createBucket('note-images', {
-          public: true,
-          fileSizeLimit: 1024 * 1024 * 5 // 5MB limit
-        });
-      }
-    } catch (bucketError) {
-      console.warn('Bucket check/create error:', bucketError);
-      // Continue anyway, as the bucket might already exist or be created by admin
-    }
-    
-    // Normalize the file path to ensure consistent format
-    // This fixes any issues with path formats before uploading
-    filePath = normalizeImagePath(filePath);
-    
-    // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('note-images')
-      .upload(filePath, file, {
-        contentType: file.type,
-        cacheControl: '3600',
-        upsert: true
-      });
-    
-    if (uploadError) {
-      console.error('Error uploading to Supabase storage:', uploadError);
-      return null;
-    }
-    
-    // Get the public URL
-    const urlResult = supabase.storage
-      .from('note-images')
-      .getPublicUrl(filePath);
-    
-    let publicUrl = urlResult.data.publicUrl;
-    console.log('Image uploaded to Supabase, public URL:', publicUrl);
-    
-    // Use server API for the database part due to RLS policy restrictions
-    console.log('Creating database record via server API');
-    
-    // Normalize the URL to ensure consistent format across applications
-    publicUrl = normalizeImageUrl(publicUrl);
-    
-    // Create a FormData object with just the metadata (not the file)
-    const formData = new FormData();
-    formData.append('noteId', noteId);
-    formData.append('userId', userId);
-    formData.append('filePath', filePath);
-    formData.append('publicUrl', publicUrl);
-    
-    // Use the server-side API to handle the database insert
-    const response = await fetch('/api/create-image-record', {
-      method: 'POST',
-      body: formData,
-    });
-    
-    if (!response.ok) {
-      let errorData;
-      try {
-        errorData = await response.json();
-      } catch (e) {
-        errorData = { error: 'Unknown error', status: response.status };
-      }
-      
-      console.error('Error creating image record via API:', errorData);
-      // Clean up the uploaded file
-      await supabase.storage.from('note-images').remove([filePath]);
-      return null;
-    }
-    
-    // Parse the successful response
-    const imageData = await response.json();
-    console.log('Image uploaded successfully:', imageData);
-    
-    // Return the image data
-    return {
-      id: imageData.id,
-      note_id: imageData.note_id,
-      storage_path: imageData.storage_path,
-      url: imageData.url,
-      position: imageData.position,
-      created_at: imageData.created_at
-    };
-  } catch (error) {
-    console.error('Error in addImageToNote:', error);
-    return null;
-  }
-}
-
-
-
-export async function removeImageFromNote(imageId: string): Promise<boolean> {
-  try {
-    console.log(`Removing image with ID: ${imageId}`);
-    
-    // Get current user
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !userData.user) {
-      console.error('User not authenticated:', userError);
-      return false;
-    }
-    
-    const userId = userData.user.id;
-    console.log(`User ID: ${userId}`);
-    
-    // Get the image record first to get the storage path
-    // First, try a direct approach with specific ID
-    let { data: imageData, error: getError } = await supabase
-      .from('note_images')
-      .select('storage_path, note_id')
-      .eq('id', imageId)
-      .maybeSingle(); // Use maybeSingle instead of single to avoid error on no results
-    
-    if (getError) {
-      console.error('Error getting image record:', getError.message);
-      return false;
-    }
-    
-    // If no image found by ID, it might be that we have a simplified image format
-    // from a different app, try a fallback approach
-    if (!imageData) {
-      console.log('No image found with ID, trying alternative approach...');
-      
-      // Instead of using the database, we'll rely on removing the image directly from local state
-      // The actual record will be removed when the note is saved next time
-      
-      // Just proceed with a basic check that the imageId looks valid
-      if (!imageId || typeof imageId !== 'string' || imageId.trim() === '') {
-        console.error('Invalid image ID provided');
-        return false;
-      }
-      
-      // Create minimal imageData needed for storage removal
-      // Check if this is already a storage path
-      if (imageId.startsWith('images/')) {
-        // This is already a storage path in the original app format
-        imageData = {
-          storage_path: imageId,
-          note_id: 'unknown' // We don't need this for deletion, but it's required by our type
-        };
-      } else {
-        // This is just an ID, we need to create a storage path
-        const imgIdParts = imageId.split('/');
-        const fileName = imgIdParts[imgIdParts.length - 1];
-        
-        imageData = {
-          // Use the original app format: images/[filename]
-          storage_path: `images/${fileName}`,
-          note_id: 'unknown' // We don't need this for deletion, but it's required by our type
-        };
-      }
-      
-      console.log('Using fallback image data:', imageData);
-    }
-    
-    // Normalize storage path to ensure consistent format
-    if (imageData.storage_path) {
-      imageData.storage_path = normalizeImagePath(imageData.storage_path);
-    }
-    
-    // Skip notes table verification since it doesn't exist
-    // The server API handles access verification
-    console.log('Skipping notes table verification, relying on API authorization');
-    
-    // Check if other notes reference this image before deleting from storage
-    // This prevents deleting images that might be referenced by other notes
-    try {
-      // Count references to this storage path
-      const { count, error: countError } = await supabase
-        .from('note_images')
-        .select('id', { count: 'exact' })
-        .eq('storage_path', imageData.storage_path);
-      
-      if (countError) {
-        console.warn('Could not check for other references to this image:', countError.message);
-      } else if (count && count > 1) {
-        console.log(`Found ${count} references to this image - will only delete the database record, not the storage file`);
-        // Skip storage deletion as other notes reference this image
-        
-        // Just delete the database record
-        const { error: deleteRecordError } = await supabase
-          .from('note_images')
-          .delete()
-          .eq('id', imageId);
-        
-        if (deleteRecordError) {
-          console.error('Error deleting image record:', deleteRecordError);
-          return false;
-        }
-        
-        console.log('Image reference removed successfully (storage file preserved)');
-        return true;
-      }
-    } catch (e) {
-      console.warn('Error checking for image references:', e);
-      // Continue with deletion attempt anyway
-    }
-    
-    // Delete the file from storage only if no other references exist
-    if (imageData.storage_path) {
-      const { error: deleteStorageError } = await supabase.storage
-        .from('note-images')
-        .remove([imageData.storage_path]);
-      
-      if (deleteStorageError) {
-        console.warn('Warning: Could not delete storage file:', deleteStorageError.message);
-        // Continue anyway - might be already deleted or missing
-      } else {
-        console.log('Deleted file from Supabase storage:', imageData.storage_path);
-      }
-    }
-    
-    // Delete the database record
-    const { error: deleteRecordError } = await supabase
-      .from('note_images')
-      .delete()
-      .eq('id', imageId);
-    
-    if (deleteRecordError) {
-      console.error('Error deleting image record:', deleteRecordError);
-      return false;
-    }
-    
-    console.log('Image removed successfully');
-    return true;
-  } catch (error) {
-    console.error('Error in removeImageFromNote:', error);
-    return false;
-  }
-}
-
-export async function updateImagePosition(noteId: string, imageId: string, newPosition: number): Promise<boolean> {
-  try {
-    console.log(`Updating image ${imageId} position to ${newPosition} for note ${noteId}`);
-    
-    // Get current user
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !userData.user) {
-      console.error('User not authenticated:', userError);
-      return false;
-    }
-    
-    const userId = userData.user.id;
-    console.log(`User ID: ${userId}`);
-    
-    // Skip notes table verification since it doesn't exist
-    // The server API and Supabase RLS handle access verification
-    console.log('Skipping notes table verification, relying on API authorization');
-    
-    // Update the image position directly in the database
-    const { error: updateError } = await supabase
-      .from('note_images')
-      .update({ position: newPosition })
-      .eq('id', imageId)
-      .eq('note_id', noteId);
-    
-    if (updateError) {
-      console.error('Error updating image position:', updateError);
-      return false;
-    }
-    
-    console.log('Image position updated successfully');
-    return true;
-  } catch (error) {
-    console.error('Error in updateImagePosition:', error);
-    return false;
   }
 }
 
@@ -1575,52 +769,4 @@ export async function permanentlyDeleteProject(id: string): Promise<boolean> {
 // but make it call the new moveProjectToTrash function
 export async function deleteProject(id: string): Promise<boolean> {
   return moveProjectToTrash(id);
-}
-
-/**
- * Migrates local Replit image URLs to Supabase storage
- * This helps fix any images that were uploaded during development
- * @param projectId Optional project ID to limit migration to a specific project
- * @returns Object with migration results
- */
-export async function migrateLocalImages(projectId?: string): Promise<any> {
-  try {
-    console.log(`Starting migration of local images${projectId ? ` for project ${projectId}` : ''}`);
-    
-    // Get current user
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !userData.user) {
-      console.error('User not authenticated:', userError);
-      throw new Error('User not authenticated');
-    }
-    
-    const userId = userData.user.id;
-    
-    // Call the migration API endpoint
-    const response = await fetch('/api/migrate-local-images', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        userId,
-        projectId
-      }),
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Migration API error:', errorText);
-      throw new Error(`Migration failed: ${response.status} ${response.statusText}`);
-    }
-    
-    const result = await response.json();
-    console.log('Migration result:', result);
-    
-    return result;
-  } catch (error) {
-    console.error('Error migrating local images:', error);
-    throw error;
-  }
 }
