@@ -651,7 +651,11 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
             placeholder="https://youtube.com/watch?v=..."
             value={editYoutubeUrl || ''}
-            onChange={(e) => setEditYoutubeUrl(e.target.value || null)}
+            onChange={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setEditYoutubeUrl(e.target.value || null);
+            }}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
           />
@@ -665,7 +669,11 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
             placeholder="https://..."
             value={editUrl || ''}
-            onChange={(e) => setEditUrl(e.target.value || null)}
+            onChange={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setEditUrl(e.target.value || null);
+            }}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
           />
@@ -679,7 +687,11 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
             placeholder="Display text for URL..."
             value={editUrlDisplayText || ''}
-            onChange={(e) => setEditUrlDisplayText(e.target.value || null)}
+            onChange={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setEditUrlDisplayText(e.target.value || null);
+            }}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
           />
