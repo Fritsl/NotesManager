@@ -584,6 +584,36 @@ function sanitizeProjectName(name: string): string {
   return sanitized;
 }
 
+export async function generateUniqueProjectName(baseName: string = 'New Project'): Promise<string> {
+  try {
+    // Get all projects first to check for name conflicts
+    const projects = await getProjects();
+    
+    // If there are no existing projects with the base name, we can use it directly
+    const existingNames = new Set(projects.map(p => p.name.toLowerCase()));
+    
+    if (!existingNames.has(baseName.toLowerCase())) {
+      return baseName;
+    }
+    
+    // Otherwise, generate a name with a number suffix
+    let counter = 1;
+    let candidateName = `${baseName} ${counter}`;
+    
+    while (existingNames.has(candidateName.toLowerCase())) {
+      counter++;
+      candidateName = `${baseName} ${counter}`;
+    }
+    
+    return candidateName;
+  } catch (error) {
+    console.error('Error generating unique project name:', error);
+    // In case of error, return a fallback with timestamp to ensure uniqueness
+    const timestamp = new Date().getTime().toString().slice(-4);
+    return `${baseName} ${timestamp}`;
+  }
+}
+
 export async function updateProject(id: string, name: string, notesData: NotesData, description: string = ''): Promise<Project | null> {
   try {
     console.log('Updating project:', id);
