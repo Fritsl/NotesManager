@@ -25,6 +25,7 @@ export default function NoteEditor() {
   // Get the Notes context to access its methods
   const notesContext = useNotes();
   const { toast } = useToast();
+  
   // We're moving away from mobile-specific logic to reduce issues
   // This will be a unified interface for all device sizes
   const [isFullscreenEditMode, setIsFullscreenEditMode] = useState<boolean>(false);
@@ -117,7 +118,7 @@ export default function NoteEditor() {
     } catch (error) {
       console.error("Failed to save project directly:", error);
     }
-  }, [selectedNote, currentProjectId, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, timeSet, updateNote, saveProject, toast]);
+  }, [selectedNote, currentProjectId, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, timeSet, updateNote, saveProject]);
 
   // Auto-save when a field loses focus and there are changes
   const handleBlur = useCallback(async (e: React.FocusEvent) => {
@@ -161,7 +162,7 @@ export default function NoteEditor() {
         clearTimeout(inactivitySaveTimerRef.current);
       }
     };
-  }, [selectedNote, hasChanges, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, timeSet, updateNote, saveProject]);
+  }, [selectedNote, hasChanges, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, timeSet, updateNote, saveProject, saveDirectly]);
 
   // Set up debounced auto-save for content changes
   const [saveDebounceTimeout, setSaveDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -448,274 +449,115 @@ export default function NoteEditor() {
               style={{ minHeight: '100%', height: '100%' }}
             />
           </div>
-
-          {/* Mobile footer */}
-          <div className="bg-gray-900 border-t border-gray-800 p-2 flex justify-around">
-            {/* Image upload button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                const fileInput = document.getElementById(`file-upload-${selectedNote?.id}`) as HTMLInputElement;
-                fileInput?.click();
-              }}
-              className="text-primary"
-            >
-              <ImagePlus size={16} />
-            </Button>
-
-            <input
-              type="file"
-              id={`file-upload-${selectedNote?.id}`}
-              className="hidden"
-              accept="image/*"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (file && selectedNote) {
-                  try {
-                    const image = await notesContext.uploadImage?.(selectedNote.id, file);
-                    if (image) {
-                      e.target.value = '';
-                      toast({
-                        title: "Image Uploaded",
-                        description: "Image has been added to the note",
-                      });
-                    }
-                  } catch (error) {
-                    console.error("Failed to upload image:", error);
-                    toast({
-                      title: "Upload Failed",
-                      description: "Could not upload image. Please try again.",
-                      variant: "destructive",
-                    });
-                  }
-                }
-              }}
-            />
-
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => {
-                console.log("Discussion toggle button clicked");
-                console.log("Current discussion state:", isDiscussion);
-                console.log("Current content:", content);
-
-                // Toggle discussion flag
-                const newValue = !isDiscussion;
-                console.log("New discussion state will be:", newValue);
-
-                // Store current content in a variable to preserve it
-                const currentContent = contentRef.current?.value || content;
-                console.log("Content to preserve:", currentContent);
-
-                // Update state without losing content
-                setIsDiscussion(newValue);
-                setHasChanges(true);
-
-                // Ensure content is preserved by explicitly setting it again
-                // This prevents content from being reset during re-renders
-                setTimeout(() => {
-                  if (contentRef.current && contentRef.current.value !== currentContent) {
-                    console.log("Content was reset, restoring to:", currentContent);
-                    // Set the value directly on the DOM element
-                    contentRef.current.value = currentContent;
-                    // Update React state to match
-                    setContent(currentContent);
-                  }
-
-                  console.log("Calling saveDirectly");
-                  // Call the direct save function
-                  saveDirectly();
-                }, 50);
-              }}
-              className={isDiscussion ? "text-blue-400" : "text-gray-400"}
-            >
-              <CheckCircle2 size={16} />
-            </Button>
-
-            <Popover.Root>
-              <Popover.Trigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className={timeSet ? "text-purple-400" : "text-gray-400"}
-                >
-                  <Clock size={16} />
-                </Button>
-              </Popover.Trigger>
-              <Popover.Content 
-                className="bg-gray-850 border border-gray-700 p-4 rounded-md shadow-lg z-50"
-                sideOffset={5}
-              >
-                <div className="flex flex-col space-y-4">
-                  <Input 
-                    type="time"
-                    value={timeSet ? (timeSet.includes(':') ? timeSet.split(':').slice(0, 2).join(':') : timeSet) : ""}
-                    onChange={(e) => handleTimeChange(e.target.value)}
-                    className="text-lg px-3 py-2 h-10 bg-gray-800 border-gray-600 focus:border-primary"
-                  />
-                  <div className="flex justify-between">
-                    <Button
-                      variant="outline"
-                      className="border-gray-700 hover:bg-gray-800"
-                      onClick={() => handleTimeChange(null)}
-                    >
-                      Clear
-                    </Button>
-                    <Popover.Close asChild>
-                      <Button onClick={handleApplyTime}>Apply</Button>
-                    </Popover.Close>
-                  </div>
-                </div>
-              </Popover.Content>
-            </Popover.Root>
-
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => {
-                // Toggle external URL
-                let newUrl = "";
-                let newDisplayText = "";
-
-                if (externalUrl) {
-                  // Clear URL if already set
-                  newUrl = "";
-                  newDisplayText = "";
-                } else {
-                  // Set a default URL if empty
-                  newUrl = "https://";
-                  newDisplayText = "";
-                }
-
-                setExternalUrl(newUrl);
-                setUrlDisplayText(newDisplayText);
-                setHasChanges(true);
-
-                // Call the direct save function to avoid circular dependency
-                // This is the only reliable way to save that works
-                setTimeout(() => {
-                  saveDirectly();
-                }, 100);
-              }}
-              className={externalUrl ? "text-green-400" : "text-gray-400"}
-            >
-              <Link size={16} />
-            </Button>
-
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => {
-                // Toggle YouTube URL
-                let newYoutubeUrl = "";
-
-                if (youtubeUrl) {
-                  // Clear URL if already set
-                  newYoutubeUrl = "";
-                } else {
-                  // Set a default YouTube URL if empty
-                  newYoutubeUrl = "https://youtube.com/watch?v=";
-                }
-
-                setYoutubeUrl(newYoutubeUrl);
-                setHasChanges(true);
-
-                // Call the direct save function to avoid circular dependency
-                // This is the only reliable way to save that works
-                setTimeout(() => {
-                  saveDirectly();
-                }, 100);
-              }}
-              className={youtubeUrl ? "text-red-400" : "text-gray-400"}
-            >
-              <Youtube size={16} />
-            </Button>
-          </div>
         </div>
       ) : (
-        /* DESKTOP REGULAR EDIT MODE */
-        <>
-          {/* Toolbar with breadcrumbs */}
-          <div className="bg-gray-900 border-b border-gray-800 p-2 flex items-center justify-between shadow-sm">
-            <div className="breadcrumbs text-sm text-gray-400 flex items-center overflow-x-auto whitespace-nowrap">
-              <span className="px-2 py-1 cursor-pointer hover:bg-gray-800 rounded">Root</span>
-
-              {breadcrumbs.map((crumb, index) => (
-                <div key={crumb.id} className="flex items-center">
-                  <span className="mx-1 text-gray-500">/</span>
-                  <span className="px-2 py-1 cursor-pointer hover:bg-gray-800 rounded">
-                    {crumb.content.split('\n')[0].slice(0, 20)}
-                    {crumb.content.length > 20 ? '...' : ''}
-                  </span>
+        /* STANDARD EDIT MODE */
+        <div className="flex flex-col h-full overflow-hidden">
+          {/* Regular Editor Header */}
+          <div className="flex items-center justify-between border-b border-gray-800 bg-gray-900 p-2 mb-2 sm:mb-3">
+            <div className="flex items-center space-x-2 min-w-0">
+              {breadcrumbs.length > 0 ? (
+                <div className="flex items-center space-x-1 max-w-[300px] overflow-hidden">
+                  {breadcrumbs.map((crumb, i) => (
+                    <div key={`breadcrumb-${crumb.id}`} className="flex items-center">
+                      {i > 0 && <ArrowLeft size={12} className="text-gray-500 mx-1" />}
+                      <span className="text-xs text-gray-400 truncate max-w-[120px]">
+                        {crumb.content}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-
-              {breadcrumbs.length > 0 && (
-                <div className="flex items-center">
-                  <span className="mx-1 text-gray-500">/</span>
-                  <span className="px-2 py-1 font-medium text-primary bg-gray-800 rounded">
-                    {selectedNote.content.split('\n')[0].slice(0, 20)}
-                    {selectedNote.content.length > 20 ? '...' : ''}
-                  </span>
-                </div>
-              )}
-
-              {breadcrumbs.length === 0 && (
-                <div className="flex items-center">
-                  <span className="mx-1 text-gray-500">/</span>
-                  <span className="px-2 py-1 font-medium text-primary bg-gray-800 rounded">
-                    {selectedNote.content.split('\n')[0].slice(0, 20)}
-                    {selectedNote.content.length > 20 ? '...' : ''}
-                  </span>
-                </div>
+              ) : (
+                <span className="text-xs text-gray-400">Root Level</span>
               )}
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* Toggle fullscreen button */}
-              <Button
-                onClick={toggleFullscreenMode}
-                variant="ghost"
-                size="sm"
-                className="flex items-center space-x-1 text-gray-400 hover:text-white"
-              >
-                {isFullscreenEditMode ? <Minimize size={16} /> : <Expand size={16} />}
-              </Button>
+            <div className="flex items-center space-x-2">
+              {isDiscussion && (
+                <div className="hidden sm:flex items-center space-x-1 px-2 py-0.5 bg-blue-900/20 text-blue-400 rounded text-xs">
+                  <MessageSquare size={12} />
+                  <span>Discussion</span>
+                </div>
+              )}
 
-              {/* Only show save button when there are unsaved changes */}
+              {youtubeUrl && (
+                <a
+                  href={youtubeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hidden sm:flex items-center space-x-1 px-2 py-0.5 bg-red-900/20 text-red-400 rounded text-xs"
+                >
+                  <Youtube size={12} />
+                  <span>YouTube</span>
+                </a>
+              )}
+
+              {externalUrl && (
+                <a
+                  href={externalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hidden sm:flex items-center space-x-1 px-2 py-0.5 bg-green-900/20 text-green-400 rounded text-xs"
+                >
+                  <Link size={12} />
+                  <span>{urlDisplayText || "Link"}</span>
+                </a>
+              )}
+
+              {timeSet && (
+                <div className="hidden sm:flex items-center space-x-1 px-2 py-0.5 bg-purple-900/20 text-purple-400 rounded text-xs">
+                  <Clock size={12} />
+                  <span>{timeSet}</span>
+                </div>
+              )}
+
+              {/* Save status/button */}
               {hasChanges && (
                 <Button
                   onClick={handleSave}
-                  className={`
-                    flex items-center space-x-1
-                    ${saveStatus === "saved" ? "bg-green-500 hover:bg-green-600" : ""}
-                  `}
-                  disabled={saveStatus === "saving"}
+                  size="sm"
+                  variant="outline"
+                  className={`border-gray-700 ${saveStatus === "saved" ? "bg-green-900/20 text-green-400 border-green-900" : ""}`}
                 >
-                  <Save size={16} />
-                  <span>{saveStatus === "saving" ? "Saving..." : "Save"}</span>
+                  {saveStatus === "saving" ? (
+                    <span className="flex items-center">Saving...</span>
+                  ) : saveStatus === "saved" ? (
+                    <span className="flex items-center">
+                      <CheckCircle2 size={14} className="mr-1" />
+                      Saved
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <Save size={14} className="mr-1" />
+                      Save
+                    </span>
+                  )}
                 </Button>
               )}
+
+              {/* Fullscreen toggle button */}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={toggleFullscreenMode} 
+                className="text-gray-400 hover:text-white"
+              >
+                <Maximize2 size={16} />
+              </Button>
             </div>
           </div>
 
-          {/* Desktop editor form */}
-          <div className="p-3 flex-1 overflow-auto bg-gray-950">
-            <div className="bg-gray-900 rounded-lg shadow-md border border-gray-800 p-3 mx-auto note-editor-form">
-              {/* Content area */}
+          {/* Main Edit Area */}
+          <div className="flex-1 overflow-y-auto pb-4">
+            <div className="p-2 sm:p-3">
+              {/* Main textarea for content */}
               <div className="mb-3">
-                <Label htmlFor="noteContent" className="block text-xs font-medium text-gray-400 mb-1">
-                  Edit Content
-                </Label>
-                <Textarea 
-                  id="noteContent" 
+                <Textarea
+                  id="noteContent"
                   ref={contentRef}
-                  rows={6} 
-                  className="w-full p-2 text-sm bg-gray-850 border-gray-700 focus:border-primary"
+                  className="min-h-[200px] text-base p-3 bg-gray-850 border-gray-700"
                   placeholder="Type your note here..."
-                  value={content}
+                  value={content} 
                   onChange={handleContentChange}
                   onBlur={handleBlur}
                 />
@@ -999,7 +841,7 @@ export default function NoteEditor() {
               )}
             </div>
           </div>
-        </>
+        </div>
       )}
     </>
   );
