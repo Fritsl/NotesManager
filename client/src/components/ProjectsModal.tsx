@@ -95,6 +95,15 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
       return;
     }
 
+    // Check for special characters that may cause database issues
+    const hasSpecialChars = /[ÆØÅæøå]|'/.test(newProjectName);
+    if (hasSpecialChars) {
+      toast({
+        title: 'Warning',
+        description: 'Special characters like ÆØÅ or apostrophes may be removed for database compatibility.',
+      });
+    }
+
     console.log('Creating new project with name:', newProjectName);
     setSavingNew(true);
     try {
@@ -144,6 +153,17 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
       const notesData = exportNotes();
       const projectName = newName || project.name;
       const projectDescription = newDescription !== undefined ? newDescription : (project.description || '');
+
+      // Check for special characters when updating project name
+      if (newName) {
+        const hasSpecialChars = /[ÆØÅæøå]|'/.test(newName);
+        if (hasSpecialChars) {
+          toast({
+            title: 'Warning',
+            description: 'Special characters like ÆØÅ or apostrophes may be removed for database compatibility.',
+          });
+        }
+      }
 
       const updated = await updateProject(project.id, projectName, notesData, projectDescription);
 
@@ -324,6 +344,11 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                   onChange={(e) => setNewProjectName(e.target.value)}
                   className="bg-gray-850 border-gray-700"
                 />
+                {/[ÆØÅæøå]|'/.test(newProjectName) && (
+                  <p className="text-xs text-amber-400 mt-1">
+                    Note: Special characters (ÆØÅ, apostrophes) may be removed for database compatibility.
+                  </p>
+                )}
               </div>
               <Button 
                 onClick={handleCreateProject}
@@ -379,6 +404,11 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                               onChange={(e) => setEditName(e.target.value)}
                               className="bg-gray-800 border-gray-700"
                             />
+                            {/[ÆØÅæøå]|'/.test(editName) && (
+                              <p className="text-xs text-amber-400 mt-1">
+                                Note: Special characters (ÆØÅ, apostrophes) may be removed for database compatibility.
+                              </p>
+                            )}
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="edit-description" className="text-gray-300">Project Description</Label>
