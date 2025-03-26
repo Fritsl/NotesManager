@@ -1249,6 +1249,14 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         return;
       }
 
+      // Ensure the UI always reflects the database name (source of truth)
+      if (updatedProject.name !== currentProjectName) {
+        console.log('Name mismatch detected - correcting from', 
+          `"${currentProjectName}" to database value "${updatedProject.name}"`
+        );
+        setCurrentProjectName(updatedProject.name);
+      }
+
       // Dispatch a custom event to notify components that a project has been updated
       // This will be used to refresh the projects list in ProjectsModal
       const projectUpdatedEvent = new CustomEvent('project-updated', {
@@ -1260,10 +1268,15 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
 
       // Show a different toast based on whether this was a manual save or auto-save after note movement
       if (!pendingNoteMoves) {
+        // Check if the name was corrected
+        const wasNameCorrected = updatedProject.name !== currentProjectName;
+        
         // Manual save via button - show a new toast instead of updating
         toast({
           title: "Project Saved",
-          description: `"${currentProjectName}" has been saved`,
+          description: wasNameCorrected 
+            ? `Project saved as "${updatedProject.name}" (corrected from UI name)`
+            : `"${updatedProject.name}" has been saved`,
         });
       } else {
         // Auto-save after note movement - also show confirmation but with different message
