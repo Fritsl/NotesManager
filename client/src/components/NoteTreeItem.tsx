@@ -649,9 +649,9 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           />
         </div>
 
-        {/* Debug message */}
+        {/* Field editing instructions */}
         <div className="p-2 mb-2 bg-blue-900/30 border border-blue-500 rounded text-center">
-          <span className="text-xs text-blue-300">Hello! Debugging the YouTube field</span>
+          <span className="text-xs text-blue-300">Tap on any field to edit its content directly</span>
         </div>
         
         {/* YouTube URL */}
@@ -733,9 +733,15 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
       if (element) {
         // Add a small delay to ensure the focus happens after React's rendering
         setTimeout(() => {
-          console.log('Restoring focus to:', lastFocusedElementId);
+          // Set caret position to the end of the text for text inputs
+          if (element instanceof HTMLInputElement && element.type !== 'time') {
+            const valueLength = element.value.length;
+            element.setSelectionRange(valueLength, valueLength);
+          }
+          
+          // Focus the element
           element.focus();
-        }, 10);
+        }, 50); // Increased delay for more reliable focus restoration
       }
     }
   }, [isEditing, isMobile, lastFocusedElementId, editTimeSet, editYoutubeUrl, editUrl, editUrlDisplayText]);
@@ -748,8 +754,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
       <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto top-[5%] translate-y-0">
         <DialogHeader>
           <DialogTitle>Edit Note</DialogTitle>
-          <DialogDescription className="text-xs text-blue-300">
-            Editing focused field: {lastFocusedElementId || 'None'}
+          <DialogDescription className="text-xs text-gray-400">
+            Edit note details
           </DialogDescription>
         </DialogHeader>
         <div 
@@ -757,7 +763,6 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           onFocus={(e) => {
             // Check if the focused element is one of our inputs and has an ID
             if (e.target.tagName === 'INPUT' && e.target.id) {
-              console.log('Input focused:', e.target.id);
               setLastFocusedElementId(e.target.id);
             }
           }}
