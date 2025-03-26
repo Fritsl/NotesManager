@@ -60,7 +60,7 @@ export default function Header() {
   } = useNotes();
   const { signOut } = useAuth();
   const { toast } = useToast();
-  
+
   // Handle sign out
   const handleSignOut = async () => {
     try {
@@ -77,7 +77,7 @@ export default function Header() {
       });
     }
   };
-  
+
   // Project state initialization
   const [showImportModal, setShowImportModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -110,17 +110,17 @@ export default function Header() {
       setIsEditingProjectName(false);
       return;
     }
-    
+
     // If the project name hasn't actually changed, just exit edit mode
     if (editedProjectName === currentProjectName) {
       setIsEditingProjectName(false);
       return;
     }
-    
+
     // Update the project name in the context
     setCurrentProjectName(editedProjectName);
     setIsEditingProjectName(false);
-    
+
     // Trigger the auto-save functionality
     if (currentProjectId) {
       setTimeout(async () => {
@@ -241,7 +241,7 @@ export default function Header() {
                 );
               })}
             </div>
-            
+
             {/* Expand/Collapse Controls */}
             <div className="hidden sm:flex items-center mr-2 border-r pr-3 border-gray-700">
               <Button 
@@ -253,7 +253,7 @@ export default function Header() {
               >
                 <ChevronUp className="h-4 w-4" />
               </Button>
-              
+
               <Button 
                 variant="ghost" 
                 size="icon"
@@ -264,7 +264,7 @@ export default function Header() {
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </div>
-            
+
             {/* Consolidated Hamburger Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -304,33 +304,7 @@ export default function Header() {
                       );
                     })}
                   </div>
-                  <div className="flex justify-between mt-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        collapseAll();
-                        document.body.click();
-                      }}
-                      className="h-8 px-2 text-xs"
-                    >
-                      <ChevronUp className="h-3 w-3 mr-1" />
-                      Collapse All
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        expandAll();
-                        document.body.click();
-                      }}
-                      className="h-8 px-2 text-xs"
-                    >
-                      <ChevronDown className="h-3 w-3 mr-1" />
-                      Expand All
-                    </Button>
                   </div>
-                </div>
 
                 {/* File Operations */}
                 <DropdownMenuItem onClick={() => {
@@ -372,10 +346,10 @@ export default function Header() {
                   <span>Save</span>
                   <span className="ml-auto text-xs text-muted-foreground">{currentProjectId ? "(Manual)" : "(No Project)"}</span>
                 </DropdownMenuItem>
-                
+
 
                 <DropdownMenuSeparator />
-                
+
                 {/* Import/Export */}
                 <DropdownMenuItem onClick={() => setShowImportModal(true)}>
                   <FileUp className="h-4 w-4 mr-2" />
@@ -385,9 +359,9 @@ export default function Header() {
                   <FileDown className="h-4 w-4 mr-2" />
                   <span>Export JSON</span>
                 </DropdownMenuItem>
-                
+
                 <DropdownMenuSeparator />
-                
+
                 {/* Tools & Utilities */}
                 <DropdownMenuItem onClick={async () => {
                   // Image Migration
@@ -397,9 +371,9 @@ export default function Header() {
                         title: "Processing",
                         description: "Migrating images to cloud storage...",
                       });
-                      
+
                       const result = await migrateLocalImages(currentProjectId);
-                      
+
                       if (result && result.migrated > 0) {
                         toast({
                           title: "Migration Complete",
@@ -430,7 +404,7 @@ export default function Header() {
                   <UploadCloud className="h-4 w-4 mr-2" />
                   <span>Migrate Images to Cloud</span>
                 </DropdownMenuItem>
-                
+
                 <DropdownMenuSeparator />
                 {/* User Options - Incorporating UserMenu items here */}
                 <DropdownMenuItem onClick={handleSignOut}>
@@ -440,7 +414,7 @@ export default function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          
+
           {/* Bottom row with search */}
           <div className="flex">
             <SearchBar />
@@ -449,7 +423,7 @@ export default function Header() {
       ) : (
         <div className="flex justify-between items-center">
           <h1 className="text-base sm:text-lg font-semibold text-gray-100">Parenting Notes App</h1>
-          
+
           <div className="flex items-center space-x-2">
             <Button 
               variant="default" 
@@ -460,7 +434,7 @@ export default function Header() {
               <FileText className="h-3.5 w-3.5 mr-1.5" />
               New Project
             </Button>
-            
+
             <Button 
               variant="outline" 
               size="sm"
@@ -470,7 +444,7 @@ export default function Header() {
               <FolderOpen className="h-3.5 w-3.5 mr-1.5" />
               Open Project
             </Button>
-            
+
             {/* Hamburger menu for mobile */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -498,7 +472,7 @@ export default function Header() {
       {showExportModal && (
         <ExportModal onClose={() => setShowExportModal(false)} />
       )}
-      
+
       {showProjectsModal && (
         <ProjectsModal isOpen={showProjectsModal} onClose={() => setShowProjectsModal(false)} />
       )}
