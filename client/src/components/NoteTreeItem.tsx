@@ -68,13 +68,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   const { toast } = useToast();
   const isMobile = useIsMobile(); // Check if we're on a mobile device
 
-  // References
+  // References for the component and drag/drop
   const ref = useRef<HTMLDivElement>(null);
-  const contentEditRef = useRef<HTMLTextAreaElement>(null);
-  const timeInputRef = useRef<HTMLInputElement>(null);
-  const youtubeUrlInputRef = useRef<HTMLInputElement>(null);
-  const urlInputRef = useRef<HTMLInputElement>(null);
-  const urlDisplayTextInputRef = useRef<HTMLInputElement>(null);
 
   // Dialog states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -83,12 +78,38 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
 
   // Inline editing state
   const [isEditing, setIsEditing] = useState(false);
-  const [editContent, setEditContent] = useState(note.content);
+  
+  // References for form fields to prevent rerender focus issues
+  const contentEditRef = useRef<HTMLTextAreaElement>(null);
+  const timeInputRef = useRef<HTMLInputElement>(null);
+  const youtubeUrlInputRef = useRef<HTMLInputElement>(null);
+  const urlInputRef = useRef<HTMLInputElement>(null);
+  const urlDisplayTextInputRef = useRef<HTMLInputElement>(null);
+
+  // Additional states for other fields
   const [editTimeSet, setEditTimeSet] = useState<string | null>(note.time_set);
-  const [editIsDiscussion, setEditIsDiscussion] = useState(note.is_discussion);
   const [editYoutubeUrl, setEditYoutubeUrl] = useState<string | null>(note.youtube_url);
   const [editUrl, setEditUrl] = useState<string | null>(note.url);
   const [editUrlDisplayText, setEditUrlDisplayText] = useState<string | null>(note.url_display_text);
+  const [editIsDiscussion, setEditIsDiscussion] = useState(note.is_discussion);
+  
+  // Add log when editing mode changes
+  useEffect(() => {
+    if (isEditing) {
+      console.log('🔍 DEBUG: Entering edit mode for note', note.id);
+      
+      // Log values to debug the focus issue
+      console.log('🔍 Initial values:', {
+        content: note.content,
+        time_set: note.time_set,
+        youtube_url: note.youtube_url,
+        url: note.url,
+        url_display_text: note.url_display_text
+      });
+    }
+  }, [isEditing, note.id, note.content, note.time_set, note.youtube_url, note.url, note.url_display_text]);
+  
+  // Log block removed - already replaced with a more detailed version above
   const [isSaving, setIsSaving] = useState(false);
 
   // Set up drag
@@ -739,6 +760,13 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               e.preventDefault();
               e.stopPropagation();
               
+              console.log('🔍 DEBUG: YouTube field onChange fired', e.target.value);
+              
+              // SIMPLIFIED FOR DEBUGGING - DON'T DO ANY STATE SETTING AT ALL
+              // Just visually log what's happening without taking any action that might cause rerendering
+              
+              // Comment out all state changes for testing
+              /*
               // Mark that we're actively typing to prevent focus jumps
               isTypingRef.current = true;
               lastTouchedFieldRef.current = `youtube-${note.id}`;
@@ -750,6 +778,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               setTimeout(() => {
                 isTypingRef.current = false;
               }, 100);
+              */
             }}
             onKeyDown={(e) => {
               // Set typing state
@@ -796,6 +825,13 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               e.preventDefault();
               e.stopPropagation();
               
+              console.log('🔍 DEBUG: URL field onChange fired', e.target.value);
+              
+              // SIMPLIFIED FOR DEBUGGING - DON'T DO ANY STATE SETTING AT ALL
+              // Just visually log what's happening without taking any action that might cause rerendering
+              
+              // Comment out all state changes for testing
+              /*
               // Mark that we're actively typing to prevent focus jumps
               isTypingRef.current = true;
               lastTouchedFieldRef.current = `url-${note.id}`;
@@ -807,6 +843,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               setTimeout(() => {
                 isTypingRef.current = false;
               }, 100);
+              */
             }}
             onKeyDown={(e) => {
               // Set typing state
@@ -912,62 +949,38 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   // Add a stable reference to prevent rerenders when focusing on a field
   const stableLastFocusedRef = React.useRef<string | null>(null);
   
-  // Ensure we only run focus logic when truly needed and not on every render
+  // SIMPLIFIED VERSION WITH DEBUGGING - Only handle last focused element tracking
   React.useEffect(() => {
     if (isEditing && isMobile && lastFocusedElementId) {
+      console.log('🔍 DEBUG: Focus effect triggered for', lastFocusedElementId);
+      
+      // FOR DEBUGGING - Completely disable auto-focusing to see if this is the cause
+      return; // <-- TEMPORARY DISABLE ALL AUTO-FOCUSING TO TEST
+      
       // Update our stable ref so we can check it elsewhere
       stableLastFocusedRef.current = lastFocusedElementId;
       
       // Skip if we're actively typing as that will break cursor position
-      if (isTypingRef.current) return;
-      
-      // Check if we need to refocus at all
-      const activeElement = document.activeElement;
-      const isFocusingCorrectField = activeElement && activeElement.id === lastFocusedElementId;
-      
-      // Skip if we're already focusing on the correct element
-      if (isFocusingCorrectField) return;
-      
-      // Check if we've already completed initial setup for this field
-      const fieldInitialized = initialFieldSetupComplete[lastFocusedElementId];
-      
-      // If we haven't initialized this field yet, mark it as initialized 
-      // but don't actually focus it, as this causes the jump
-      if (!fieldInitialized) {
-        setInitialFieldSetupComplete({
-          ...initialFieldSetupComplete,
-          [lastFocusedElementId]: true
-        });
+      if (isTypingRef.current) {
+        console.log('🔍 DEBUG: Skipping focus - user is actively typing');
         return;
       }
       
-      // Otherwise, focus on the correct element
-      const element = document.getElementById(lastFocusedElementId);
-      if (element) {
-        // Use requestAnimationFrame to ensure DOM updates have completed
-        requestAnimationFrame(() => {
-          // Double-check we're not typing in another field
-          if (isTypingRef.current && lastTouchedFieldRef.current !== lastFocusedElementId) {
-            return;
-          }
-          
-          try {
-            // Set caret position to the end of the text for text inputs
-            if (element instanceof HTMLInputElement && element.type !== 'time') {
-              const valueLength = element.value.length;
-              element.setSelectionRange(valueLength, valueLength);
-            }
-            
-            // Focus the element
-            element.focus();
-          } catch (err) {
-            // Ignore focus errors, which can occur if the element was removed
-            console.log('Focus error:', err);
-          }
-        });
+      // Check if we need to refocus at all
+      const activeElement = document.activeElement;
+      console.log('🔍 DEBUG: Current active element:', activeElement?.id);
+      const isFocusingCorrectField = activeElement && activeElement.id === lastFocusedElementId;
+      
+      // Skip if we're already focusing on the correct element
+      if (isFocusingCorrectField) {
+        console.log('🔍 DEBUG: Already focused on correct field, skipping');
+        return;
       }
+      
+      console.log('🔍 DEBUG: Would normally try to focus on', lastFocusedElementId);
+      // Don't do any focusing at all - this is just for debugging
     }
-  }, [isEditing, isMobile, lastFocusedElementId, initialFieldSetupComplete]); // Don't include edit state variables
+  }, [isEditing, isMobile, lastFocusedElementId]); // Simplified dependency array
 
   // Mobile Dialog for fullscreen editing
   const MobileEditDialog = () => (
