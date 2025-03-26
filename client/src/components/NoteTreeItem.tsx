@@ -420,18 +420,22 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
     setIsSaving(true);
 
     try {
-      // Get content directly from the textarea ref to avoid cursor jump issues
+      // Get all values directly from refs to avoid cursor jump issues during typing
       const currentContent = contentEditRef.current?.value || note.content;
+      const currentTimeSet = timeInputRef.current?.value || null;
+      const currentYoutubeUrl = youtubeUrlInputRef.current?.value || null;
+      const currentUrl = urlInputRef.current?.value || null;
+      const currentUrlDisplayText = urlDisplayTextInputRef.current?.value || null;
 
       // Update the note in memory with all properties
       const updatedNote = {
         ...note,
         content: currentContent,
-        time_set: editTimeSet,
-        is_discussion: editIsDiscussion,
-        youtube_url: editYoutubeUrl,
-        url: editUrl,
-        url_display_text: editUrlDisplayText
+        time_set: currentTimeSet,
+        is_discussion: editIsDiscussion, // Switch is controlled so we keep this state
+        youtube_url: currentYoutubeUrl,
+        url: currentUrl,
+        url_display_text: currentUrlDisplayText
       };
 
       // First update in local state
@@ -629,10 +633,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             type="time" 
             className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
             defaultValue={editTimeSet || ''}
-            onFocus={(e) => {
-              e.stopPropagation();
-              setLastFocusedElementId(`time-${note.id}`);
-            }}
+            // Only using one onFocus handler
             onChange={(e) => {
               e.preventDefault(); 
               e.stopPropagation();
@@ -733,7 +734,6 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
             placeholder="https://youtube.com/watch?v=..."
             defaultValue={editYoutubeUrl || ''}
-            // Focus handler is defined below
             onChange={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -785,10 +785,11 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           <label className="text-xs text-gray-400 w-20" htmlFor={`url-${note.id}`}>URL:</label>
           <input 
             id={`url-${note.id}`}
+            ref={urlInputRef}
             type="url" 
             className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
             placeholder="https://..."
-            value={editUrl || ''}
+            defaultValue={editUrl || ''}
             onChange={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -796,13 +797,6 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               // Mark that we're actively typing to prevent focus jumps
               isTypingRef.current = true;
               lastTouchedFieldRef.current = `url-${note.id}`;
-              
-              // Use a separate variable to track state change
-              const newValue = e.target.value || null;
-              setEditUrl(newValue);
-              
-              // Mark this field as the active one
-              document.body.dataset.activeField = `url-${note.id}`;
               
               // Store this input's ID as the last focused element
               setLastFocusedElementId(`url-${note.id}`);
