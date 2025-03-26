@@ -224,6 +224,133 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
   
+  // Cleanup project images endpoint
+  app.get("/api/cleanup-project-images", async (req: Request, res: Response) => {
+    try {
+      const projectId = req.query.projectId as string;
+      if (!projectId) {
+        return res.status(400).json({ error: "Project ID is required" });
+      }
+      
+      log(`Cleaning up images for project ${projectId}`);
+      
+      // Get all image records associated with this project
+      // Since we can't directly query the notes table (it doesn't exist in this app's schema),
+      // we'll use a pattern-based approach to find images that might be associated with this project
+      
+      // Use direct PostgreSQL connection to bypass RLS policies
+      let client;
+      try {
+        client = await pool.connect();
+        log(`Database connection established successfully`);
+      } catch (connError) {
+        log(`Error connecting to database: ${connError instanceof Error ? connError.message : String(connError)}`);
+        throw connError;
+      }
+      
+      try {
+        // Find images that might be associated with this project
+        // We'll use a pattern match on the note_id which often contains the project ID
+        const imageQuery = `
+          SELECT id, storage_path
+          FROM note_images
+          WHERE note_id LIKE $1
+          OR id LIKE $1
+        `;
+        
+        const pattern = `%${projectId}%`;
+        log(`Executing image query with pattern: ${pattern}`);
+        
+        const imageResult = await client.query(imageQuery, [pattern]);
+        const imageRecords = imageResult.rows;
+        log(`Found ${imageRecords.length} potential image records for project ${projectId}`);
+        
+        let deletedFiles = 0;
+        let deletedRecords = 0;
+        
+        // Delete storage files if they exist
+        if (imageRecords.length > 0) {
+          const storagePaths = imageRecords
+            .filter(img => img.storage_path)
+            .map(img => img.storage_path);
+          
+          if (storagePaths.length > 0) {
+            log(`Deleting ${storagePaths.length} files from storage`);
+            
+            // Delete files in batches to avoid rate limits
+            const BATCH_SIZE = 100;
+            for (let i = 0; i < storagePaths.length; i += BATCH_SIZE) {
+              const batch = storagePaths.slice(i, i + BATCH_SIZE);
+              
+              try {
+                // Create a Supabase client for admin operations
+                const adminSupabase = createClient(
+                  process.env.VITE_SUPABASE_URL || '',
+                  process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
+                );
+                
+                const { data: deletedData, error: deleteError } = await adminSupabase.storage
+                  .from('note-images')
+                  .remove(batch);
+                
+                if (deleteError) {
+                  log(`Error deleting batch of files from storage: ${deleteError.message}`);
+                } else {
+                  deletedFiles += (deletedData?.length || 0);
+                  log(`Deleted ${deletedData?.length || 0} files from batch ${Math.floor(i/BATCH_SIZE) + 1}`);
+                }
+              } catch (batchError) {
+                log(`Error in storage batch ${Math.floor(i/BATCH_SIZE) + 1}: ${batchError}`);
+                // Continue with next batch
+              }
+            }
+          }
+          
+          // Delete database records
+          const imageIds = imageRecords.map(img => img.id);
+          log(`Deleting ${imageIds.length} image records from database`);
+          
+          // Delete in batches to avoid rate limits
+          const BATCH_SIZE = 100;
+          for (let i = 0; i < imageIds.length; i += BATCH_SIZE) {
+            const batch = imageIds.slice(i, i + BATCH_SIZE);
+            
+            const deleteQuery = `
+              DELETE FROM note_images
+              WHERE id = ANY($1::uuid[])
+              RETURNING id
+            `;
+            
+            try {
+              const deleteResult = await client.query(deleteQuery, [batch]);
+              deletedRecords += deleteResult.rowCount;
+              log(`Deleted ${deleteResult.rowCount} records from batch ${Math.floor(i/BATCH_SIZE) + 1}`);
+            } catch (deleteError) {
+              log(`Error deleting image records batch ${Math.floor(i/BATCH_SIZE) + 1}: ${deleteError}`);
+              // Continue with next batch
+            }
+          }
+        }
+        
+        return res.json({
+          success: true,
+          projectId,
+          deletedFiles,
+          deletedRecords,
+          message: `Cleaned up ${deletedFiles} image files and ${deletedRecords} image records`
+        });
+      } finally {
+        client.release();
+      }
+    } catch (error) {
+      console.error("Error in cleanup-project-images:", error);
+      return res.status(500).json({ 
+        error: "Internal server error during cleanup", 
+        details: (error as Error).message 
+      });
+    }
+  });
+  
   // Endpoint to create an image record in the database using server auth
   app.post("/api/create-image-record", upload.none(), async (req: Request, res: Response) => {
     try {
