@@ -628,6 +628,10 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               e.preventDefault(); 
               e.stopPropagation();
               
+              // Mark that we're actively typing to prevent focus jumps
+              isTypingRef.current = true;
+              lastTouchedFieldRef.current = `time-${note.id}`;
+              
               // Use a separate variable to track state change
               const newValue = e.target.value ? e.target.value : null;
               setEditTimeSet(newValue);
@@ -637,8 +641,17 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               
               // Store this input's ID as the last focused element
               setLastFocusedElementId(`time-${note.id}`);
+              
+              // Clear typing status after a delay
+              setTimeout(() => {
+                isTypingRef.current = false;
+              }, 100);
             }}
             onKeyDown={(e) => {
+              // Set typing state
+              isTypingRef.current = true;
+              lastTouchedFieldRef.current = `time-${note.id}`;
+              
               // Don't let the event bubble up to potentially interfere with focus
               e.stopPropagation();
             }}
@@ -649,6 +662,11 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               setLastFocusedElementId(e.target.id);
             }}
             onBlur={(e) => {
+              // Clear typing state after a brief delay
+              setTimeout(() => {
+                isTypingRef.current = false;
+              }, 100);
+              
               // Only clear if this is the current active field
               if (document.body.dataset.activeField === `time-${note.id}`) {
                 document.body.dataset.activeField = '';
@@ -713,6 +731,10 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               e.preventDefault();
               e.stopPropagation();
               
+              // Mark that we're actively typing to prevent focus jumps
+              isTypingRef.current = true;
+              lastTouchedFieldRef.current = `youtube-${note.id}`;
+              
               // Use a separate variable to track state change
               const newValue = e.target.value || null;
               setEditYoutubeUrl(newValue);
@@ -722,8 +744,17 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               
               // Store this input's ID as the last focused element
               setLastFocusedElementId(`youtube-${note.id}`);
+              
+              // Clear typing status after a delay
+              setTimeout(() => {
+                isTypingRef.current = false;
+              }, 100);
             }}
             onKeyDown={(e) => {
+              // Set typing state
+              isTypingRef.current = true;
+              lastTouchedFieldRef.current = `youtube-${note.id}`;
+              
               // Don't let the event bubble up to potentially interfere with focus
               e.stopPropagation();
             }}
@@ -734,6 +765,11 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               setLastFocusedElementId(e.target.id);
             }}
             onBlur={(e) => {
+              // Clear typing state after a brief delay
+              setTimeout(() => {
+                isTypingRef.current = false;
+              }, 100);
+              
               // Only clear if this is the current active field
               if (document.body.dataset.activeField === `youtube-${note.id}`) {
                 document.body.dataset.activeField = '';
@@ -757,6 +793,10 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               e.preventDefault();
               e.stopPropagation();
               
+              // Mark that we're actively typing to prevent focus jumps
+              isTypingRef.current = true;
+              lastTouchedFieldRef.current = `url-${note.id}`;
+              
               // Use a separate variable to track state change
               const newValue = e.target.value || null;
               setEditUrl(newValue);
@@ -766,8 +806,17 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               
               // Store this input's ID as the last focused element
               setLastFocusedElementId(`url-${note.id}`);
+              
+              // Clear typing status after a delay
+              setTimeout(() => {
+                isTypingRef.current = false;
+              }, 100);
             }}
             onKeyDown={(e) => {
+              // Set typing state
+              isTypingRef.current = true;
+              lastTouchedFieldRef.current = `url-${note.id}`;
+              
               // Don't let the event bubble up to potentially interfere with focus
               e.stopPropagation();
             }}
@@ -778,6 +827,11 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               setLastFocusedElementId(e.target.id);
             }}
             onBlur={(e) => {
+              // Clear typing state after a brief delay
+              setTimeout(() => {
+                isTypingRef.current = false;
+              }, 100);
+              
               // Only clear if this is the current active field
               if (document.body.dataset.activeField === `url-${note.id}`) {
                 document.body.dataset.activeField = '';
@@ -801,6 +855,10 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               e.preventDefault();
               e.stopPropagation();
               
+              // Mark that we're actively typing to prevent focus jumps
+              isTypingRef.current = true;
+              lastTouchedFieldRef.current = `url-text-${note.id}`;
+              
               // Use a separate variable to track state change
               const newValue = e.target.value || null;
               setEditUrlDisplayText(newValue);
@@ -810,8 +868,17 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               
               // Store this input's ID as the last focused element
               setLastFocusedElementId(`url-text-${note.id}`);
+              
+              // Clear typing status after a delay
+              setTimeout(() => {
+                isTypingRef.current = false;
+              }, 100);
             }}
             onKeyDown={(e) => {
+              // Set typing state
+              isTypingRef.current = true;
+              lastTouchedFieldRef.current = `url-text-${note.id}`;
+              
               // Don't let the event bubble up to potentially interfere with focus
               e.stopPropagation();
             }}
@@ -822,6 +889,11 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               setLastFocusedElementId(e.target.id);
             }}
             onBlur={(e) => {
+              // Clear typing state after a brief delay
+              setTimeout(() => {
+                isTypingRef.current = false;
+              }, 100);
+              
               // Only clear if this is the current active field
               if (document.body.dataset.activeField === `url-text-${note.id}`) {
                 document.body.dataset.activeField = '';
@@ -838,25 +910,41 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   // Track the last focused element in the mobile dialog to restore focus after state updates
   const [lastFocusedElementId, setLastFocusedElementId] = React.useState<string | null>(null);
   
-  // Use effect to maintain focus on the last focused input
+  // Add a ref to track when we're actively typing to prevent focus jumps
+  const isTypingRef = React.useRef(false);
+  const lastTouchedFieldRef = React.useRef<string | null>(null);
+  
+  // Use effect to maintain focus on the last focused input - but ONLY when not actively typing
   React.useEffect(() => {
-    if (isEditing && isMobile && lastFocusedElementId) {
-      const element = document.getElementById(lastFocusedElementId);
-      if (element) {
-        // Add a small delay to ensure the focus happens after React's rendering
-        setTimeout(() => {
-          // Set caret position to the end of the text for text inputs
-          if (element instanceof HTMLInputElement && element.type !== 'time') {
-            const valueLength = element.value.length;
-            element.setSelectionRange(valueLength, valueLength);
-          }
-          
-          // Focus the element
-          element.focus();
-        }, 50); // Increased delay for more reliable focus restoration
+    if (isEditing && isMobile && lastFocusedElementId && !isTypingRef.current) {
+      // Check if we need to refocus at all
+      const activeElement = document.activeElement;
+      const isFocusingCorrectField = activeElement && activeElement.id === lastFocusedElementId;
+      
+      // Only do this if we're not currently focused on the correct element
+      if (!isFocusingCorrectField) {
+        const element = document.getElementById(lastFocusedElementId);
+        if (element) {
+          // Add a small delay to ensure the focus happens after React's rendering
+          setTimeout(() => {
+            // Don't set focus if we're typing in another field
+            if (isTypingRef.current && lastTouchedFieldRef.current !== lastFocusedElementId) {
+              return;
+            }
+            
+            // Set caret position to the end of the text for text inputs
+            if (element instanceof HTMLInputElement && element.type !== 'time') {
+              const valueLength = element.value.length;
+              element.setSelectionRange(valueLength, valueLength);
+            }
+            
+            // Focus the element
+            element.focus();
+          }, 50); // Increased delay for more reliable focus restoration
+        }
       }
     }
-  }, [isEditing, isMobile, lastFocusedElementId, editTimeSet, editYoutubeUrl, editUrl, editUrlDisplayText]);
+  }, [isEditing, isMobile, lastFocusedElementId]); // Don't include the edit state variables here
 
   // Mobile Dialog for fullscreen editing
   const MobileEditDialog = () => (
