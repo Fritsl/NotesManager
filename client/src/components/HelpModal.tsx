@@ -55,6 +55,16 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                     </div>
                   </div>
                 </div>
+
+                <div>
+                  <h4 className="text-lg font-medium text-primary mb-2">Actions</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-start">
+                      <kbd className="px-2 py-1 bg-gray-800 rounded text-sm text-gray-200 min-w-[50px] text-center mr-3">Ctrl+Z</kbd>
+                      <span>Undo last note movement</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
