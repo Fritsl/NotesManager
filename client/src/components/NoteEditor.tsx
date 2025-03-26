@@ -581,15 +581,11 @@ export default function NoteEditor() {
                 <Input
                   type="url"
                   id="youtubeUrlMobile"
-                  ref={youtubeUrlRef}
                   className="h-8 text-xs bg-gray-850 border-gray-700"
                   placeholder="YouTube URL (optional)"
                   value={youtubeUrl}
-                  onChange={handleYoutubeUrlChange}
-                  onBlur={(e) => {
-                    // Prevent default blur behavior
-                    e.stopPropagation();
-                    // Only update field value without triggering full save
+                  onChange={(e) => {
+                    // Direct state update without auto-save to prevent focus jumps
                     setYoutubeUrl(e.target.value);
                     setHasChanges(true);
                   }}
@@ -604,15 +600,11 @@ export default function NoteEditor() {
                 <Input
                   type="url"
                   id="externalUrlMobile"
-                  ref={externalUrlRef}
                   className="h-8 text-xs bg-gray-850 border-gray-700"
                   placeholder="Link URL (optional)"
                   value={externalUrl}
-                  onChange={handleExternalUrlChange}
-                  onBlur={(e) => {
-                    // Prevent default blur behavior
-                    e.stopPropagation();
-                    // Only update field value without triggering full save
+                  onChange={(e) => {
+                    // Direct state update without auto-save to prevent focus jumps
                     setExternalUrl(e.target.value);
                     setHasChanges(true);
                   }}
@@ -625,15 +617,11 @@ export default function NoteEditor() {
                   <Input
                     type="text"
                     id="urlDisplayTextMobile"
-                    ref={urlDisplayTextRef}
                     className="h-8 text-xs bg-gray-850 border-gray-700"
                     placeholder="Link text (optional)"
                     value={urlDisplayText}
-                    onChange={handleUrlDisplayTextChange}
-                    onBlur={(e) => {
-                      // Prevent default blur behavior
-                      e.stopPropagation();
-                      // Only update field value without triggering full save
+                    onChange={(e) => {
+                      // Direct state update without auto-save to prevent focus jumps
                       setUrlDisplayText(e.target.value);
                       setHasChanges(true);
                     }}
@@ -907,7 +895,6 @@ export default function NoteEditor() {
                       className="h-3 w-3 border-gray-600"
                       checked={isDiscussion}
                       onCheckedChange={handleDiscussionChange}
-                      onBlur={handleBlur}
                     />
                     <Label htmlFor="isDiscussion" className="text-xs text-gray-400">
                       Mark as discussion

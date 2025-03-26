@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from './ui/button';
 import { 
   DropdownMenu,
@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { Avatar, AvatarFallback } from './ui/avatar';
-import { User, LogIn, LogOut, FolderOpen, Save, Edit, Download } from 'lucide-react';
+import { User, LogIn, LogOut, FolderOpen, Save, Edit, Download, Undo } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import AuthModal from './AuthModal';
 import ProjectsModal from './ProjectsModal';
