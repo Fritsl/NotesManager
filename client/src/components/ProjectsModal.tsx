@@ -346,9 +346,24 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                 <Label htmlFor="new-project" className="text-gray-300">Create New Project</Label>
                 <Input 
                   id="new-project" 
-                  placeholder="Project name"
+                  placeholder="Project name (ASCII only)"
                   value={newProjectName}
-                  onChange={(e) => setNewProjectName(e.target.value)}
+                  onChange={(e) => {
+                    // Filter out non-ASCII characters and problematic characters that database restricts
+                    const rawInput = e.target.value;
+                    const filteredInput = rawInput.replace(/[^\x00-\x7F]|[<>{}[\]\\\/]/g, '');
+                    
+                    // Show a warning if characters were filtered out
+                    if (filteredInput !== rawInput) {
+                      toast({
+                        title: 'Character Removed',
+                        description: 'Some characters are not allowed in project names due to database constraints.',
+                        duration: 3000
+                      });
+                    }
+                    
+                    setNewProjectName(filteredInput);
+                  }}
                   className="bg-gray-850 border-gray-700"
                 />
                 {(/[<>{}[\]\\\/]/.test(newProjectName) || /[^\x00-\x7F]/.test(newProjectName)) && (
@@ -409,8 +424,24 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                             <Input 
                               id="edit-name" 
                               value={editName}
-                              onChange={(e) => setEditName(e.target.value)}
+                              onChange={(e) => {
+                                // Filter out non-ASCII characters and problematic characters that database restricts
+                                const rawInput = e.target.value;
+                                const filteredInput = rawInput.replace(/[^\x00-\x7F]|[<>{}[\]\\\/]/g, '');
+                                
+                                // Show a warning if characters were filtered out
+                                if (filteredInput !== rawInput) {
+                                  toast({
+                                    title: 'Character Removed',
+                                    description: 'Some characters are not allowed in project names due to database constraints.',
+                                    duration: 3000
+                                  });
+                                }
+                                
+                                setEditName(filteredInput);
+                              }}
                               className="bg-gray-800 border-gray-700"
+                              placeholder="Project name (ASCII only)"
                             />
                             {(/[<>{}[\]\\\/]/.test(editName) || /[^\x00-\x7F]/.test(editName)) && (
                               <p className="text-xs text-amber-400 mt-1">

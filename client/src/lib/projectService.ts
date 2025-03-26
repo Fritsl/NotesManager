@@ -582,7 +582,6 @@ function sanitizeProjectName(name: string): string {
   }
   
   return sanitized;
-  return sanitized;
 }
 
 export async function updateProject(id: string, name: string, notesData: NotesData, description: string = ''): Promise<Project | null> {
