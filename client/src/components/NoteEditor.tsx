@@ -723,7 +723,7 @@ export default function NoteEditor() {
 
               {/* Optional fields in tabs */}
               <div className="border-t border-gray-800 pt-2 mt-2">
-                <div className="grid grid-cols-1 gap-2">
+                <div className="grid grid-cols-1 gap-2">>
                   {/* YouTube URL - more compact */}
                   <div className="flex items-center space-x-2">
                     <div className="flex-shrink-0">
