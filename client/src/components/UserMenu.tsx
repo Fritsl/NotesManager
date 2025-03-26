@@ -35,9 +35,9 @@ export default function UserMenu() {
   const [isOffline, setIsOffline] = useState(false);
   const { user, signOut } = useAuth();
   const { toast } = useToast();
-  const { exportNotes } = useNotes();
+  const { exportNotes, canUndo, undoLastAction, getUndoDescription } = useNotes();
   
-  // Check if the app can be installed as a PWA
+  // Check if the app can be installed as a PWA and set up key event listeners
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
       // Prevent Chrome 67 and earlier from automatically showing the prompt
@@ -63,9 +63,23 @@ export default function UserMenu() {
       }
     };
     
+    // Handle keyboard shortcuts
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Ctrl+Z or Command+Z (macOS)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && canUndo) {
+        e.preventDefault();
+        undoLastAction();
+        toast({
+          title: "Action Undone",
+          description: getUndoDescription() || "Last action has been undone",
+        });
+      }
+    };
+    
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('online', handleOnlineStatus);
     window.addEventListener('offline', handleOnlineStatus);
+    window.addEventListener('keydown', handleKeyDown);
     
     // Set initial offline state
     setIsOffline(!navigator.onLine);
@@ -74,8 +88,9 @@ export default function UserMenu() {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('online', handleOnlineStatus);
       window.removeEventListener('offline', handleOnlineStatus);
+      window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [toast]);
+  }, [toast, canUndo, undoLastAction, getUndoDescription]);
 
   const getInitials = () => {
     if (!user?.email) return '?';
@@ -196,6 +211,12 @@ export default function UserMenu() {
                 Edit Profile Payoff
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              {canUndo && (
+                <DropdownMenuItem onClick={undoLastAction}>
+                  <Undo className="h-4 w-4 mr-2" />
+                  {getUndoDescription() || 'Undo Last Action'}
+                </DropdownMenuItem>
+              )}
               {isPwaInstallable && (
                 <DropdownMenuItem onClick={handleInstallPwa}>
                   <Download className="h-4 w-4 mr-2" />
