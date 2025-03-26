@@ -353,12 +353,10 @@ export default function HeaderWithSearch() {
                         "h-7 w-7 p-0 font-bold text-white",
                         level > 0 ? "ml-1" : "",
                         `${colorTheme.bg} border ${colorTheme.border}`,
-                        currentLevel === level 
-                          ? `${colorTheme.highlight} border-2 shadow-md` 
-                          : `opacity-70 hover:opacity-100 hover:${colorTheme.highlight} hover:border-2`
+                        currentLevel === level ? 'ring-2 ring-white' : ''
                       )}
                     >
-                      {colorTheme.label}
+                      {level}
                     </Button>
                   );
                 })}
