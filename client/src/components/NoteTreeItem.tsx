@@ -616,7 +616,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         "grid gap-x-4 gap-y-2 mb-3",
         isMobile ? "grid-cols-1" : "grid-cols-2" // Single column on mobile for more space
       )}>
-        {/* Time settings */}
+        {/* Time settings with enhanced focus handling */}
         <div className="flex items-center">
           <label className="text-xs text-gray-400 w-14" htmlFor={`time-${note.id}`}>Time:</label>
           <input 
@@ -627,10 +627,32 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             onChange={(e) => {
               e.preventDefault(); 
               e.stopPropagation();
+              
+              // Use a separate variable to track state change
+              const newValue = e.target.value ? e.target.value : null;
+              setEditTimeSet(newValue);
+              
+              // Mark this field as the active one
+              document.body.dataset.activeField = `time-${note.id}`;
+              
               // Store this input's ID as the last focused element
+              setLastFocusedElementId(`time-${note.id}`);
+            }}
+            onKeyDown={(e) => {
+              // Don't let the event bubble up to potentially interfere with focus
+              e.stopPropagation();
+            }}
+            onFocus={(e) => {
+              e.stopPropagation();
+              // Mark active to prevent other elements from stealing focus
+              document.body.dataset.activeField = `time-${note.id}`;
               setLastFocusedElementId(e.target.id);
-              // Set the new time value
-              setEditTimeSet(e.target.value ? e.target.value : null);
+            }}
+            onBlur={(e) => {
+              // Only clear if this is the current active field
+              if (document.body.dataset.activeField === `time-${note.id}`) {
+                document.body.dataset.activeField = '';
+              }
             }}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
@@ -649,12 +671,36 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           />
         </div>
 
-        {/* Field editing instructions */}
-        <div className="p-2 mb-2 bg-blue-900/30 border border-blue-500 rounded text-center">
-          <span className="text-xs text-blue-300">Tap on any field to edit its content directly</span>
+        {/* Test field with dedicated focus management */}
+        <div className="p-2 mb-2 bg-blue-900/30 border border-blue-500 rounded">
+          <div className="text-xs text-blue-300 mb-2 text-center">Test Field (Try editing this one first)</div>
+          <input 
+            id={`test-field-${note.id}`}
+            type="text" 
+            className="w-full h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
+            placeholder="Test field with standalone focus handling..."
+            defaultValue="Type here to test focus"
+            onClick={(e) => {
+              e.stopPropagation();
+              // Mark active to prevent other elements from stealing focus
+              document.body.dataset.activeFocus = `test-field-${note.id}`;
+            }}
+            onFocus={(e) => {
+              e.stopPropagation();
+              setLastFocusedElementId(e.target.id);
+              // Mark this field as currently focused
+              document.body.dataset.activeFocus = e.target.id;
+            }}
+            onBlur={() => {
+              // Clear active focus marker when field loses focus
+              if (document.body.dataset.activeFocus === `test-field-${note.id}`) {
+                document.body.dataset.activeFocus = '';
+              }
+            }}
+          />
         </div>
         
-        {/* YouTube URL */}
+        {/* YouTube URL with enhanced focus handling */}
         <div className="flex items-center col-span-full">
           <label className="text-xs text-gray-400 w-20" htmlFor={`youtube-${note.id}`}>YouTube:</label>
           <input 
@@ -666,17 +712,39 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             onChange={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              
+              // Use a separate variable to track state change
+              const newValue = e.target.value || null;
+              setEditYoutubeUrl(newValue);
+              
+              // Mark this field as the active one
+              document.body.dataset.activeField = `youtube-${note.id}`;
+              
               // Store this input's ID as the last focused element
+              setLastFocusedElementId(`youtube-${note.id}`);
+            }}
+            onKeyDown={(e) => {
+              // Don't let the event bubble up to potentially interfere with focus
+              e.stopPropagation();
+            }}
+            onFocus={(e) => {
+              e.stopPropagation();
+              // Mark active to prevent other elements from stealing focus
+              document.body.dataset.activeField = `youtube-${note.id}`;
               setLastFocusedElementId(e.target.id);
-              // Set the YouTube URL value
-              setEditYoutubeUrl(e.target.value || null);
+            }}
+            onBlur={(e) => {
+              // Only clear if this is the current active field
+              if (document.body.dataset.activeField === `youtube-${note.id}`) {
+                document.body.dataset.activeField = '';
+              }
             }}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
           />
         </div>
 
-        {/* External URL */}
+        {/* External URL with enhanced focus handling */}
         <div className="flex items-center col-span-full">
           <label className="text-xs text-gray-400 w-20" htmlFor={`url-${note.id}`}>URL:</label>
           <input 
@@ -688,17 +756,39 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             onChange={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              
+              // Use a separate variable to track state change
+              const newValue = e.target.value || null;
+              setEditUrl(newValue);
+              
+              // Mark this field as the active one
+              document.body.dataset.activeField = `url-${note.id}`;
+              
               // Store this input's ID as the last focused element
+              setLastFocusedElementId(`url-${note.id}`);
+            }}
+            onKeyDown={(e) => {
+              // Don't let the event bubble up to potentially interfere with focus
+              e.stopPropagation();
+            }}
+            onFocus={(e) => {
+              e.stopPropagation();
+              // Mark active to prevent other elements from stealing focus
+              document.body.dataset.activeField = `url-${note.id}`;
               setLastFocusedElementId(e.target.id);
-              // Set the URL value
-              setEditUrl(e.target.value || null);
+            }}
+            onBlur={(e) => {
+              // Only clear if this is the current active field
+              if (document.body.dataset.activeField === `url-${note.id}`) {
+                document.body.dataset.activeField = '';
+              }
             }}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
           />
         </div>
 
-        {/* URL Display Text */}
+        {/* URL Display Text with enhanced focus handling */}
         <div className="flex items-center col-span-full">
           <label className="text-xs text-gray-400 w-20" htmlFor={`url-text-${note.id}`}>Link text:</label>
           <input 
@@ -710,10 +800,32 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             onChange={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              
+              // Use a separate variable to track state change
+              const newValue = e.target.value || null;
+              setEditUrlDisplayText(newValue);
+              
+              // Mark this field as the active one
+              document.body.dataset.activeField = `url-text-${note.id}`;
+              
               // Store this input's ID as the last focused element
+              setLastFocusedElementId(`url-text-${note.id}`);
+            }}
+            onKeyDown={(e) => {
+              // Don't let the event bubble up to potentially interfere with focus
+              e.stopPropagation();
+            }}
+            onFocus={(e) => {
+              e.stopPropagation();
+              // Mark active to prevent other elements from stealing focus
+              document.body.dataset.activeField = `url-text-${note.id}`;
               setLastFocusedElementId(e.target.id);
-              // Set the URL display text value
-              setEditUrlDisplayText(e.target.value || null);
+            }}
+            onBlur={(e) => {
+              // Only clear if this is the current active field
+              if (document.body.dataset.activeField === `url-text-${note.id}`) {
+                document.body.dataset.activeField = '';
+              }
             }}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
