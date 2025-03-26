@@ -302,10 +302,13 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   const hasChildren = note.children.length > 0;
 
   // Display more content in the tree view
-  const contentLines = note.content.split('\n');
+  const contentLines = note.content ? note.content.split('\n') : [''];
 
   // First line is the title (can be a bit longer now)
-  const displayContent = contentLines[0].slice(0, 60) + (contentLines[0].length > 60 ? '...' : '');
+  // If content is empty, display a placeholder
+  const displayContent = note.content.trim() === '' 
+    ? '(Empty note)' 
+    : contentLines[0].slice(0, 60) + (contentLines[0].length > 60 ? '...' : '');
 
   // Get multiple lines for preview if available
   const MAX_PREVIEW_LINES = 3;

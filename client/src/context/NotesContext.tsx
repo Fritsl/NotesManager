@@ -382,7 +382,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
   const addNote = useCallback((parent: Note | null) => {
     const newNote: Note = {
       id: uuidv4(),
-      content: "New note",
+      content: "", // Empty by default - no more "New note" text!
       position: 0,
       is_discussion: false,
       time_set: null,
