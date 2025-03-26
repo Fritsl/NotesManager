@@ -765,6 +765,66 @@ export default function HeaderWithSearch() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* New Project Dialog */}
+      <AlertDialog open={showNewProjectDialog} onOpenChange={setShowNewProjectDialog}>
+        <AlertDialogContent className="bg-gray-900 border-gray-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-gray-100">Create New Project</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Enter a name for your new project. The name must contain only ASCII characters.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Input
+              ref={newProjectInputRef}
+              value={newProjectName}
+              onChange={(e) => {
+                // Filter out non-ASCII characters and problematic characters that database restricts
+                const rawInput = e.target.value;
+                const filteredInput = rawInput.replace(/[^\x00-\x7F]|[<>{}[\]\\\/]/g, '');
+                
+                // Show a warning if characters were filtered out
+                if (filteredInput !== rawInput) {
+                  toast({
+                    title: 'Character Removed',
+                    description: 'Some characters are not allowed in project names due to database constraints.',
+                    duration: 3000
+                  });
+                }
+                
+                setNewProjectName(filteredInput);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  // Handle project creation on Enter
+                  if (newProjectName.trim() !== '') {
+                    createNewProject(newProjectName.trim());
+                    setShowNewProjectDialog(false);
+                  }
+                }
+              }}
+              className="w-full bg-gray-800 border-gray-700 text-gray-100"
+              placeholder="Project name (ASCII characters only)"
+              autoFocus
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-gray-800 text-gray-300 hover:bg-gray-700 border-gray-700">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (newProjectName.trim() !== '') {
+                  createNewProject(newProjectName.trim());
+                }
+              }}
+              className="bg-primary hover:bg-primary/90"
+            >
+              Create Project
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   );
 }
