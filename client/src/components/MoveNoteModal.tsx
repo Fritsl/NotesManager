@@ -251,14 +251,14 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
           ) : (
             <FolderDown className={cn(
               "h-5 w-5 flex-shrink-0",
-              `text-${itemColor.text}`
+              itemColor.text
             )} />
           )}
           
           <div className="flex flex-col">
             <span className={cn(
               "text-sm break-all truncate max-w-[600px]",
-              !isRoot && `text-${itemColor.text}`
+              !isRoot && itemColor.text
             )}>
               {dest.label}
             </span>
