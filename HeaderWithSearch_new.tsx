@@ -325,6 +325,272 @@ export default function HeaderWithSearch() {
     }
   };
 
-  // Return your JSX here
-  // ...
+  // Return JSX 
+  return (
+    <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-background/80 px-4 py-2 backdrop-blur-sm sm:px-6">
+      <div className="flex items-center gap-2 flex-1">
+        {/* Project name heading (or edit input) */}
+        <div className="flex-1 min-w-0">
+          {isEditingProjectName ? (
+            <div className="flex items-center space-x-2">
+              <Input
+                ref={projectNameInputRef}
+                value={editedProjectName}
+                onChange={(e) => setEditedProjectName(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="h-9"
+                placeholder="Enter project name..."
+              />
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={saveProjectName}
+                className="text-green-500 hover:text-green-700"
+              >
+                <Check size={18} />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={cancelEditing}
+                className="text-red-500 hover:text-red-700"
+              >
+                <X size={18} />
+              </Button>
+            </div>
+          ) : (
+            <>
+              {hasActiveProject ? (
+                <div className="flex items-center space-x-2">
+                  <h1 
+                    className="text-lg font-semibold truncate cursor-pointer hover:text-primary/80"
+                    onClick={startEditing}
+                    title="Click to edit project name"
+                  >
+                    {currentProjectName || "Untitled Project"}
+                  </h1>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={startEditing}
+                    className="h-8 w-8 text-gray-400 hover:text-primary p-1"
+                    title="Edit project name"
+                  >
+                    <Edit2 size={16} />
+                  </Button>
+                </div>
+              ) : (
+                <h1 className="text-lg font-semibold text-muted-foreground">No Project Open</h1>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Search bar */}
+        <div className="hidden md:block w-80">
+          <SearchBar />
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-1 md:gap-2">
+          {/* Import/Export Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" title="Import/Export">
+                <FileText size={20} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem 
+                onClick={() => setShowImportModal(true)} 
+                className="cursor-pointer"
+              >
+                <FileUp className="mr-2 h-4 w-4" />
+                <span>Import</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => setShowExportModal(true)} 
+                className="cursor-pointer"
+              >
+                <FileDown className="mr-2 h-4 w-4" />
+                <span>Export</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={handleExportAsText} 
+                className="cursor-pointer"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Export Level as Text</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Undo button (visible only when undo is available) */}
+          {canUndo && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={undoLastAction} 
+                    title={getUndoDescription()}
+                    className="relative"
+                  >
+                    <RotateCcw size={20} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p>{getUndoDescription()}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          {/* Projects Menu */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setShowProjectsModal(true)}
+            title="Projects"
+          >
+            <FolderOpen size={20} />
+          </Button>
+
+          {/* Fullscreen Toggle */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleFullscreen}
+            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+          >
+            {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+          </Button>
+
+          {/* Help button */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setShowHelpModal(true)}
+            title="Help"
+          >
+            <HelpCircle size={20} />
+          </Button>
+
+          {/* Filter menu */}
+          <div className="hidden md:block">
+            <FilterMenu onFilterChange={handleFilterChange} />
+          </div>
+
+          {/* User menu (sign in/out) */}
+          <UserMenu />
+        </div>
+      </div>
+
+      {/* Modals */}
+      {showImportModal && <ImportModal onClose={() => setShowImportModal(false)} />}
+      {showExportModal && <ExportModal onClose={() => setShowExportModal(false)} />}
+      {showProjectsModal && <ProjectsModal isOpen={showProjectsModal} onClose={() => setShowProjectsModal(false)} />}
+      {showPayoffModal && <PayoffModal isOpen={showPayoffModal} onClose={() => setShowPayoffModal(false)} />}
+      {showDescriptionModal && <ProjectDescriptionModal isOpen={showDescriptionModal} onClose={() => setShowDescriptionModal(false)} />}
+      {showHelpModal && <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />}
+      {showAuthModal && <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />}
+      
+      {/* New Project Creation Dialog */}
+      <AlertDialog open={showNewProjectDialog} onOpenChange={setShowNewProjectDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Create New Project</AlertDialogTitle>
+            <AlertDialogDescription>
+              Enter a name for your new project
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Input
+              ref={newProjectInputRef}
+              value={newProjectName}
+              onChange={(e) => setNewProjectName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (newProjectName.trim() !== '') {
+                    createNewProject(newProjectName);
+                    setShowNewProjectDialog(false);
+                    setNewProjectName('');
+                  }
+                }
+              }}
+              className="w-full"
+              placeholder="Project name"
+              autoFocus
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setNewProjectName('')}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (newProjectName.trim() !== '') {
+                  createNewProject(newProjectName);
+                  setNewProjectName('');
+                }
+              }}
+              disabled={newProjectName.trim() === ''}
+            >
+              Create
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Project Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Project</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{currentProjectName}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (currentProjectId) {
+                  try {
+                    const result = await moveProjectToTrash(currentProjectId);
+                    if (result) {
+                      toast({
+                        title: "Project Moved to Trash",
+                        description: "The project has been moved to the trash bin."
+                      });
+                      setHasActiveProject(false);
+                      setCurrentProjectName('');
+                      setCurrentProjectId(null);
+                      setNotes([]);
+                    } else {
+                      toast({
+                        title: "Error",
+                        description: "Failed to delete the project.",
+                        variant: "destructive",
+                      });
+                    }
+                  } catch (error) {
+                    console.error("Error deleting project:", error);
+                    toast({
+                      title: "Error",
+                      description: "An unexpected error occurred.",
+                      variant: "destructive",
+                    });
+                  }
+                }
+              }}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
 }
