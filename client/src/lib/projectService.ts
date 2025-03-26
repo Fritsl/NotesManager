@@ -556,12 +556,25 @@ function sanitizeProjectName(name: string): string {
     return 'Untitled Project';
   }
 
-  // Preserve apostrophes and non-English characters (like ÆØÅæøå)
-  // but replace any database-problematic characters with safe alternatives
-  // This helps avoid the "title_characters_check" constraint violation
+  // Check for special characters that might cause database issues
+  // This is based on the "title_characters_check" constraint in the database
+  const hasProblematicChars = /[ÆØÅæøå]|'/.test(sanitized);
   
-  // If we still encounter issues, we can implement a more strict sanitization
-  // but let's start with minimum sanitization to preserve special characters
+  if (hasProblematicChars) {
+    // For now, we'll just log this. In the UI, we'll show a warning
+    console.warn('Project name contains special characters that may cause issues:', sanitized);
+    
+    // Remove problematic characters to avoid database constraint errors
+    sanitized = sanitized
+      .replace(/[ÆØÅæøå]/g, '') // Remove Nordic letters
+      .replace(/'/g, '') // Remove apostrophes
+      .trim();
+      
+    // If removing these characters made the name empty, use a default
+    if (!sanitized) {
+      return 'Untitled Project';
+    }
+  }
   
   // Limit length to 100 characters (arbitrary but reasonable limit)
   if (sanitized.length > 100) {
