@@ -4,6 +4,7 @@ import NoteTreeItem from "./NoteTreeItem";
 import DropZone from "./DropZone";
 import { Button } from "@/components/ui/button";
 import { Plus, FilePlus, RotateCcw } from "lucide-react";
+import { getProject } from "@/lib/projectService";
 
 export default function NoteTree() {
   const { 
@@ -16,6 +17,8 @@ export default function NoteTree() {
     expandToLevel, 
     currentLevel,
     currentProjectName,
+    setCurrentProjectName,
+    currentProjectId,
     hasActiveProject,
     maxDepth,
     canUndo,
@@ -23,8 +26,27 @@ export default function NoteTree() {
     getUndoDescription
   } = useNotes();
   
-  // Debug current project name
-  console.log("NoteTree - Current Project Name:", currentProjectName);
+  // Monitor current project name for debugging
+  useEffect(() => {
+    console.log("NoteTree - Current Project Name:", currentProjectName);
+  }, [currentProjectName]);
+  
+  // Add safeguard to ensure project name is always synced with database
+  useEffect(() => {
+    // Ensure project name isn't empty when it should have a value
+    if (hasActiveProject && currentProjectId && (!currentProjectName || currentProjectName.trim() === '')) {
+      console.warn('Project name missing when it should have a value - requesting refresh');
+      // This might trigger a database name restore if the app has the ID but lost the name
+      getProject(currentProjectId).then((project) => {
+        if (project && project.name) {
+          console.log('Name mismatch detected - correcting from', 
+            `"${currentProjectName}" to database value "${project.name}"`
+          );
+          setCurrentProjectName(project.name);
+        }
+      });
+    }
+  }, [currentProjectName, hasActiveProject, currentProjectId, setCurrentProjectName]);
 
   // Check if a node is expanded
   const isExpanded = (noteId: string) => {
