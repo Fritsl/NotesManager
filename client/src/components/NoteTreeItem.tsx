@@ -973,11 +973,11 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                                level === 3 ? '16px' : 
                                level === 4 ? '14px' : '13px',
                       fontWeight: level === 0 ? 700 : 
-                                level === 1 ? 400 : /* L2 now non-bold */
-                                level === 2 ? 600 : 
+                                level === 1 ? 600 : 
+                                level === 2 ? 400 : /* L2 (level 2) now non-bold */
                                 level === 3 ? 500 : 
                                 level === 4 ? 500 : 400,
-                      fontStyle: level === 1 ? 'italic' : 'normal', /* L2 now italic */
+                      fontStyle: level === 2 ? 'italic' : 'normal', /* L2 (level 2) now italic */
                       lineHeight: level === 0 ? 1.2 : 
                                  level === 1 ? 1.3 : 
                                  level === 2 ? 1.35 : 
