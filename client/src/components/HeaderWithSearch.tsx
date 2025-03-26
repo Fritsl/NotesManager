@@ -522,6 +522,20 @@ export default function HeaderWithSearch() {
                       <span>Add Note (Root level)</span>
                     </DropdownMenuItem>
                   )}
+                  
+                  {/* Show Undo option only when there's something to undo */}
+                  {canUndo && (
+                    <DropdownMenuItem onClick={() => {
+                      undoLastAction();
+                      toast({
+                        title: "Undo Complete",
+                        description: "Last action has been undone",
+                      });
+                    }}>
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      <span>Undo: {getUndoDescription()}</span>
+                    </DropdownMenuItem>
+                  )}
 
                   {/* Only show the separator if we displayed the Add Note menu item */}
                   {hasActiveProject && notes.length > 0 && <DropdownMenuSeparator />}
@@ -534,6 +548,13 @@ export default function HeaderWithSearch() {
                   <DropdownMenuItem onClick={() => setShowExportModal(true)}>
                     <FileDown className="h-4 w-4 mr-2" />
                     <span>Export JSON</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={handleExportAsText}
+                    disabled={!hasActiveProject}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    <span>Export Level as Text</span>
                   </DropdownMenuItem>
 
                   <DropdownMenuSeparator />
@@ -687,6 +708,13 @@ export default function HeaderWithSearch() {
                   <DropdownMenuItem onClick={() => setShowExportModal(true)}>
                     <FileDown className="h-4 w-4 mr-2" />
                     <span>Export JSON</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={handleExportAsText}
+                    disabled={!hasActiveProject}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    <span>Export Level as Text</span>
                   </DropdownMenuItem>
 
                   <DropdownMenuSeparator />
