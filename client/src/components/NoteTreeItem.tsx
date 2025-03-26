@@ -700,8 +700,9 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
 
         {/* URL Display Text */}
         <div className="flex items-center col-span-full">
-          <label className="text-xs text-gray-400 w-20">Link text:</label>
+          <label className="text-xs text-gray-400 w-20" htmlFor={`url-text-${note.id}`}>Link text:</label>
           <input 
+            id={`url-text-${note.id}`}
             type="text" 
             className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
             placeholder="Display text for URL..."
@@ -709,13 +710,10 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             onChange={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              // Store the current focused element
-              const currentFocus = document.activeElement;
+              // Store this input's ID as the last focused element
+              setLastFocusedElementId(e.target.id);
+              // Set the URL display text value
               setEditUrlDisplayText(e.target.value || null);
-              // Ensure focus remains on this field after state update
-              if (currentFocus === e.target) {
-                setTimeout(() => e.target.focus(), 0);
-              }
             }}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
@@ -851,8 +849,9 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-3">
                   {/* Time settings */}
                   <div className="flex items-center">
-                    <label className="text-xs text-gray-400 w-14">Time:</label>
+                    <label className="text-xs text-gray-400 w-14" htmlFor={`desktop-time-${note.id}`}>Time:</label>
                     <input 
+                      id={`desktop-time-${note.id}`}
                       type="time" 
                       className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
                       value={editTimeSet || ''}
@@ -876,8 +875,9 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
 
                   {/* YouTube URL */}
                   <div className="flex items-center col-span-2">
-                    <label className="text-xs text-gray-400 w-20">YouTube:</label>
+                    <label className="text-xs text-gray-400 w-20" htmlFor={`desktop-youtube-${note.id}`}>YouTube:</label>
                     <input 
+                      id={`desktop-youtube-${note.id}`}
                       type="url" 
                       className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
                       placeholder="https://youtube.com/watch?v=..."
@@ -890,8 +890,9 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
 
                   {/* External URL */}
                   <div className="flex items-center col-span-2">
-                    <label className="text-xs text-gray-400 w-20">URL:</label>
+                    <label className="text-xs text-gray-400 w-20" htmlFor={`desktop-url-${note.id}`}>URL:</label>
                     <input 
+                      id={`desktop-url-${note.id}`}
                       type="url" 
                       className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
                       placeholder="https://..."
@@ -905,8 +906,9 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                   {/* Display text (only if URL exists) */}
                   {editUrl && (
                     <div className="flex items-center col-span-2">
-                      <label className="text-xs text-gray-400 w-20">Link text:</label>
+                      <label className="text-xs text-gray-400 w-20" htmlFor={`desktop-url-text-${note.id}`}>Link text:</label>
                       <input 
+                        id={`desktop-url-text-${note.id}`}
                         type="text" 
                         className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
                         placeholder="Link display text"
