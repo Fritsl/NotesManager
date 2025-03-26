@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { Note } from "@/types/notes";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -655,8 +656,9 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         
         {/* YouTube URL */}
         <div className="flex items-center col-span-full">
-          <label className="text-xs text-gray-400 w-20">YouTube:</label>
+          <label className="text-xs text-gray-400 w-20" htmlFor={`youtube-${note.id}`}>YouTube:</label>
           <input 
+            id={`youtube-${note.id}`}
             type="url" 
             className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
             placeholder="https://youtube.com/watch?v=..."
@@ -664,13 +666,10 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             onChange={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              // Store the current focused element
-              const currentFocus = document.activeElement;
+              // Store this input's ID as the last focused element
+              setLastFocusedElementId(e.target.id);
+              // Set the YouTube URL value
               setEditYoutubeUrl(e.target.value || null);
-              // Ensure focus remains on this field after state update
-              if (currentFocus === e.target) {
-                setTimeout(() => e.target.focus(), 0);
-              }
             }}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
@@ -679,8 +678,9 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
 
         {/* External URL */}
         <div className="flex items-center col-span-full">
-          <label className="text-xs text-gray-400 w-20">URL:</label>
+          <label className="text-xs text-gray-400 w-20" htmlFor={`url-${note.id}`}>URL:</label>
           <input 
+            id={`url-${note.id}`}
             type="url" 
             className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
             placeholder="https://..."
@@ -688,13 +688,10 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             onChange={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              // Store the current focused element
-              const currentFocus = document.activeElement;
+              // Store this input's ID as the last focused element
+              setLastFocusedElementId(e.target.id);
+              // Set the URL value
               setEditUrl(e.target.value || null);
-              // Ensure focus remains on this field after state update
-              if (currentFocus === e.target) {
-                setTimeout(() => e.target.focus(), 0);
-              }
             }}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
