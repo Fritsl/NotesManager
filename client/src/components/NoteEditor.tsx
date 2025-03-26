@@ -558,18 +558,128 @@ export default function NoteEditor() {
             </div>
           </div>
 
-          {/* Full-height textarea */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Full-height textarea - NOT 100% anymore to make room for fields */}
+          <div className="flex-1 flex flex-col overflow-hidden overflow-y-auto">
             <Textarea 
               id="noteContentFullscreen" 
               ref={contentRef}
-              className="flex-1 w-full p-4 text-base bg-gray-950 border-none focus:border-none focus:ring-0 resize-none"
+              className="w-full p-4 text-base bg-gray-950 border-none focus:border-none focus:ring-0 resize-none"
               placeholder="Type your note here..."
               value={content}
               onChange={handleContentChange}
               onBlur={handleBlur}
-              style={{ minHeight: '100%', height: '100%' }}
+              style={{ minHeight: '200px' }}
             />
+            
+            {/* Mobile form fields - added with compact design */}
+            <div className="p-3 bg-gray-900 border-t border-gray-800 space-y-3">
+              {/* YouTube URL */}
+              <div className="flex items-center space-x-2">
+                <div className="flex-shrink-0">
+                  <Youtube size={14} className="text-red-400" />
+                </div>
+                <Input
+                  type="url"
+                  id="youtubeUrlMobile"
+                  ref={youtubeUrlRef}
+                  className="h-8 text-xs bg-gray-850 border-gray-700"
+                  placeholder="YouTube URL (optional)"
+                  value={youtubeUrl}
+                  onChange={handleYoutubeUrlChange}
+                  onBlur={(e) => {
+                    // Prevent default blur behavior
+                    e.stopPropagation();
+                    // Only update field value without triggering full save
+                    setYoutubeUrl(e.target.value);
+                    setHasChanges(true);
+                  }}
+                />
+              </div>
+
+              {/* External URL */}
+              <div className="flex items-center space-x-2">
+                <div className="flex-shrink-0">
+                  <Link size={14} className="text-green-400" />
+                </div>
+                <Input
+                  type="url"
+                  id="externalUrlMobile"
+                  ref={externalUrlRef}
+                  className="h-8 text-xs bg-gray-850 border-gray-700"
+                  placeholder="Link URL (optional)"
+                  value={externalUrl}
+                  onChange={handleExternalUrlChange}
+                  onBlur={(e) => {
+                    // Prevent default blur behavior
+                    e.stopPropagation();
+                    // Only update field value without triggering full save
+                    setExternalUrl(e.target.value);
+                    setHasChanges(true);
+                  }}
+                />
+              </div>
+
+              {/* URL Display Text - only show if URL is entered */}
+              {externalUrl && (
+                <div className="flex items-center space-x-2 ml-5">
+                  <Input
+                    type="text"
+                    id="urlDisplayTextMobile"
+                    ref={urlDisplayTextRef}
+                    className="h-8 text-xs bg-gray-850 border-gray-700"
+                    placeholder="Link text (optional)"
+                    value={urlDisplayText}
+                    onChange={handleUrlDisplayTextChange}
+                    onBlur={(e) => {
+                      // Prevent default blur behavior
+                      e.stopPropagation();
+                      // Only update field value without triggering full save
+                      setUrlDisplayText(e.target.value);
+                      setHasChanges(true);
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Time Picker */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Clock size={14} className="text-purple-400" />
+                  <Label className="text-xs text-gray-400">Time (optional)</Label>
+                </div>
+                <Input 
+                  type="time"
+                  id="timePickerMobile"
+                  className="w-32 h-8 text-xs bg-gray-850 border-gray-700"
+                  value={timeSet ? (timeSet.includes(':') ? timeSet.split(':').slice(0, 2).join(':') : timeSet) : ""}
+                  onChange={(e) => {
+                    // Direct update without blur event
+                    handleTimeChange(e.target.value);
+                  }}
+                />
+              </div>
+
+              {/* Discussion checkbox */}
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="isDiscussionMobile"
+                    className="h-4 w-4 border-gray-600"
+                    checked={isDiscussion}
+                    onCheckedChange={(checked) => {
+                      // Direct update without blur event
+                      if (typeof checked === 'boolean') {
+                        setIsDiscussion(checked);
+                        setHasChanges(true);
+                      }
+                    }}
+                  />
+                  <Label htmlFor="isDiscussionMobile" className="text-xs text-gray-400">
+                    Discussion note
+                  </Label>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       ) : (
