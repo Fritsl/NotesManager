@@ -7,6 +7,18 @@ import { createProject, updateProject, addImageToNote, removeImageFromNote, upda
 // State to track pending note movements that need to be saved
 let pendingNoteMoves = false;
 
+// Interface for undo history items
+interface UndoHistoryItem {
+  type: 'move';  // Can expand with other action types later
+  noteId: string;
+  noteName: string;  // Truncated note content for display
+  previousParentId: string | null;
+  previousPosition: number;
+  targetParentId: string | null;
+  targetParentName: string | null;  // Truncated parent content for display
+  timestamp: number;
+}
+
 interface NotesContextType {
   notes: Note[];
   setNotes: (notes: Note[]) => void;
@@ -40,6 +52,11 @@ interface NotesContextType {
   uploadImage: (noteId: string, file: File) => Promise<NoteImage | null>;
   removeImage: (imageId: string) => Promise<boolean>;
   reorderImage: (noteId: string, imageId: string, newPosition: number) => Promise<boolean>;
+  // Undo functionality
+  undoHistory: UndoHistoryItem[];
+  canUndo: boolean;
+  undoLastAction: () => void;
+  getUndoDescription: () => string;
 }
 
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
@@ -64,6 +81,8 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
   const [isAutoLoading, setIsAutoLoading] = useState<boolean>(false);
   // State to track pending note movements that need to be saved
   const [pendingNoteMoves, setPendingNoteMoves] = useState<boolean>(false);
+  // State for undo history
+  const [undoHistory, setUndoHistory] = useState<UndoHistoryItem[]>([]);
   const { toast } = useToast();
 
   // Auto-load the last accessed project on initial mount
@@ -533,6 +552,105 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
 
   // Reference to track if a move operation is in progress to prevent multiple simultaneous moves
   const isMovingRef = useRef<boolean>(false);
+  
+  // Helper function to truncate note content for display (used in undo history)
+  const truncateNoteContent = (content: string, maxLength: number = 15): string => {
+    if (!content) return 'Untitled';
+    return content.length > maxLength ? content.substring(0, maxLength) + '...' : content;
+  };
+  
+  // Get description of the most recent undo action
+  const getUndoDescription = useCallback((): string => {
+    if (undoHistory.length === 0) return '';
+    
+    const lastAction = undoHistory[0];
+    if (lastAction.type === 'move') {
+      if (lastAction.targetParentId) {
+        return `Undo > fold out > Move "${lastAction.noteName}" as a child of "${lastAction.targetParentName}"`;
+      } else {
+        return `Undo > Move "${lastAction.noteName}" to root level`;
+      }
+    }
+    
+    return '';
+  }, [undoHistory]);
+  
+  // Check if undo is available
+  const canUndo = useMemo(() => undoHistory.length > 0, [undoHistory]);
+  
+  // Perform the last undo action
+  const undoLastAction = useCallback(() => {
+    if (undoHistory.length === 0) return;
+    
+    const lastAction = undoHistory[0];
+    console.log('Undoing action:', lastAction);
+    
+    if (lastAction.type === 'move') {
+      // Perform the reverse move without adding to history
+      const performUndo = async () => {
+        isMovingRef.current = true; // Set flag to prevent duplicate moves
+        
+        setNotes((prevNotes) => {
+          const updatedNotes = [...prevNotes];
+          
+          // Find the note in the current location
+          const { note, parent } = findNoteAndParent(lastAction.noteId, updatedNotes);
+          
+          if (!note) {
+            console.error('Cannot undo: Note not found');
+            return prevNotes;
+          }
+          
+          // Remove note from current parent
+          if (parent) {
+            parent.children = parent.children.filter(child => child.id !== note.id);
+            parent.children = cleanNotePositions(parent.children);
+          } else {
+            // Remove from root level
+            const rootIndex = updatedNotes.findIndex(n => n.id === note.id);
+            if (rootIndex !== -1) {
+              updatedNotes.splice(rootIndex, 1);
+            }
+          }
+          
+          // Add to previous parent
+          if (lastAction.previousParentId) {
+            // Find the original parent
+            const { note: originalParent } = findNoteAndPath(lastAction.previousParentId, updatedNotes);
+            if (originalParent) {
+              note.position = lastAction.previousPosition;
+              originalParent.children.push(note);
+              originalParent.children = cleanNotePositions(originalParent.children);
+            } else {
+              console.error('Cannot undo: Original parent not found');
+              // Move to root as fallback
+              updatedNotes.push(note);
+            }
+          } else {
+            // Return to root level
+            note.position = lastAction.previousPosition;
+            updatedNotes.push(note);
+          }
+          
+          return cleanNotePositions(updatedNotes);
+        });
+        
+        // Remove this action from history
+        setUndoHistory(prev => prev.slice(1));
+        
+        setTimeout(() => {
+          isMovingRef.current = false;
+        }, 200);
+        
+        // Auto-save after undoing
+        if (currentProjectId) {
+          await saveProject();
+        }
+      };
+      
+      performUndo();
+    }
+  }, [undoHistory, findNoteAndParent, findNoteAndPath, cleanNotePositions, currentProjectId, saveProject]);
   
   // Move a note in the tree
   const moveNote = useCallback(async (noteId: string, targetParentId: string | null, position: number) => {
