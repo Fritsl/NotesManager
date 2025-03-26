@@ -1,0 +1,39 @@
+// First menu - line ~534-539
+<DropdownMenuItem onClick={() => setShowExportModal(true)}>
+  <FileDown className="h-4 w-4 mr-2" />
+  <span>Export JSON</span>
+</DropdownMenuItem>
+<DropdownMenuItem 
+  onClick={handleExportAsText}
+  disabled={!hasActiveProject}
+>
+  <FileText className="h-4 w-4 mr-2" />
+  <span>Export Level as Text</span>
+</DropdownMenuItem>
+
+// Second menu - line ~687-692
+<DropdownMenuItem onClick={() => setShowExportModal(true)}>
+  <FileDown className="h-4 w-4 mr-2" />
+  <span>Export JSON</span>
+</DropdownMenuItem>
+<DropdownMenuItem 
+  onClick={handleExportAsText}
+  disabled={!hasActiveProject}
+>
+  <FileText className="h-4 w-4 mr-2" />
+  <span>Export Level as Text</span>
+</DropdownMenuItem>
+
+// Also add Undo functionality to the menu ~500ish (after Add Note)
+{canUndo && (
+  <DropdownMenuItem onClick={() => {
+    undoLastAction();
+    toast({
+      title: "Undo Complete",
+      description: "Last action has been undone",
+    });
+  }}>
+    <RotateCcw className="h-4 w-4 mr-2" />
+    <span>Undo: {getUndoDescription()}</span>
+  </DropdownMenuItem>
+)}
