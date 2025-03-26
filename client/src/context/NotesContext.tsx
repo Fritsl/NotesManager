@@ -72,7 +72,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [breadcrumbs, setBreadcrumbs] = useState<Note[]>([]);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
-  const [currentLevel, setCurrentLevel] = useState<number>(1);
+  const [currentLevel, setCurrentLevel] = useState<number>(0);
   const [currentProjectName, setCurrentProjectName] = useState<string>('');
   const [currentProjectDescription, setCurrentProjectDescription] = useState<string>('');
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
@@ -90,33 +90,33 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
     const loadLastProject = async () => {
       // Only attempt to load if this is the initial load
       if (!isInitialLoad) return;
-      
+
       try {
         // Get the last project ID from localStorage
         const lastProjectId = localStorage.getItem('lastProjectId');
-        
+
         // If we have a last project ID, try to load it
         if (lastProjectId) {
           console.log('Auto-loading last project ID:', lastProjectId);
           setIsAutoLoading(true);
-          
+
           // Fetch the project from the database
           const project = await getProject(lastProjectId);
-          
+
           if (project) {
             console.log('Auto-loaded project:', project.name);
-            
+
             // Import the notes from the project
             importNotes(project.data, project.name, project.id);
-            
+
             // Set project description if available
             if (project.description) {
               setCurrentProjectDescription(project.description);
             }
-            
+
             // Mark as having an active project
             setHasActiveProject(true);
-            
+
             toast({
               title: 'Project Loaded',
               description: `Automatically loaded "${project.name}"`,
@@ -136,7 +136,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         setIsAutoLoading(false);
       }
     };
-    
+
     // Execute the auto-load function
     loadLastProject();
   }, []);
@@ -149,12 +149,12 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       console.log('Saved last project ID to localStorage:', currentProjectId);
     }
   }, [currentProjectId]);
-  
+
   // Clean note positions to ensure sequential ordering without gaps
   const cleanNotePositions = useCallback((noteList: Note[]): Note[] => {
     // Sort the notes by their current position
     const sortedNotes = [...noteList].sort((a, b) => a.position - b.position);
-    
+
     // Reassign positions sequentially starting from 0
     const cleanedNotes = sortedNotes.map((note, index) => {
       // Preserve all original note properties including images
@@ -167,7 +167,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         images: note.images || [],
       };
     });
-    
+
     return cleanedNotes;
   }, []);
 
@@ -176,7 +176,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
     console.log('ImportNotes received data:', data);
     console.log('Project name:', projectName);
     console.log('Project ID:', projectId);
-    
+
     if (!data) {
       console.error('ImportNotes failed: data is null or undefined');
       toast({
@@ -186,7 +186,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       });
       return;
     }
-    
+
     if (!data.notes) {
       console.error('ImportNotes failed: data.notes is missing', data);
       toast({
@@ -196,7 +196,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       });
       return;
     }
-    
+
     if (!Array.isArray(data.notes)) {
       console.error('ImportNotes failed: data.notes is not an array', typeof data.notes, data);
       toast({
@@ -206,25 +206,25 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       });
       return;
     }
-    
+
     // Process notes to ensure compatible image format and generate new IDs
     const processImagesInNotes = (noteList: Note[]): Note[] => {
       // Create ID mapping to maintain parent-child relationships
       const idMap = new Map<string, string>();
-      
+
       const processNote = (note: Note): Note => {
         // Generate a new ID for this note
         const newId = uuidv4();
         // Store mapping from old ID to new ID
         idMap.set(note.id, newId);
-        
+
         // Create a new note with the new ID
         const processedNote: Note = {
           ...note,
           id: newId,
           children: note.children ? note.children.map(child => processNote(child)) : []
         };
-        
+
         // Process images if present
         if (note.images && note.images.length > 0) {
           processedNote.images = note.images.map((image, index) => {
@@ -238,42 +238,42 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
               storage_path: image.storage_path,
               position: image.position !== undefined ? image.position : index
             };
-            
+
             return enhancedImage;
           });
         }
-        
+
         return processedNote;
       };
-      
+
       return noteList.map(processNote);
     };
-    
+
     // Process the notes to ensure compatible image format, then clean positions
     const processedNotes = processImagesInNotes(data.notes);
     console.log('Cleaning note positions for', processedNotes.length, 'notes');
     const cleanedNotes = cleanNotePositions(processedNotes);
     console.log('Cleaned notes:', cleanedNotes);
-    
+
     setNotes(cleanedNotes);
     setSelectedNote(null);
     setBreadcrumbs([]);
-    
+
     // Update project name if provided
     if (projectName) {
       setCurrentProjectName(projectName);
     }
-    
+
     // Only update the project ID if explicitly provided
     // Otherwise keep the current project ID to maintain save functionality
     if (projectId !== undefined) {
       setCurrentProjectId(projectId || null);
     }
     // currentProjectId remains unchanged if projectId is undefined
-    
+
     // Always set hasActiveProject to true when importing notes
     setHasActiveProject(true);
-    
+
     toast({
       title: "Import Successful",
       description: `Imported ${data.notes.length} notes${projectName ? ` from "${projectName}"` : ''}`,
@@ -294,7 +294,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
               position: image.position
             } as NoteImage))
           : [];
-            
+
         // Create a completely new note object with fields in the exact order needed
         // for compatibility with other applications
         const exportedNote: Note = {
@@ -311,11 +311,11 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           // Then include children (after images)
           children: note.children ? formatNotesForExport(note.children) : []
         };
-        
+
         return exportedNote;
       });
     };
-    
+
     return { notes: formatNotesForExport(notes) };
   }, [notes]);
 
@@ -329,7 +329,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       if (note.id === noteId) {
         return { note, path };
       }
-      
+
       if (note.children.length > 0) {
         const result = findNoteAndPath(noteId, note.children, [...path, note]);
         if (result.note) {
@@ -337,7 +337,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         }
       }
     }
-    
+
     return { note: null, path: [] };
   }, [notes]);
 
@@ -348,7 +348,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       setBreadcrumbs([]);
       return;
     }
-    
+
     const { path } = findNoteAndPath(note.id);
     setSelectedNote(note);
     setBreadcrumbs(path);
@@ -364,7 +364,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       if (currentNodes[i].id === noteId) {
         return { note: currentNodes[i], parent, index: i };
       }
-      
+
       if (currentNodes[i].children.length > 0) {
         const result = findNoteAndParent(noteId, currentNodes[i].children, currentNodes[i]);
         if (result.note) {
@@ -372,7 +372,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         }
       }
     }
-    
+
     return { note: null, parent: null, index: -1 };
   }, [notes]);
 
@@ -396,7 +396,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         const updatedNotes = [...prevNotes];
         newNote.position = updatedNotes.length;
         updatedNotes.push(newNote);
-        
+
         // Clean positions at root level to ensure consistency
         return cleanNotePositions(updatedNotes);
       });
@@ -405,15 +405,15 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       setNotes((prevNotes) => {
         const updatedNotes = [...prevNotes];
         const { note: foundParent } = findNoteAndPath(parent.id, updatedNotes);
-        
+
         if (foundParent) {
           newNote.position = foundParent.children.length;
           foundParent.children.push(newNote);
-          
+
           // Clean positions for this parent's children
           foundParent.children = cleanNotePositions(foundParent.children);
         }
-        
+
         return updatedNotes;
       });
     }
@@ -437,10 +437,10 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         formattedNote.time_set = `${timeParts[0]}:${timeParts[1]}`;
       }
     }
-    
+
     setNotes((prevNotes) => {
       const updatedNotes = [...prevNotes];
-      
+
       // Find the note at any level in the tree
       const updateNoteInTree = (nodes: Note[]): boolean => {
         for (let i = 0; i < nodes.length; i++) {
@@ -449,13 +449,13 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
             if (!formattedNote.children || formattedNote.children.length === 0) {
               formattedNote.children = nodes[i].children;
             }
-            
+
             // CRITICAL: Preserve the images array if not explicitly provided
             // This ensures images don't get lost during regular note updates
             if (!formattedNote.images || !Array.isArray(formattedNote.images)) {
               formattedNote.images = nodes[i].images || [];
             }
-            
+
             // Update the node with the formatted note that preserves images
             nodes[i] = { 
               ...formattedNote,
@@ -464,24 +464,24 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
             };
             return true;
           }
-          
+
           if (nodes[i].children.length > 0) {
             if (updateNoteInTree(nodes[i].children)) {
               return true;
             }
           }
         }
-        
+
         return false;
       };
-      
+
       updateNoteInTree(updatedNotes);
       return updatedNotes;
     });
-    
+
     // Make sure the selected note also has the images preserved
     setSelectedNote(formattedNote);
-    
+
     toast({
       title: "Note Updated",
       description: "Your changes have been saved",
@@ -494,7 +494,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       const updatedNotes = [...prevNotes];
       // Create a variable to keep track of the parent note that had a child removed
       let parentNote: Note | null = null;
-      
+
       // Find and remove the note at any level in the tree
       const removeNoteFromTree = (nodes: Note[], parent: Note | null = null): boolean => {
         for (let i = 0; i < nodes.length; i++) {
@@ -504,19 +504,19 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
             parentNote = parent;
             return true;
           }
-          
+
           if (nodes[i].children.length > 0) {
             if (removeNoteFromTree(nodes[i].children, nodes[i])) {
               return true;
             }
           }
         }
-        
+
         return false;
       };
-      
+
       removeNoteFromTree(updatedNotes);
-      
+
       // If we deleted from a parent's children, clean those children's positions
       if (parentNote) {
         // Update the positions of the remaining children
@@ -534,16 +534,16 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           note.position = index;
         });
       }
-      
+
       // Apply full position cleaning to ensure consistency
       return cleanNotePositions(updatedNotes);
     });
-    
+
     if (selectedNote?.id === noteId) {
       setSelectedNote(null);
       setBreadcrumbs([]);
     }
-    
+
     toast({
       title: "Note Deleted",
       description: "The note has been removed",
@@ -552,17 +552,17 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
 
   // Reference to track if a move operation is in progress to prevent multiple simultaneous moves
   const isMovingRef = useRef<boolean>(false);
-  
+
   // Helper function to truncate note content for display (used in undo history)
   const truncateNoteContent = (content: string, maxLength: number = 15): string => {
     if (!content) return 'Untitled';
     return content.length > maxLength ? content.substring(0, maxLength) + '...' : content;
   };
-  
+
   // Get description of the most recent undo action
   const getUndoDescription = useCallback((): string => {
     if (undoHistory.length === 0) return '';
-    
+
     const lastAction = undoHistory[0];
     if (lastAction.type === 'move') {
       if (lastAction.targetParentId) {
@@ -571,36 +571,36 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         return `Undo > Move "${lastAction.noteName}" to root level`;
       }
     }
-    
+
     return '';
   }, [undoHistory]);
-  
+
   // Check if undo is available
   const canUndo = useMemo(() => undoHistory.length > 0, [undoHistory]);
-  
+
   // Perform the last undo action
   const undoLastAction = useCallback(() => {
     if (undoHistory.length === 0) return;
-    
+
     const lastAction = undoHistory[0];
     console.log('Undoing action:', lastAction);
-    
+
     if (lastAction.type === 'move') {
       // Perform the reverse move without adding to history
       const performUndo = async () => {
         isMovingRef.current = true; // Set flag to prevent duplicate moves
-        
+
         setNotes((prevNotes) => {
           const updatedNotes = [...prevNotes];
-          
+
           // Find the note in the current location
           const { note, parent } = findNoteAndParent(lastAction.noteId, updatedNotes);
-          
+
           if (!note) {
             console.error('Cannot undo: Note not found');
             return prevNotes;
           }
-          
+
           // Remove note from current parent
           if (parent) {
             parent.children = parent.children.filter(child => child.id !== note.id);
@@ -612,7 +612,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
               updatedNotes.splice(rootIndex, 1);
             }
           }
-          
+
           // Add to previous parent
           if (lastAction.previousParentId) {
             // Find the original parent
@@ -631,28 +631,28 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
             note.position = lastAction.previousPosition;
             updatedNotes.push(note);
           }
-          
+
           return cleanNotePositions(updatedNotes);
         });
-        
+
         // Remove this action from history
         setUndoHistory(prev => prev.slice(1));
-        
+
         setTimeout(() => {
           isMovingRef.current = false;
         }, 200);
-        
+
         // Auto-save after undoing
         if (currentProjectId) {
           // Instead of calling saveProject directly, set a flag for later save
           setPendingNoteMoves(true);
         }
       };
-      
+
       performUndo();
     }
   }, [undoHistory, findNoteAndParent, findNoteAndPath, cleanNotePositions, currentProjectId]);
-  
+
   // Move a note in the tree
   const moveNote = useCallback(async (noteId: string, targetParentId: string | null, position: number) => {
     // Prevent multiple drop handlers from triggering simultaneously
@@ -660,36 +660,36 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       console.log("⚠️ Ignoring duplicate move operation - operation already in progress");
       return;
     }
-    
+
     // Set the moving flag to true
     isMovingRef.current = true;
-    
+
     // Create a timeout to reset the flag after a short delay
     setTimeout(() => {
       isMovingRef.current = false;
     }, 200); // 200ms should be enough to block duplicate events
-    
+
     console.log(`📌 MOVING note ${noteId} to parent: ${targetParentId}, position: ${position}`);
-    
+
     setNotes((prevNotes) => {
       const updatedNotes = [...prevNotes];
-      
+
       // Find the note to move and its current parent
       const { note: foundNote, parent: sourceParent, index: sourceIndex } = findNoteAndParent(noteId, updatedNotes);
-      
+
       if (!foundNote) {
         console.error("Note not found:", noteId);
         return updatedNotes;
       }
-      
+
       // Create a deep copy of the note to move (to avoid reference issues)
       const noteToMove = JSON.parse(JSON.stringify(foundNote));
-      
+
       // Record the move for undo history before applying the change
       // Only if this is not an undo operation itself
       const sourceParentId = sourceParent ? sourceParent.id : null;
       const sourcePosition = foundNote.position;
-      
+
       // If we have a target parent ID, get its title for display
       let targetParentName: string | null = null;
       if (targetParentId) {
@@ -698,7 +698,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           targetParentName = truncateNoteContent(targetParent.content);
         }
       }
-      
+
       // Add to the undo history (only keep the 20 most recent actions)
       const undoItem: UndoHistoryItem = {
         type: 'move',
@@ -710,51 +710,51 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         targetParentName: targetParentName,
         timestamp: Date.now()
       };
-      
+
       // Add to the start of the array, keep only the 20 most recent moves
       setUndoHistory(prev => [undoItem, ...prev.slice(0, 19)]);
-      
+
       // Check if trying to move a note to one of its own descendants (which would create a cycle)
       const isTargetADescendantOfSource = (sourceId: string, targetParentId: string | null): boolean => {
         if (targetParentId === null) return false;
         if (sourceId === targetParentId) return true;
-        
+
         // Helper function to check if targetId is a descendant of any node
         const isDescendant = (nodes: Note[], targetId: string): boolean => {
           for (const node of nodes) {
             if (node.id === targetId) {
               return true;
             }
-            
+
             if (node.children.length > 0 && isDescendant(node.children, targetId)) {
               return true;
             }
           }
           return false;
         };
-        
+
         // Check if targetParentId is a descendant of the source note
         return isDescendant(foundNote.children, targetParentId);
       };
-      
+
       if (targetParentId && isTargetADescendantOfSource(noteId, targetParentId)) {
         console.warn("Cannot move a note to one of its own descendants");
         return updatedNotes;
       }
-      
+
       // Remove note from its current position
       if (sourceParent) {
         sourceParent.children.splice(sourceIndex, 1);
       } else {
         updatedNotes.splice(sourceIndex, 1);
       }
-      
+
       // Add the note to its new position
       if (targetParentId === null) {
         // Move to root level
         const insertPosition = Math.min(position, updatedNotes.length);
         updatedNotes.splice(insertPosition, 0, noteToMove);
-        
+
         // Clean all positions at root level
         updatedNotes.forEach((note, index) => {
           note.position = index;
@@ -765,44 +765,44 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           for (let i = 0; i < nodes.length; i++) {
             if (nodes[i].id === targetParentId) {
               console.log(`INSERTING note ${noteToMove.id} as child of ${targetParentId} at position ${position}`);
-              
+
               // Make sure we have a valid position (defensive)
               const insertPosition = Math.min(position, nodes[i].children.length);
-              
+
               // Important: Deep clone the note to avoid reference issues
               const noteClone = JSON.parse(JSON.stringify(noteToMove));
-              
+
               // Insert at the specified position
               nodes[i].children.splice(insertPosition, 0, noteClone);
-              
+
               // Clean all positions in this child list
               nodes[i].children.forEach((child, index) => {
                 child.position = index;
               });
-              
+
               return true;
             }
-            
+
             if (nodes[i].children.length > 0) {
               if (findAndInsert(nodes[i].children)) {
                 return true;
               }
             }
           }
-          
+
           return false;
         };
-        
+
         findAndInsert(updatedNotes);
       }
-      
+
       // For complex moves that might affect multiple levels, 
       // use the full cleanNotePositions function to ensure consistency
       const resultNotes = cleanNotePositions(updatedNotes);
-      
+
       // Set flag to trigger saving in an effect
       setPendingNoteMoves(true);
-      
+
       return resultNotes;
     });
   }, [findNoteAndParent, findNoteAndPath, cleanNotePositions, truncateNoteContent]);
@@ -864,38 +864,38 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
   useEffect(() => {
     // Skip if no URL parameters or if we're still auto-loading a project
     if (isAutoLoading || isInitialLoad) return;
-    
+
     const handleDeepLink = async () => {
       try {
         const { projectId, noteId } = urlParams;
-        
+
         console.log('Checking deep link parameters:', { projectId, noteId });
-        
+
         // Only proceed if we have a project ID
         if (!projectId) return;
-        
+
         // Check if this project is already loaded
         if (currentProjectId === projectId) {
           console.log('Project already loaded, navigating to specific note if needed');
-          
+
           // If we have a note ID, find and select it
           if (noteId) {
             const { note: foundNote } = findNoteAndPath(noteId);
             if (foundNote) {
               // Select the note and expand to it
               selectNote(foundNote);
-              
+
               // Expand all parent notes to make the target note visible
               const { path } = findNoteAndPath(noteId);
-              
+
               // Create a new Set with all the path note IDs
               const newExpandedNodes = new Set(expandedNodes);
               path.forEach(pathNote => {
                 newExpandedNodes.add(pathNote.id);
               });
-              
+
               setExpandedNodes(newExpandedNodes);
-              
+
               toast({
                 title: "Note Located",
                 description: "Navigated to the requested note",
@@ -911,48 +911,47 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         } else {
           // Need to load a different project
           console.log('Loading project from deep link:', projectId);
-          
+
           const project = await getProject(projectId);
-          
+
           if (project) {
             console.log('Deep link loaded project:', project.name);
-            
+
             // Import the notes from the project
             importNotes(project.data, project.name, project.id);
-            
+
             // Set project description if available
             if (project.description) {
               setCurrentProjectDescription(project.description);
             }
-            
+
             // Mark as having an active project
             setHasActiveProject(true);
-            
+
             toast({
               title: 'Project Loaded',
               description: `Loaded "${project.name}" from shared link`,
             });
-            
+
             // If we also have a note ID, wait a bit for the project to load then select the note
             if (noteId) {
               // Use setTimeout to give the project time to fully load and render
               setTimeout(() => {
                 const { note: foundNote } = findNoteAndPath(noteId);
-                if (foundNote) {
-                  // Select the note and expand to it
+                if (foundNote) {                  // Select the note and expand to it
                   selectNote(foundNote);
-                  
+
                   // Expand all parent notes to make the target note visible
                   const { path } = findNoteAndPath(noteId);
-                  
+
                   // Create a new Set with all the path note IDs
                   const newExpandedNodes = new Set(expandedNodes);
                   path.forEach(pathNote => {
                     newExpandedNodes.add(pathNote.id);
                   });
-                  
+
                   setExpandedNodes(newExpandedNodes);
-                  
+
                   toast({
                     title: "Note Located",
                     description: "Navigated to the requested note",
@@ -977,7 +976,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         });
       }
     };
-    
+
     // Only run if we have URL parameters and the app is ready
     if (urlParams.projectId) {
       handleDeepLink();
@@ -993,39 +992,39 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
   const expandToLevel = useCallback((level: number) => {
     // Use the level as is - the UI buttons are already 0-indexed (L0, L1, L2, etc.)
     const targetLevel = level;
-    
+
     // Always reset expanded nodes first
     setExpandedNodes(new Set());
-    
+
     // Set current level to 0 for collapsed state
     if (targetLevel <= 0) {
       setCurrentLevel(0);
       return;
     }
-    
+
     // Otherwise update current level to match expansion
     setCurrentLevel(targetLevel);
-    
+
     const newExpandedNodes = new Set<string>();
-    
+
     // Helper function to traverse the tree and expand nodes up to the specified level
     const expandLevels = (nodes: Note[], currentLevel = 0) => {
       if (currentLevel >= targetLevel) {
         return;
       }
-      
+
       for (const note of nodes) {
         // Add all nodes that are at levels LESS than the target level
         // This ensures that L1 shows level 0 nodes, L2 shows levels 0 and 1, etc.
         newExpandedNodes.add(note.id);
-        
+
         // Recursively process children if they exist
         if (note.children && note.children.length > 0) {
           expandLevels(note.children, currentLevel + 1);
         }
       }
     };
-    
+
     expandLevels(notes);
     setExpandedNodes(newExpandedNodes);
   }, [notes]);
@@ -1041,14 +1040,14 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         });
         return;
       }
-      
+
       // Create an empty notes array for the new project
       const emptyNotesData: NotesData = { notes: [] };
-      
+
       // Create the project in the database
       console.log('Creating new project:', name);
       const createdProject = await createProject(name, emptyNotesData);
-      
+
       if (!createdProject) {
         console.error('Failed to create project');
         toast({
@@ -1058,19 +1057,19 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         });
         return;
       }
-      
+
       console.log('Project created:', createdProject);
-      
+
       // Set the current project
       setCurrentProjectId(createdProject.id);
       setCurrentProjectName(createdProject.name);
       setHasActiveProject(true);
-      
+
       // Clear previous notes
       setNotes([]);
       setSelectedNote(null);
       setBreadcrumbs([]);
-      
+
       toast({
         title: "Project Created",
         description: `New project "${name}" has been created`,
@@ -1097,7 +1096,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         });
         return;
       }
-      
+
       console.log('Saving project:', { 
         id: currentProjectId, 
         name: currentProjectName,
@@ -1105,10 +1104,10 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         notesCount: notes.length,
         firstNote: notes.length > 0 ? notes[0].content : 'No notes'
       });
-      
+
       // Create a clean copy of the notes data to save
       const notesData: NotesData = { notes: cleanNotePositions([...notes]) };
-      
+
       // Update the project in the database
       const updatedProject = await updateProject(
         currentProjectId, 
@@ -1116,7 +1115,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         notesData, 
         currentProjectDescription
       );
-      
+
       if (!updatedProject) {
         console.error('Failed to update project');
         toast({
@@ -1126,16 +1125,16 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         });
         return;
       }
-      
+
       // Dispatch a custom event to notify components that a project has been updated
       // This will be used to refresh the projects list in ProjectsModal
       const projectUpdatedEvent = new CustomEvent('project-updated', {
         detail: { projectId: currentProjectId }
       });
       window.dispatchEvent(projectUpdatedEvent);
-      
+
       console.log('Project saved successfully:', updatedProject);
-      
+
       // Only show toast when manually saved via button (not auto-saves)
       if (!pendingNoteMoves) {
         toast({
@@ -1143,12 +1142,12 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           description: `"${currentProjectName}" has been saved`,
         });
       }
-      
+
       // Clear the pending flag if it was set
       if (pendingNoteMoves) {
         setPendingNoteMoves(false);
       }
-      
+
     } catch (error) {
       console.error('Error saving project:', error);
       toast({
@@ -1158,7 +1157,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       });
     }
   }, [currentProjectId, currentProjectName, currentProjectDescription, notes, cleanNotePositions, toast, pendingNoteMoves]);
-  
+
   // Effect to handle auto-saving when pendingNoteMoves is set
   useEffect(() => {
     if (pendingNoteMoves && currentProjectId) {
@@ -1170,7 +1169,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           console.error('Failed to auto-save after note movement:', err);
         });
       }, 500);
-      
+
       return () => {
         clearTimeout(saveTimeout);
       };
@@ -1182,7 +1181,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
     try {
       console.log(`Uploading image for note ${noteId}`);
       const image = await addImageToNote(noteId, file);
-      
+
       if (image) {
         // Update the notes state to include the new image
         setNotes(prevNotes => {
@@ -1212,7 +1211,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
                   return child;
                 });
               };
-              
+
               return {
                 ...note,
                 children: updateChildrenWithImage(note.children)
@@ -1226,13 +1225,13 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           title: "Image Uploaded",
           description: "The image has been attached to the note",
         });
-        
+
         // Save the project to ensure the image is persisted
         saveProject().catch(err => {
           console.error("Error saving project after image upload:", err);
         });
       }
-      
+
       return image;
     } catch (error) {
       console.error('Error uploading image:', error);
@@ -1244,13 +1243,13 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       return null;
     }
   }, [toast, saveProject]);
-  
+
   // Remove an image from a note
   const removeImage = useCallback(async (imageId: string): Promise<boolean> => {
     try {
       console.log(`Removing image ${imageId}`);
       const success = await removeImageFromNote(imageId);
-      
+
       if (success) {
         // Update the notes state to remove the image
         setNotes(prevNotes => {
@@ -1265,7 +1264,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
                   images: note.images.filter(img => img.id !== imageId)
                 };
               }
-              
+
               // If the note has children, recursively check them
               if (note.children && note.children.length > 0) {
                 return {
@@ -1273,12 +1272,12 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
                   children: removeImageFromNotes(note.children)
                 };
               }
-              
+
               // No changes needed for this note
               return note;
             });
           };
-          
+
           return removeImageFromNotes(prevNotes);
         });
 
@@ -1286,13 +1285,13 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           title: "Image Removed",
           description: "The image has been removed from the note",
         });
-        
+
         // Save the project to ensure the image removal is persisted
         saveProject().catch(err => {
           console.error("Error saving project after image removal:", err);
         });
       }
-      
+
       return success;
     } catch (error) {
       console.error('Error removing image:', error);
@@ -1304,13 +1303,13 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       return false;
     }
   }, [toast, saveProject]);
-  
+
   // Reorder images within a note
   const reorderImage = useCallback(async (noteId: string, imageId: string, newPosition: number): Promise<boolean> => {
     try {
       console.log(`Reordering image ${imageId} to position ${newPosition}`);
       const success = await updateImagePosition(noteId, imageId, newPosition);
-      
+
       if (success) {
         // Update the notes state to reflect the new image position
         setNotes(prevNotes => {
@@ -1319,36 +1318,36 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
             if (note.id === noteId && note.images && note.images.length > 0) {
               // Find the image to reorder
               const imageToMove = note.images.find(img => img.id === imageId);
-              
+
               if (imageToMove) {
                 // Remove the image from its current position
                 const filteredImages = note.images.filter(img => img.id !== imageId);
-                
+
                 // Calculate a safe position that's within bounds
                 const safePosition = Math.max(0, Math.min(newPosition, filteredImages.length));
-                
+
                 // Insert the image at the new position
                 const updatedImages = [
                   ...filteredImages.slice(0, safePosition),
                   { ...imageToMove, position: safePosition },
                   ...filteredImages.slice(safePosition)
                 ];
-                
+
                 // Sort images by position to ensure correct order
                 const sortedImages = updatedImages.sort((a, b) => a.position - b.position);
-                
+
                 return { ...note, images: sortedImages };
               }
             }
             return note;
           };
-          
+
           // Helper function to update notes recursively
           const updateNotesWithReorderedImage = (notes: Note[]): Note[] => {
             return notes.map(note => {
               // First check if this is the note with the image
               const updatedNote = updateImagesInNote(note);
-              
+
               // If the note has children, recursively update them too
               if (updatedNote.children && updatedNote.children.length > 0) {
                 return {
@@ -1356,11 +1355,11 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
                   children: updateNotesWithReorderedImage(updatedNote.children)
                 };
               }
-              
+
               return updatedNote;
             });
           };
-          
+
           return updateNotesWithReorderedImage(prevNotes);
         });
 
@@ -1368,13 +1367,13 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           title: "Image Reordered",
           description: "The image position has been updated",
         });
-        
+
         // Save the project to ensure the image reordering is persisted
         saveProject().catch(err => {
           console.error("Error saving project after image reordering:", err);
         });
       }
-      
+
       return success;
     } catch (error) {
       console.error('Error reordering image:', error);
