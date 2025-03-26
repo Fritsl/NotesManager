@@ -27,8 +27,7 @@ import {
   Minimize2,
   PlusCircle,
   FilePlus,
-  RotateCcw,
-  User
+  RotateCcw
 } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { useAuth } from "@/context/AuthContext";
@@ -460,27 +459,25 @@ export default function HeaderWithSearch() {
                   <TooltipTrigger asChild>
                     <button
                       onClick={toggleFullscreen}
-                      className={`ml-2 p-1 rounded-full hover:bg-gray-800 transition-colors focus:outline-none`}
+                      className={`ml-2 p-1 rounded-full hover:bg-black/20 transition-colors text-gray-400 ${
+                        isFullscreen ? 'opacity-20 hover:opacity-60' : 'opacity-50 hover:opacity-100'
+                      } py-2`}
+                      aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
                     >
                       {isFullscreen ? (
-                        <Minimize2 className="h-4 w-4 text-gray-400 hover:text-gray-300" />
+                        <Minimize2 className="w-4 h-4" />
                       ) : (
-                        <Maximize2 className="h-4 w-4 text-gray-400 hover:text-gray-300" />
+                        <Maximize2 className="w-4 h-4" />
                       )}
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>{isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}</p>
+                    <p>Toggle Fullscreen Mode</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
 
-
-
-              {/* User Menu */}
-              <UserMenu />
-
-              {/* Dropdown Menu for all other actions */}
+              {/* Consolidated Hamburger Menu - Removed mobile level controls */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8 touch-target">
@@ -490,8 +487,7 @@ export default function HeaderWithSearch() {
                 <DropdownMenuContent align="end" className="w-56">
                   {/* File Operations */}
                   <DropdownMenuItem onClick={() => {
-                    setNewProjectName('');
-                    setShowNewProjectDialog(true);
+                    createNewProject('New Project');
                   }}>
                     <FileText className="h-4 w-4 mr-2" />
                     <span>New</span>
@@ -500,73 +496,59 @@ export default function HeaderWithSearch() {
                     <FolderOpen className="h-4 w-4 mr-2" />
                     <span>Projects</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => {
-                      setShowDeleteConfirm(true);
-                    }}
-                    disabled={!hasActiveProject}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2 text-red-500" />
-                    <span>Delete Project</span>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuSeparator />
-
-                  {/* Save Status Message */}
-                  <DropdownMenuItem 
-                    onClick={() => {
-                      saveProject().then(() => {
+                  <DropdownMenuItem onClick={async () => {
+                    if (currentProjectId) {
+                      try {
+                        await saveProject();
                         toast({
-                          title: "Project Saved",
-                          description: "Project saved to database successfully"
+                          title: "Saved",
+                          description: "Project saved successfully",
                         });
-                      });
-                    }}
-                    disabled={!hasActiveProject}
-                  >
-                    <Save className="h-4 w-4 mr-2 text-green-500" />
-                    <span>Save Project</span>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuSeparator />
-
-                  {/* Note Actions */}
-                  <DropdownMenuItem 
-                    onClick={() => {
-                      if (hasActiveProject) {
-                        addNote(null);
-                      } else {
+                      } catch (err) {
                         toast({
-                          title: "No Active Project",
-                          description: "Please create or open a project first",
-                          variant: "destructive"
+                          title: "Error",
+                          description: "Failed to save project",
+                          variant: "destructive",
                         });
                       }
-                    }}
-                    disabled={!hasActiveProject}
-                  >
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    <span>Add Note (Root level)</span>
+                    } else {
+                      toast({
+                        title: "No Project",
+                        description: "Cannot save - no active project",
+                        variant: "destructive",
+                      });
+                    }
+                  }}>
+                    <Save className="h-4 w-4 mr-2" />
+                    <span>Save</span>
+                    <span className="ml-auto text-xs text-muted-foreground">{currentProjectId ? "(Manual)" : "(No Project)"}</span>
                   </DropdownMenuItem>
 
-                  {/* Undo Action - only shown when actions are available to undo */}
+                  {/* Note Actions */}
+                  {/* Only show Add Note in menu when there are already notes (not when on blank screen) */}
+                  {hasActiveProject && notes.length > 0 && (
+                    <DropdownMenuItem onClick={() => addNote(null)}>
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                      <span>Add Note (Root level)</span>
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {/* Show Undo option only when there's something to undo */}
                   {canUndo && (
-                    <DropdownMenuItem 
-                      onClick={() => {
-                        const undoDesc = getUndoDescription();
-                        undoLastAction();
-                        toast({
-                          title: "Undo Complete",
-                          description: `Undid: ${undoDesc}`
-                        });
-                      }}
-                    >
+                    <DropdownMenuItem onClick={() => {
+                      undoLastAction();
+                      toast({
+                        title: "Undo Complete",
+                        description: "Last action has been undone",
+                      });
+                    }}>
                       <RotateCcw className="h-4 w-4 mr-2" />
-                      <span>{getUndoDescription()} (Ctrl+Z)</span>
+                      <span>Undo: {getUndoDescription()}</span>
                     </DropdownMenuItem>
                   )}
 
-                  <DropdownMenuSeparator />
+                  {/* Only show the separator if we displayed the Add Note menu item */}
+                  {hasActiveProject && notes.length > 0 && <DropdownMenuSeparator />}
 
                   {/* Import/Export */}
                   <DropdownMenuItem onClick={() => setShowImportModal(true)}>
@@ -586,20 +568,30 @@ export default function HeaderWithSearch() {
                   </DropdownMenuItem>
 
                   <DropdownMenuSeparator />
-                  {/* User Options */}
+                  {/* User Options - Incorporating UserMenu items here */}
                   <DropdownMenuItem onClick={() => setShowPayoffModal(true)}>
                     <Edit className="h-4 w-4 mr-2" />
                     <span>Edit Profile Payoff</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => setShowDescriptionModal(true)}
-                    disabled={!hasActiveProject}
-                  >
+                  <DropdownMenuItem onClick={() => setShowDescriptionModal(true)}>
                     <FileEdit className="h-4 w-4 mr-2" />
                     <span>Edit Project Description</span>
                   </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      if (currentProjectId) {
+                        setShowDeleteConfirm(true);
+                      }
+                    }}
+                    disabled={!currentProjectId}
+                    className="text-red-500 hover:text-red-400 focus:text-red-400"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    <span>Delete Project</span>
+                  </DropdownMenuItem>
+                  
 
-
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={()=> {/*Add SearchBar here*/}}>
                     <span>Search</span>
                   </DropdownMenuItem>
@@ -612,13 +604,16 @@ export default function HeaderWithSearch() {
                     <HelpCircle className="h-4 w-4 mr-2" />
                     <span>Help</span>
                   </DropdownMenuItem>
-
                   {user ? (
                     <>
-                      <DropdownMenuItem className="cursor-default pb-2">
-                        <User className="h-4 w-4 mr-2 text-gray-400" />
-                        <span className="text-xs text-gray-400">{user.email}</span>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="cursor-default">
+                        <span className="text-gray-300 text-xs font-semibold">Who's Signed In</span>
                       </DropdownMenuItem>
+                      <DropdownMenuItem className="cursor-default pb-2">
+                        <span className="text-xs">{user.email}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={handleSignOut}>
                         <LogOut className="h-4 w-4 mr-2" />
                         <span>Sign Out</span>
@@ -635,11 +630,6 @@ export default function HeaderWithSearch() {
             </div>
           </div>
 
-          {/* Second row with search and filter */}
-          <div className="flex justify-between items-center">
-            <SearchBar />
-            <FilterMenu onFilterChange={handleFilterChange} />
-          </div>
         </div>
       ) : (
         <>
@@ -777,10 +767,14 @@ export default function HeaderWithSearch() {
 
                   {user ? (
                     <>
-                      <DropdownMenuItem className="cursor-default pb-2">
-                        <User className="h-4 w-4 mr-2 text-gray-400" />
-                        <span className="text-xs text-gray-400">{user.email}</span>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="cursor-default">
+                        <span className="text-gray-300 text-xs font-semibold">Who's Signed In</span>
                       </DropdownMenuItem>
+                      <DropdownMenuItem className="cursor-default pb-2">
+                        <span className="text-xs">{user.email}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={handleSignOut}>
                         <LogOut className="h-4 w-4 mr-2" />
                         <span>Sign Out</span>
