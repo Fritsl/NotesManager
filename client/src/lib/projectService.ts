@@ -1106,6 +1106,44 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
 }
 
 // Image handling functions
+// Helper function to normalize image paths
+function normalizeImagePath(path: string): string {
+  // Remove any duplicate 'images/' segments
+  if (path.includes('/images/images/') || path.includes('images/images/')) {
+    console.log(`Fixing double path segments in path: ${path}`);
+    const pathParts = path.split('/');
+    const fileNamePart = pathParts[pathParts.length - 1];
+    return `images/${fileNamePart}`;
+  }
+  
+  // Ensure path starts with 'images/'
+  if (!path.startsWith('images/')) {
+    console.log(`Adding images/ prefix to path: ${path}`);
+    const pathParts = path.split('/');
+    const fileNamePart = pathParts[pathParts.length - 1];
+    return `images/${fileNamePart}`;
+  }
+  
+  return path;
+}
+
+// Helper function to normalize image URLs
+function normalizeImageUrl(url: string): string {
+  try {
+    if (url && url.includes('/images/images/')) {
+      console.log(`Fixing double path segments in URL: ${url}`);
+      const urlObj = new URL(url);
+      const newPath = urlObj.pathname.replace('/images/images/', '/images/');
+      return url.replace(urlObj.pathname, newPath);
+    }
+    return url;
+  } catch (e) {
+    // If URL parsing fails, keep original URL
+    console.warn(`Failed to parse and normalize URL: ${url}`, e);
+    return url;
+  }
+}
+
 export async function addImageToNote(noteId: string, file: File): Promise<NoteImage | null> {
   try {
     console.log(`Adding image to note ${noteId}`);
@@ -1145,6 +1183,10 @@ export async function addImageToNote(noteId: string, file: File): Promise<NoteIm
       // Continue anyway, as the bucket might already exist or be created by admin
     }
     
+    // Normalize the file path to ensure consistent format
+    // This fixes any issues with path formats before uploading
+    filePath = normalizeImagePath(filePath);
+    
     // Upload to Supabase Storage
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('note-images')
@@ -1165,35 +1207,13 @@ export async function addImageToNote(noteId: string, file: File): Promise<NoteIm
       .getPublicUrl(filePath);
     
     let publicUrl = urlResult.data.publicUrl;
-    
     console.log('Image uploaded to Supabase, public URL:', publicUrl);
     
     // Use server API for the database part due to RLS policy restrictions
     console.log('Creating database record via server API');
     
-    // Ensure path is properly formatted for compatibility with other apps
-    // Standard format is "images/filename.ext" - no user IDs or duplicated segments
-    if (filePath.includes('/images/images/')) {
-      // Fix double path segments
-      console.log(`Fixing double path segments in filePath: ${filePath}`);
-      const pathParts = filePath.split('/');
-      const fileNamePart = pathParts[pathParts.length - 1];
-      filePath = `images/${fileNamePart}`;
-    }
-    
-    // Similarly normalize public URL if needed
-    if (publicUrl && publicUrl.includes('/images/images/')) {
-      try {
-        const urlObj = new URL(publicUrl);
-        // Replace double path in URL
-        console.log(`Fixing double path segments in URL: ${publicUrl}`);
-        const newPath = urlObj.pathname.replace('/images/images/', '/images/');
-        publicUrl = publicUrl.replace(urlObj.pathname, newPath);
-      } catch (e) {
-        // If URL parsing fails, keep original URL
-        console.warn(`Failed to parse and normalize URL: ${publicUrl}`, e);
-      }
-    }
+    // Normalize the URL to ensure consistent format across applications
+    publicUrl = normalizeImageUrl(publicUrl);
     
     // Create a FormData object with just the metadata (not the file)
     const formData = new FormData();
@@ -1240,6 +1260,8 @@ export async function addImageToNote(noteId: string, file: File): Promise<NoteIm
     return null;
   }
 }
+
+
 
 export async function removeImageFromNote(imageId: string): Promise<boolean> {
   try {
@@ -1306,11 +1328,50 @@ export async function removeImageFromNote(imageId: string): Promise<boolean> {
       console.log('Using fallback image data:', imageData);
     }
     
+    // Normalize storage path to ensure consistent format
+    if (imageData.storage_path) {
+      imageData.storage_path = normalizeImagePath(imageData.storage_path);
+    }
+    
     // Skip notes table verification since it doesn't exist
     // The server API handles access verification
     console.log('Skipping notes table verification, relying on API authorization');
     
-    // Delete the file from storage
+    // Check if other notes reference this image before deleting from storage
+    // This prevents deleting images that might be referenced by other notes
+    try {
+      // Count references to this storage path
+      const { count, error: countError } = await supabase
+        .from('note_images')
+        .select('id', { count: 'exact' })
+        .eq('storage_path', imageData.storage_path);
+      
+      if (countError) {
+        console.warn('Could not check for other references to this image:', countError.message);
+      } else if (count && count > 1) {
+        console.log(`Found ${count} references to this image - will only delete the database record, not the storage file`);
+        // Skip storage deletion as other notes reference this image
+        
+        // Just delete the database record
+        const { error: deleteRecordError } = await supabase
+          .from('note_images')
+          .delete()
+          .eq('id', imageId);
+        
+        if (deleteRecordError) {
+          console.error('Error deleting image record:', deleteRecordError);
+          return false;
+        }
+        
+        console.log('Image reference removed successfully (storage file preserved)');
+        return true;
+      }
+    } catch (e) {
+      console.warn('Error checking for image references:', e);
+      // Continue with deletion attempt anyway
+    }
+    
+    // Delete the file from storage only if no other references exist
     if (imageData.storage_path) {
       const { error: deleteStorageError } = await supabase.storage
         .from('note-images')
