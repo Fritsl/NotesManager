@@ -1461,6 +1461,47 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
   }, [toast, saveProject]);
 
   // Debug info function removed
+  
+  // Scroll to note and highlight it
+  const scrollToNote = useCallback((noteId: string) => {
+    // Find the note element in the DOM
+    const noteElement = document.getElementById(`note-${noteId}`);
+    if (noteElement) {
+      // Expand any parent nodes to make the note visible
+      const { path } = findNoteAndPath(noteId);
+      if (path.length > 0) {
+        // Expand all nodes in the path
+        setExpandedNodes(prev => {
+          const newSet = new Set(prev);
+          path.forEach(note => newSet.add(note.id));
+          return newSet;
+        });
+      }
+      
+      // Wait a small delay for the DOM to update
+      setTimeout(() => {
+        // Scroll the note into view with a smooth animation
+        noteElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+        
+        // Add a temporary highlight class
+        noteElement.classList.add('highlight-note');
+        
+        // Remove the highlight class after animation completes
+        setTimeout(() => {
+          noteElement.classList.remove('highlight-note');
+        }, 2000);
+      }, 100);
+      
+      // Also select the note
+      const { note } = findNoteAndPath(noteId);
+      if (note) {
+        selectNote(note);
+      }
+    }
+  }, [findNoteAndPath, selectNote, setExpandedNodes]);
 
   return (
     <NotesContext.Provider
@@ -1502,7 +1543,9 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         undoHistory,
         canUndo,
         undoLastAction,
-        getUndoDescription
+        getUndoDescription,
+        // Note focusing
+        scrollToNote
       }}
     >
       {children}

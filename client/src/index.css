@@ -41,6 +41,26 @@
     @apply rounded-md shadow-md transition-all duration-200 hover:shadow-lg;
     border-width: 1px;
   }
+  
+  /* Note highlighting animation for scroll-to effect */
+  .highlight-note {
+    animation: highlight-pulse 2s ease-in-out;
+  }
+  
+  @keyframes highlight-pulse {
+    0% { 
+      box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7);
+      background-color: rgba(52, 152, 219, 0.4);
+    }
+    50% { 
+      box-shadow: 0 0 0 10px rgba(52, 152, 219, 0);
+      background-color: rgba(52, 152, 219, 0.2);
+    }
+    100% { 
+      box-shadow: 0 0 0 0 rgba(52, 152, 219, 0);
+      background-color: transparent;
+    }
+  }
 
   /* Mobile-first design */
   @media (max-width: 640px) {
