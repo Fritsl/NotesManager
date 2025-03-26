@@ -155,8 +155,6 @@ export default function HeaderWithSearch() {
   const [newProjectName, setNewProjectName] = useState('');
   const projectNameInputRef = useRef<HTMLInputElement>(null);
   const newProjectInputRef = useRef<HTMLInputElement>(null);
-  
-
 
   // Update local state when context project name changes
   useEffect(() => {
@@ -171,7 +169,7 @@ export default function HeaderWithSearch() {
     }
   }, [isEditingProjectName]);
 
-  // Add global keyboard shortcut for Viewer (I key)
+  // Add global keyboard shortcuts for Viewer (I key) and Undo (Ctrl+Z)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Check if we're in a text input or textarea field
@@ -185,13 +183,23 @@ export default function HeaderWithSearch() {
       if (!isEditingText && e.key.toLowerCase() === 'i') {
         window.open("https://fastpresenterviwer.netlify.app", "_self");
       }
+      
+      // Add shortcut for undo (Ctrl+Z) when not editing text
+      if (!isEditingText && e.key.toLowerCase() === 'z' && (e.ctrlKey || e.metaKey) && canUndo) {
+        e.preventDefault(); // Prevent default browser undo
+        undoLastAction();
+        toast({
+          title: "Undo Complete",
+          description: "Last action has been undone",
+        });
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [canUndo, undoLastAction, toast]);
 
   const startEditing = () => {
     setIsEditingProjectName(true);

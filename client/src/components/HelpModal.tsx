@@ -63,6 +63,10 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                       <kbd className="px-2 py-1 bg-gray-800 rounded text-sm text-gray-200 min-w-[50px] text-center mr-3">Ctrl+Z</kbd>
                       <span>Undo last note movement</span>
                     </div>
+                    <div className="flex items-start">
+                      <div className="px-2 py-1 bg-gray-800 rounded text-sm text-gray-200 min-w-[50px] text-center mr-3">Menu</div>
+                      <span>Export Level as Text (copies all visible notes to clipboard)</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -130,6 +134,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   <li>Include links to external resources directly in your notes</li>
                   <li>Projects are automatically saved as you make changes</li>
                   <li>Use Ctrl+Z or the Undo option in the menu to undo note movements</li>
+                  <li>Export Level as Text from the menu to copy all visible notes to clipboard in a text format</li>
                   <li>You can export your notes as JSON for backup</li>
                   <li>Import previously exported JSON to restore your notes</li>
                   <li>Regularly check the trash to ensure you haven't deleted something important</li>
