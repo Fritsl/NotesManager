@@ -181,6 +181,21 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           // Check if in the right side zone (Inside, as a child)
           if (isRightZone) {
             console.log("PLACING AS CHILD of", note.id, "at position", note.children.length);
+            // Add highlight animation to the target parent note
+            const element = document.getElementById(`note-${note.id}`);
+            if (element) {
+              element.classList.add('note-highlight');
+            }
+            
+            // Add moving animation to the source note
+            const sourceElement = document.getElementById(`note-${draggedItemId}`);
+            if (sourceElement) {
+              sourceElement.classList.add('note-moving');
+              setTimeout(() => {
+                sourceElement.classList.remove('note-moving');
+              }, 1000);
+            }
+            
             // Very important - Add as a child of the current note at the END (Inside)
             moveNote(draggedItemId, note.id, note.children.length);
             return; // Return to ensure we don't continue to other checks

@@ -231,9 +231,10 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
       <div 
         key={dest.id || 'root'} 
         className={cn(
-          "flex items-center justify-between p-3 mb-2 rounded-md cursor-pointer",
+          "flex items-center justify-between p-3 mb-2 rounded-md cursor-pointer fade-in-note",
           "hover:bg-gray-800 border border-gray-800 hover:border-gray-700",
-          "transition-colors"
+          "transition-all duration-150 hover:shadow-md",
+          !isRoot && `border-l-[4px] ${itemColor.border}`
         )}
         onClick={() => {
           if (dest.hasChildren) {
@@ -242,8 +243,15 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
           } else {
             // Move note directly to this location
             handleMoveNote(dest.id);
+            
+            // Add animation effect when clicked
+            const element = document.getElementById(`dest-${dest.id || 'root'}`);
+            if (element) {
+              element.classList.add('note-highlight');
+            }
           }
         }}
+        id={`dest-${dest.id || 'root'}`}
       >
         <div className="flex items-center gap-2 max-w-[85%]">
           {isRoot ? (
@@ -257,7 +265,7 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
           
           <div className="flex flex-col">
             <span className={cn(
-              "text-sm break-all truncate max-w-[600px]",
+              "text-sm font-medium truncate max-w-[600px]",
               !isRoot && itemColor.text
             )}>
               {dest.label}
@@ -280,8 +288,8 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
   
   return (
     <Dialog open={isOpen && !!noteToMove} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl bg-gray-900 text-gray-100 border-gray-800 h-[80vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-5xl w-[95vw] bg-gray-900 text-gray-100 border-gray-800 h-[90vh] flex flex-col">
+        <DialogHeader className="pb-2">
           <DialogTitle className="text-lg flex items-center gap-2">
             <span>Move Note</span>
             {noteToMove && (
@@ -290,8 +298,6 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
               </span>
             )}
           </DialogTitle>
-          
-          {/* Dialog description removed to save space */}
         </DialogHeader>
         
         {/* Navigation breadcrumb */}
@@ -358,7 +364,7 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
         </div>
         
         {/* Destinations list - scrollable container */}
-        <div className="flex-1 overflow-y-auto pr-2 min-h-0">
+        <div className="flex-1 overflow-y-auto pr-2 min-h-0 max-h-[calc(80vh-150px)]">
           {currentLevelDestinations.length === 0 ? (
             <div className="text-center py-8 text-gray-400">
               {searchText ? "No matching destinations found" : "No available destinations at this level"}
@@ -367,16 +373,6 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
             currentLevelDestinations.map(renderDestinationItem)
           )}
         </div>
-        
-        <DialogFooter className="mt-4 pt-4 border-t border-gray-800">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="w-auto border-gray-700 hover:bg-gray-800 text-gray-300"
-          >
-            Cancel
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
