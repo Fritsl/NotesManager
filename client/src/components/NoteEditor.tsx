@@ -83,6 +83,11 @@ export default function NoteEditor() {
       return;
     }
 
+    // Capture the currently focused element
+    const activeElement = document.activeElement;
+    console.log("🔍 BEFORE saveDirectly - Active element:", (activeElement as HTMLElement)?.id || "none", 
+                "Type:", (activeElement as HTMLElement)?.tagName || "unknown");
+
     try {
       // Get the latest content directly from the DOM reference
       const currentContent = contentRef.current.value;
@@ -90,7 +95,7 @@ export default function NoteEditor() {
       // Update local state to keep it in sync
       setContent(currentContent);
 
-      // First update the note in memory
+      // First update the note in memory ONLY - don't call saveProject() during typing
       const updatedNote = {
         ...selectedNote,
         content: currentContent, // Use the latest content from DOM reference
@@ -101,28 +106,31 @@ export default function NoteEditor() {
         time_set: timeSet,
       };
 
-      // Update the note in local state first
+      // Update the note in local state first (in-memory only)
       updateNote(updatedNote);
+      console.log("✅ Note updated in memory only");
 
-      // Now perform the same actions as the manual save
-      console.log("Direct save starting for note:", selectedNote.id);
-      console.log("Direct save - Project ID:", currentProjectId);
+      // CRITICAL CHANGE: Don't save to database during typing - only on blur or explicit save
+      // This is the root cause of focus issues - the saveProject() call forces a refresh
 
-      // Ensure current note is saved to database by calling manual save function
-      console.log("Manual save for project ID:", currentProjectId);
-      await saveProject();
-      console.log("Project saved directly from editor");
-
-      // Reset changes flag after successful save
-      setHasChanges(false);
+      // Reset changes flag after memory update
+      // setHasChanges(true); // Keep it flagged as changed
     } catch (error) {
-      console.error("Failed to save project directly:", error);
+      console.error("❌ Failed to update note in memory:", error);
     }
-  }, [selectedNote, currentProjectId, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, timeSet, updateNote, saveProject]);
+    
+    // Check if focus changed during the update
+    const newActiveElement = document.activeElement;
+    console.log("🔍 AFTER saveDirectly - Active element:", (newActiveElement as HTMLElement)?.id || "none", 
+              "Type:", (newActiveElement as HTMLElement)?.tagName || "unknown");
+    console.log("📝 Focus changed?", activeElement !== newActiveElement);
+  }, [selectedNote, currentProjectId, content, youtubeUrl, externalUrl, urlDisplayText, isDiscussion, timeSet, updateNote]);
 
   // Auto-save when a field loses focus and there are changes
   const handleBlur = useCallback(async (e: React.FocusEvent) => {
     if (selectedNote && hasChanges && contentRef.current) {
+      console.log("⚠️ Blur event detected on:", (e.target as HTMLElement).id || "unknown element");
+      
       // Clear any existing blur timer
       if (blurSaveTimerRef.current) {
         clearTimeout(blurSaveTimerRef.current);
@@ -132,11 +140,22 @@ export default function NoteEditor() {
       blurSaveTimerRef.current = setTimeout(async () => {
         console.log("Blur auto-save triggered for note:", selectedNote.id);
 
-        // Set saveDirectly flag to true to trigger a save
+        // First update the in-memory state
         saveDirectly();
-      }, 500);
+
+        // Then save to database, but only when focus has LEFT the field
+        // This is where we actually persist to the database
+        console.log("🔄 Saving note to database after blur");
+        
+        try {
+          await saveProject();
+          console.log("✅ Note saved to database after blur");
+        } catch (error) {
+          console.error("❌ Failed to save note to database after blur:", error);
+        }
+      }, 800); // Slightly longer delay to ensure we're not in a field transition
     }
-  }, [selectedNote, hasChanges, saveDirectly]);
+  }, [selectedNote, hasChanges, saveDirectly, saveProject]);
 
   // Auto-save after 5 seconds of inactivity in text fields
   useEffect(() => {
@@ -151,8 +170,18 @@ export default function NoteEditor() {
       inactivitySaveTimerRef.current = setTimeout(async () => {
         console.log("Inactivity auto-save triggered after 5 seconds");
 
-        // Use the direct save function to avoid circular dependency
+        // First update in-memory only
         saveDirectly();
+        
+        // Then save to the database
+        try {
+          console.log("🔄 Saving to database after inactivity");
+          await saveProject();
+          console.log("✅ Note saved to database after inactivity");
+          setHasChanges(false); // Clear the changes flag after successful save
+        } catch (error) {
+          console.error("❌ Failed to save to database after inactivity:", error);
+        }
       }, 5000); // 5 seconds of inactivity
     }
 
@@ -189,39 +218,43 @@ export default function NoteEditor() {
   };
 
   const handleYoutubeUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("YouTube URL change:", e.target.value);
     const newUrl = e.target.value;
     setYoutubeUrl(newUrl);
     setHasChanges(true);
 
-    // Use a longer delay for autosave to prevent focus loss issues
-    // This prevents the UI from jumping around while editing
+    // Track the active element before setting timeout
+    const activeElement = document.activeElement;
+    console.log("Active element before timeout:", activeElement?.id);
+
+    // Completely remove the auto-save for YouTube URL - only save on blur
     if (saveDebounceTimeout) {
       clearTimeout(saveDebounceTimeout);
     }
     
-    const timeout = setTimeout(() => {
-      saveDirectly();
-    }, 1500); // Use a longer 1.5 second delay to match content edits
-    
-    setSaveDebounceTimeout(timeout);
+    // Don't auto-save, only mark as changed
+    // We'll save when the field loses focus instead
+    console.log("YouTube URL changed but no auto-save scheduled");
   };
 
   const handleExternalUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("External URL change:", e.target.value);
     const newUrl = e.target.value;
     setExternalUrl(newUrl);
     setHasChanges(true);
 
-    // Use longer delay for autosave to prevent focus loss issues
-    // This prevents the UI from jumping around while editing
+    // Track the active element before setting timeout
+    const activeElement = document.activeElement;
+    console.log("Active element before timeout:", activeElement?.id);
+
+    // Completely remove the auto-save for URL fields - only save on blur
     if (saveDebounceTimeout) {
       clearTimeout(saveDebounceTimeout);
     }
     
-    const timeout = setTimeout(() => {
-      saveDirectly();
-    }, 1500); // Use a longer 1.5 second delay to match content edits
-    
-    setSaveDebounceTimeout(timeout);
+    // Don't auto-save, only mark as changed
+    // We'll save when the field loses focus instead
+    console.log("External URL changed but no auto-save scheduled");
   };
 
   const handleUrlDisplayTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
