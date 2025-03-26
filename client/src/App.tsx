@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import AuthModal from "@/components/AuthModal";
 import { Toaster } from "@/components/ui/toaster";
+import TestInputField from "@/components/TestInputField";
 
 // Authentication guard component
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -113,6 +114,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router urlParams={urlParams} />
+        <TestInputField />
         <Toaster />
       </AuthProvider>
     </QueryClientProvider>
