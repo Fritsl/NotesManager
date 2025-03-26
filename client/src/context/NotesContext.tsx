@@ -484,21 +484,17 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
     // Make sure the selected note also has the images preserved
     setSelectedNote(formattedNote);
 
-    // Auto-save to database when notes are updated
+    // Schedule an auto-save by setting a timeout
     if (currentProjectId) {
       // Use a timeout to avoid saving on every keystroke
       if (autoSaveTimeoutRef.current) {
         clearTimeout(autoSaveTimeoutRef.current);
       }
       
+      // Set a new timeout to trigger auto-save
       autoSaveTimeoutRef.current = setTimeout(() => {
-        saveProject()
-          .then(() => {
-            console.log('Project auto-saved after note update');
-          })
-          .catch(err => {
-            console.error('Failed to auto-save after note update:', err);
-          });
+        // Just mark notes as needing to be saved - the effect will handle it
+        setPendingNoteMoves(true);
       }, 1000); // 1 second debounce
     }
 
@@ -506,7 +502,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       title: "Note Updated",
       description: "Your changes have been saved",
     });
-  }, [toast, currentProjectId, saveProject]);
+  }, [toast, currentProjectId]);
 
   // Delete a note
   const deleteNote = useCallback((noteId: string) => {
