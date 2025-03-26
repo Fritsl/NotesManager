@@ -291,9 +291,7 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
             )}
           </DialogTitle>
           
-          <DialogDescription className="text-gray-400">
-            Click on a destination to move the note. Navigate through the hierarchy by clicking folders.
-          </DialogDescription>
+          {/* Dialog description removed to save space */}
         </DialogHeader>
         
         {/* Navigation breadcrumb */}
