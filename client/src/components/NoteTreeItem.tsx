@@ -1124,17 +1124,17 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               <Edit size={16} />
             </Button>
 
-            {/* Add Sibling Button */}
+            {/* Add Note Below Button */}
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-gray-400 hover:text-primary p-1 touch-target"
-              title="Add Sibling"
+              className="h-8 w-8 text-gray-400 hover:text-green-500 p-1 touch-target"
+              title="Add Note Below"
               onClick={(e) => {
                 e.stopPropagation();
                 // If it's a root note, create another root note
                 if (isRoot) {
-                  // Create a root note at the current index + 1
+                  // Create a root note at the current index + 1 (directly below this note)
                   addNote(null, index + 1);
                 } else {
                   // Create a sibling right after the current note (at index + 1)
