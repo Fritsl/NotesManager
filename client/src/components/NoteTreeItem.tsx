@@ -643,6 +643,11 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           />
         </div>
 
+        {/* Debug message */}
+        <div className="p-2 mb-2 bg-blue-900/30 border border-blue-500 rounded text-center">
+          <span className="text-xs text-blue-300">Hello! Debugging the YouTube field</span>
+        </div>
+        
         {/* YouTube URL */}
         <div className="flex items-center col-span-full">
           <label className="text-xs text-gray-400 w-20">YouTube:</label>
