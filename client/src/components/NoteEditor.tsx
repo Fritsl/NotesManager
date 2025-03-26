@@ -26,9 +26,9 @@ export default function NoteEditor() {
   const notesContext = useNotes();
   const { toast } = useToast();
   
-  // We're moving away from mobile-specific logic to reduce issues
-  // This will be a unified interface for all device sizes
-  const [isFullscreenEditMode, setIsFullscreenEditMode] = useState<boolean>(false);
+  // Always use fullscreen edit mode - it works better on all platforms
+  // This simplifies our approach and avoids focus issues
+  const [isFullscreenEditMode, setIsFullscreenEditMode] = useState<boolean>(true);
 
   const [content, setContent] = useState<string>("");
   const [youtubeUrl, setYoutubeUrl] = useState<string>("");
