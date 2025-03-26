@@ -607,13 +607,9 @@ export default function HeaderWithSearch() {
                   {user ? (
                     <>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="cursor-default">
-                        <span className="text-gray-300 text-xs font-semibold">Who's Signed In</span>
-                      </DropdownMenuItem>
                       <DropdownMenuItem className="cursor-default pb-2">
                         <span className="text-xs">{user.email}</span>
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={handleSignOut}>
                         <LogOut className="h-4 w-4 mr-2" />
                         <span>Sign Out</span>
@@ -768,13 +764,9 @@ export default function HeaderWithSearch() {
                   {user ? (
                     <>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="cursor-default">
-                        <span className="text-gray-300 text-xs font-semibold">Who's Signed In</span>
-                      </DropdownMenuItem>
                       <DropdownMenuItem className="cursor-default pb-2">
                         <span className="text-xs">{user.email}</span>
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={handleSignOut}>
                         <LogOut className="h-4 w-4 mr-2" />
                         <span>Sign Out</span>
