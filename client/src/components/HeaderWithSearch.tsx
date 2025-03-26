@@ -146,7 +146,10 @@ export default function HeaderWithSearch() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
   const projectNameInputRef = useRef<HTMLInputElement>(null);
+  const newProjectInputRef = useRef<HTMLInputElement>(null);
 
   // Update local state when context project name changes
   useEffect(() => {
