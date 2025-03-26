@@ -90,15 +90,36 @@ export default function NotesEditor() {
           )}
         </div>
       ) : (
-        <div className="flex items-center justify-center flex-1">
-          <Button 
-            onClick={() => addNote()} 
-            variant="ghost" 
-            className="text-gray-400 hover:text-gray-100 flex items-center gap-2"
-          >
-            <Plus className="h-5 w-5" />
-            Add a note
-          </Button>
+        <div className="flex flex-col items-center justify-center flex-1 px-4 py-8 sm:py-12">
+          <div className="max-w-md w-full bg-gray-900 rounded-lg border border-gray-800 p-4 sm:p-6 shadow-lg">
+            <div className="text-center mb-4 sm:mb-6">
+              <FilePlus className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-2 sm:mb-3 text-primary" />
+              <h2 className="text-lg sm:text-xl font-bold text-gray-100 mb-1">No Active Project</h2>
+              <p className="text-sm sm:text-base text-gray-400">
+                Create a new project or import an existing one to begin organizing your notes
+              </p>
+            </div>
+            
+            <div className="space-y-3 sm:space-y-4">
+              <div className="border-t border-gray-800 pt-3 sm:pt-4">
+                <h3 className="font-medium text-gray-300 mb-2 text-sm sm:text-base">Get Started:</h3>
+                <ul className="text-xs sm:text-sm space-y-2">
+                  <li className="flex items-start">
+                    <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 text-primary text-xs mr-2 mt-0.5 flex-shrink-0">1</span>
+                    <span className="text-gray-300">Click "New" in the menu to create a project</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 text-primary text-xs mr-2 mt-0.5 flex-shrink-0">2</span>
+                    <span className="text-gray-300">Once created, you can add notes and organize them hierarchically</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 text-primary text-xs mr-2 mt-0.5 flex-shrink-0">3</span>
+                    <span className="text-gray-300">Or import an existing notes file from the menu to get started</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
       )}
       
