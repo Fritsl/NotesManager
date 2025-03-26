@@ -480,7 +480,6 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         defaultValue={note.content} // Initialize with note content, but don't update during typing
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
-        autoFocus
       />
 
       {/* Images Section */}
@@ -622,7 +621,11 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             type="time" 
             className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
             value={editTimeSet || ''}
-            onChange={(e) => setEditTimeSet(e.target.value ? e.target.value : null)}
+            onChange={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setEditTimeSet(e.target.value ? e.target.value : null);
+            }}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
           />
