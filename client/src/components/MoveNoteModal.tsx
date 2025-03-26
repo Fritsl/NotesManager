@@ -27,6 +27,7 @@ interface Destination {
   level: number;
   path: string[];
   hasChildren: boolean;
+  uniqueId?: string; // Optional unique identifier to prevent key conflicts
 }
 
 export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteModalProps) {
@@ -56,7 +57,8 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
         content: "Root Level",
         level: 0, 
         path: ["Root"],
-        hasChildren: notes.length > 0
+        hasChildren: notes.length > 0,
+        uniqueId: `root-${Date.now()}`
       }
     ];
     
@@ -93,7 +95,8 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
             content: note.content,
             level: level,
             path: notePath,
-            hasChildren: note.children.length > 0
+            hasChildren: note.children.length > 0,
+            uniqueId: `dest-${note.id}-${Date.now()}-${Math.floor(Math.random() * 1000)}`
           });
           
           // Add children recursively
@@ -134,9 +137,16 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
     hasChildren: notes.length > 0
   };
   
+  // Create a unique ID for each root item to prevent key conflicts
+  const searchRootItem = {
+    ...rootItem,
+    // Add unique identifier for search root
+    uniqueId: `search-root-${Date.now()}`
+  };
+  
   // Only apply parent filter when NOT searching
   const currentLevelDestinations = useSearchResults
-    ? filteredDestinations.concat([rootItem]) 
+    ? filteredDestinations.concat([searchRootItem])
     : selectedParentId === undefined
       ? filteredDestinations
       : filteredDestinations.filter(dest => {
@@ -245,7 +255,7 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
     
     return (
       <div 
-        key={`${useSearchResults ? 'search-' : ''}${dest.id || 'root'}`} 
+        key={dest.uniqueId || dest.id || 'root-' + Date.now()}
         className={cn(
           "flex items-center justify-between p-3 mb-2 rounded-md cursor-pointer fade-in-note",
           "hover:bg-gray-800 border border-gray-800 hover:border-gray-700",
