@@ -966,17 +966,12 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                 <div className="flex flex-col gap-2">
                   <div 
                     className={`mobile-text-base ${
-                      level === 0 ? 'text-xl' : 
-                      level === 1 ? 'text-lg' : 
-                      level === 2 ? 'text-base' : 
-                      level === 3 ? 'text-sm' : 
-                      'text-xs'
+                      level === 0 ? 'heading-h1' : 
+                      level === 1 ? 'heading-h2' : 
+                      level === 2 ? 'heading-h3' : 
+                      level === 3 ? 'heading-h4' : 
+                      'heading-h5'
                     } ${level >= 0 && level < levelColors.length ? levelColors[level].text : levelColors[0].text} truncate`}
-                    style={{ 
-                      fontWeight: level === 0 ? 600 : 
-                                level === 1 ? 500 : 
-                                level >= 2 ? 400 : 400 
-                    }}
                     onDoubleClick={(e) => {
                       e.stopPropagation();
                       setIsEditing(true);
