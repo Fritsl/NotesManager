@@ -266,13 +266,28 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
     setSelectedNote(null);
     setBreadcrumbs([]);
 
-    // Update project name if provided
-    if (projectName) {
+    // Only set the project name directly for temporary imports (without a projectId)
+    // For persistent database projects, always use the database name as source of truth
+    if (projectName && projectId === null) {
+      // This is a temporary import (like from JSON file), so use the provided name
       setCurrentProjectName(projectName);
+    } else if (projectId) {
+      // This is a persistent project load from database, verify the name matches the database
+      // We'll fetch latest project data to ensure name is correct
+      (async () => {
+        try {
+          const project = await getProject(projectId);
+          if (project?.name && project.name !== currentProjectName) {
+            console.log(`Name mismatch detected - correcting from "${currentProjectName}" to database value "${project.name}"`);
+            setCurrentProjectName(project.name);
+          }
+        } catch (error) {
+          console.error("Error verifying project name with database:", error);
+        }
+      })();
     }
 
-    // Only update the project ID if explicitly provided
-    // Otherwise keep the current project ID to maintain save functionality
+    // Update the project ID if explicitly provided
     if (projectId !== undefined) {
       setCurrentProjectId(projectId || null);
     }
