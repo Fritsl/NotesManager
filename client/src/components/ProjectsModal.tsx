@@ -492,8 +492,10 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                               </div>
                               <div className="text-sm text-gray-400 ml-8 flex items-center gap-4">
                                 <span>Updated: {formatDate(project.updated_at)}</span>
-                                <span className="border border-gray-700 rounded px-2 py-0.5 flex items-center">
-                                  <span className="text-xs mr-1">Notes:</span> 
+                                <span className="border border-gray-700 rounded px-2 py-0.5 flex items-center" title="Note count in database">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                  </svg>
                                   <span className="font-semibold">{project.note_count ?? 0}</span>
                                 </span>
                               </div>
