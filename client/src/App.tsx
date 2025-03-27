@@ -3,6 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import NotFound from "@/pages/not-found";
 import NotesEditor from "@/pages/NotesEditor";
+import DiagnosticsPage from "./pages/DiagnosticsPage";
 import { NotesProvider } from "@/context/NotesContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { useState, useEffect } from "react";
@@ -76,6 +77,14 @@ function Router({ urlParams }: { urlParams: UrlParams }) {
               <NotesProvider urlParams={urlParams}>
                 <NotesEditor />
               </NotesProvider>
+            </AuthGuard>
+          )} 
+        />
+        <Route 
+          path="/diagnostics" 
+          component={() => (
+            <AuthGuard>
+              <DiagnosticsPage />
             </AuthGuard>
           )} 
         />

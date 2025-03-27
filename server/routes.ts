@@ -763,6 +763,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
   
+  // Diagnostic endpoint for database analysis
+  app.get("/api/diagnostics", async (req: Request, res: Response) => {
+    try {
+      const userId = req.query.userId as string;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+      
+      console.log(`Running diagnostics for user ${userId}`);
+      
+      // Connect directly to PostgreSQL
+      let client;
+      try {
+        client = await pool.connect();
+        console.log('Connected to database for diagnostics');
+      } catch (error) {
+        return res.status(500).json({ 
+          error: "Database connection error",
+          details: error instanceof Error ? error.message : String(error)
+        });
+      }
+      
+      try {
+        // Fetch project settings
+        const settingsQuery = `
+          SELECT * FROM settings 
+          WHERE user_id = $1
+          ORDER BY updated_at DESC
+        `;
+        
+        const settingsResult = await client.query(settingsQuery, [userId]);
+        const settings = settingsResult.rows;
+        
+        // Count notes per project
+        const projectStats = [];
+        for (const setting of settings) {
+          // Count notes in the database
+          const notesQuery = `
+            SELECT COUNT(*) as db_note_count 
+            FROM notes 
+            WHERE project_id = $1 AND user_id = $2
+          `;
+          
+          const notesResult = await client.query(notesQuery, [setting.id, userId]);
+          const dbNoteCount = parseInt(notesResult.rows[0]?.db_note_count || '0');
+          
+          // Check local JSON file if it exists
+          const projectFilePath = path.join(projectsDir, `${setting.id}.json`);
+          let jsonNoteCount = 0;
+          let jsonFileExists = false;
+          
+          if (fs.existsSync(projectFilePath)) {
+            try {
+              jsonFileExists = true;
+              const projectDataStr = fs.readFileSync(projectFilePath, 'utf8');
+              const fileProjectData = JSON.parse(projectDataStr);
+              
+              // Count notes recursively in the JSON file
+              const countJsonNotes = (notes: any[]): number => {
+                if (!notes || !Array.isArray(notes)) return 0;
+                
+                let count = notes.length;
+                for (const note of notes) {
+                  if (note.children && Array.isArray(note.children)) {
+                    count += countJsonNotes(note.children);
+                  }
+                }
+                return count;
+              };
+              
+              jsonNoteCount = countJsonNotes(fileProjectData.data?.notes || []);
+            } catch (error) {
+              console.error(`Error reading JSON file for project ${setting.id}:`, error);
+            }
+          }
+          
+          projectStats.push({
+            id: setting.id,
+            title: setting.title,
+            settings_note_count: setting.note_count || 0,
+            db_note_count: dbNoteCount,
+            json_file_exists: jsonFileExists,
+            json_note_count: jsonNoteCount,
+            last_updated: setting.updated_at
+          });
+        }
+        
+        // Get sample notes for the most recently used project
+        let sampleNotes = [];
+        if (projectStats.length > 0) {
+          const recentProjectId = projectStats[0].id;
+          
+          const sampleNotesQuery = `
+            SELECT id, content, position, parent_id
+            FROM notes
+            WHERE project_id = $1 AND user_id = $2
+            ORDER BY position
+            LIMIT 10
+          `;
+          
+          const sampleResult = await client.query(sampleNotesQuery, [recentProjectId, userId]);
+          sampleNotes = sampleResult.rows;
+        }
+        
+        // Return all diagnostic data
+        return res.status(200).json({
+          timestamp: new Date().toISOString(),
+          user_id: userId,
+          project_count: settings.length,
+          projects: projectStats,
+          sample_notes: sampleNotes
+        });
+        
+      } finally {
+        if (client) {
+          client.release();
+        }
+      }
+    } catch (error) {
+      console.error("Error in diagnostics:", error);
+      return res.status(500).json({
+        error: "Failed to run diagnostics",
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
   // Cleanup project images endpoint
   app.get("/api/cleanup-project-images", async (req: Request, res: Response) => {
     try {
