@@ -104,7 +104,7 @@ export default function DiagnosticsPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-5xl">
+    <div className="container mx-auto p-4 max-w-5xl text-black dark:text-white">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Database Diagnostics</h1>
         <Button onClick={refreshData} disabled={isLoading}>
@@ -125,7 +125,7 @@ export default function DiagnosticsPage() {
       </Card>
 
       {diagnosticsData && (
-        <Card className="p-4 mb-6 bg-blue-50 border-blue-200">
+        <Card className="p-4 mb-6 bg-blue-50 border-blue-200 text-black">
           <h2 className="text-lg font-semibold mb-2">Server Diagnostics Summary</h2>
           <p className="mb-2">
             <strong>Projects:</strong> {diagnosticsData.project_count} | 
@@ -134,7 +134,7 @@ export default function DiagnosticsPage() {
           <div className="overflow-x-auto mt-4">
             <table className="min-w-full border-collapse">
               <thead>
-                <tr className="bg-blue-100">
+                <tr className="bg-blue-100 text-black">
                   <th className="border p-2 text-left">Project</th>
                   <th className="border p-2 text-left">Database Notes</th>
                   <th className="border p-2 text-left">Settings Count</th>
@@ -143,7 +143,7 @@ export default function DiagnosticsPage() {
                   <th className="border p-2 text-left">Status</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="text-black">
                 {diagnosticsData.projects.map(project => {
                   // Determine status
                   let status = 'ok';
@@ -221,20 +221,20 @@ export default function DiagnosticsPage() {
       )}
 
       <div className="grid grid-cols-1 gap-6 mb-6">
-        <Card className="p-4">
+        <Card className="p-4 text-black">
           <h2 className="text-lg font-semibold mb-2">Projects from API</h2>
           <p className="mb-2">Total Projects: {dbProjects.length}</p>
           <div className="overflow-x-auto">
             <table className="min-w-full border-collapse">
               <thead>
-                <tr className="bg-gray-100">
+                <tr className="bg-gray-100 text-black">
                   <th className="border p-2 text-left">ID</th>
                   <th className="border p-2 text-left">Name</th>
                   <th className="border p-2 text-left">Note Count</th>
                   <th className="border p-2 text-left">Updated</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="text-black">
                 {dbProjects.map(project => (
                   <tr key={project.id} className="hover:bg-gray-50">
                     <td className="border p-2 font-mono text-xs">{project.id}</td>
@@ -254,7 +254,7 @@ export default function DiagnosticsPage() {
         </Card>
 
         {dbNotes.length > 0 && (
-          <Card className="p-4">
+          <Card className="p-4 text-black">
             <h2 className="text-lg font-semibold mb-2">Notes in Database (via Supabase)</h2>
             <p className="mb-2">Total Notes: {dbNotes.length}</p>
             
@@ -272,14 +272,14 @@ export default function DiagnosticsPage() {
                 <div className="overflow-x-auto max-h-60 overflow-y-auto">
                   <table className="min-w-full border-collapse">
                     <thead>
-                      <tr className="bg-gray-100">
+                      <tr className="bg-gray-100 text-black">
                         <th className="border p-2 text-left">ID</th>
                         <th className="border p-2 text-left">Position</th>
                         <th className="border p-2 text-left">Content</th>
                         <th className="border p-2 text-left">Parent ID</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="text-black">
                       {projectNotes.map(note => (
                         <tr key={note.id} className="hover:bg-gray-50">
                           <td className="border p-2 font-mono text-xs">{note.id}</td>
@@ -303,7 +303,7 @@ export default function DiagnosticsPage() {
 
       <div className="mt-8">
         <h2 className="text-lg font-semibold mb-2">Common Issues & Solutions</h2>
-        <Card className="p-4">
+        <Card className="p-4 text-black">
           <ul className="list-disc list-inside space-y-2">
             <li>Notes might be stored in the database but not displayed in the app due to different ID formats</li>
             <li>The app might be using JSON files instead of the database for some operations</li>
