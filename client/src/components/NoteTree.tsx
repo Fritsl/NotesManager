@@ -166,16 +166,20 @@ export default function NoteTree() {
           ))}
           
           {notes.length === 0 && (
-            <div className="fixed inset-0 flex items-center justify-center">
-              <Button
-                variant="outline"
-                onClick={() => addNote(null)}
-                className="flex items-center"
-                size="lg"
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Add a note
-              </Button>
+            <div className="flex items-center justify-center h-[calc(100vh-120px)]">
+              <div className="text-center">
+                <FilePlus className="h-10 w-10 mx-auto mb-2 text-gray-500" />
+                <p className="text-gray-500 mb-4">No notes in this project yet</p>
+                <Button
+                  variant="outline"
+                  onClick={() => addNote(null)}
+                  className="flex items-center mx-auto"
+                  size="lg"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  Add a note
+                </Button>
+              </div>
             </div>
           )}
         </div>
