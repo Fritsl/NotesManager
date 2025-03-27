@@ -103,59 +103,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalNoteCount = data.notes ? countTotalNotes(data.notes) : 0;
       console.log(`Total note count (including children): ${totalNoteCount}`);
       
-      // Make sure the settings table record exists for this project
-      const { data: settingsExists, error: settingsCheckError } = await supabase
-        .from('settings')
-        .select('id')
-        .eq('id', id)
-        .eq('user_id', userId)
-        .maybeSingle();
+      // Use direct DB connection to check/update settings
+      let dbClient;
+      
+      try {
+        dbClient = await pool.connect();
+        console.log('Connected to database directly for settings operations');
         
-      if (settingsCheckError) {
-        console.error('Error checking if settings record exists:', settingsCheckError);
-      }
-      
-      // If settings record doesn't exist, create it
-      if (!settingsExists) {
-        console.log('Creating settings record for project:', id);
-        const now = new Date().toISOString();
-        const { error: settingsInsertError } = await supabase
-          .from('settings')
-          .insert({
-            id: id,
-            title: name,
-            user_id: userId,
-            description: description || '',
-            created_at: now,
-            updated_at: now,
-            last_modified_at: now,
-            note_count: totalNoteCount
-          });
+        // Check if settings exist for this project
+        const settingsCheckQuery = `
+          SELECT id FROM settings
+          WHERE id = $1 AND user_id = $2
+        `;
+        
+        const settingsResult = await dbClient.query(settingsCheckQuery, [id, userId]);
+        const settingsExists = settingsResult.rows.length > 0;
+        
+        if (!settingsExists) {
+          // Create settings record if it doesn't exist
+          console.log('Creating settings record for project:', id);
+          const now = new Date().toISOString();
           
-        if (settingsInsertError) {
-          console.error('Error inserting settings record:', settingsInsertError);
+          const insertQuery = `
+            INSERT INTO settings 
+            (id, user_id, title, description, created_at, updated_at, last_modified_at, note_count)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING id
+          `;
+          
+          try {
+            const insertResult = await dbClient.query(insertQuery, [
+              id,
+              userId,
+              name,
+              description || '',
+              now,
+              now,
+              now,
+              totalNoteCount
+            ]);
+            
+            if (insertResult.rows.length > 0) {
+              console.log('Successfully created settings record');
+            } else {
+              console.error('No rows returned when creating settings record');
+            }
+          } catch (insertError) {
+            console.error('Error inserting settings record:', insertError);
+          }
         } else {
-          console.log('Successfully created settings record');
+          // Update existing settings record
+          console.log('Updating existing settings record for project:', id);
+          
+          const updateQuery = `
+            UPDATE settings
+            SET note_count = $1,
+                title = $2,
+                description = $3,
+                updated_at = NOW(),
+                last_modified_at = NOW()
+            WHERE id = $4 AND user_id = $5
+            RETURNING id
+          `;
+          
+          try {
+            const updateResult = await dbClient.query(updateQuery, [
+              totalNoteCount,
+              name,
+              description || '',
+              id,
+              userId
+            ]);
+            
+            if (updateResult.rows.length > 0) {
+              console.log('Successfully updated note_count in settings table');
+            } else {
+              console.error('No rows returned when updating settings record');
+            }
+          } catch (updateError) {
+            console.error('Error updating settings record:', updateError);
+          }
         }
-      }
-      
-      // Update the note_count in the settings table
-      const { data: settingsData, error: settingsError } = await supabase
-        .from('settings')
-        .update({
-          note_count: totalNoteCount,
-          title: name,
-          description: description || '',
-          last_modified_at: new Date().toISOString()
-        })
-        .eq('id', id)
-        .eq('user_id', userId);
-      
-      if (settingsError) {
-        console.error('Error updating note_count in settings:', settingsError);
-        // Continue execution - we'll still save the file even if DB update fails
-      } else {
-        console.log('Successfully updated note_count in settings table');
+      } catch (settingsDbError) {
+        console.error('Database error handling settings:', settingsDbError);
+      } finally {
+        if (dbClient) dbClient.release();
       }
       
       // Process notes and save them to the database
@@ -587,7 +619,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const imagesQuery = `
             SELECT * FROM note_images 
             WHERE note_id IN (
-              SELECT id FROM notes WHERE project_id = $1
+              SELECT id::text FROM notes WHERE project_id = $1
             )
           `;
           
