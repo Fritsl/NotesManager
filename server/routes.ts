@@ -199,6 +199,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ]
             );
             
+            // Process images for this note
+            if (note.images && Array.isArray(note.images)) {
+              for (let imgIndex = 0; imgIndex < note.images.length; imgIndex++) {
+                const image = note.images[imgIndex];
+                
+                // Ensure storage_path is correctly formatted
+                let storagePath = image.storage_path || '';
+                if (storagePath) {
+                  const pathParts = storagePath.split('/');
+                  const fileName = pathParts[pathParts.length - 1];
+                  
+                  // Fix path format
+                  if (!storagePath.startsWith('images/') || storagePath.includes('/images/images/')) {
+                    storagePath = `images/${fileName}`;
+                  }
+                }
+                
+                // Fix URL if needed
+                let imageUrl = image.url || '';
+                if (imageUrl.includes('/images/images/')) {
+                  const urlObj = new URL(imageUrl);
+                  const newPath = urlObj.pathname.replace('/images/images/', '/images/');
+                  imageUrl = imageUrl.replace(urlObj.pathname, newPath);
+                }
+                
+                try {
+                  // Insert image record if it has the required fields
+                  if (storagePath && imageUrl) {
+                    // Check if image already exists for this note by URL
+                    const existingImageQuery = `
+                      SELECT id FROM note_images 
+                      WHERE note_id = $1 AND url = $2
+                    `;
+                    const existingResult = await client.query(existingImageQuery, [note.id, imageUrl]);
+                    
+                    if (existingResult.rows.length === 0) {
+                      // Image doesn't exist, insert it
+                      const insertImageQuery = `
+                        INSERT INTO note_images (
+                          id, note_id, storage_path, url, position, created_at
+                        ) VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW())
+                      `;
+                      await client.query(insertImageQuery, [
+                        note.id, 
+                        storagePath, 
+                        imageUrl, 
+                        image.position || imgIndex
+                      ]);
+                      console.log(`Saved image for note ${note.id}: ${storagePath}`);
+                    } else {
+                      console.log(`Image already exists for note ${note.id}: ${storagePath}`);
+                    }
+                  }
+                } catch (imageError) {
+                  console.error(`Error saving image for note ${note.id}:`, imageError);
+                  // Continue with next image
+                }
+              }
+            }
+            
             // Process child notes recursively
             if (note.children && Array.isArray(note.children)) {
               await processNotes(note.children, note.id);
@@ -272,21 +332,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Project contains ${imageCount} images (normalized)`);
       
-      // Still store the project data in a file for backward compatibility
-      const projectFilePath = path.join(projectsDir, `${id}.json`);
-      const projectData = {
-        id,
-        name,
-        user_id: userId,
-        data,
-        description,
-        updated_at: new Date().toISOString(),
-        created_at: new Date().toISOString()
-      };
+      // No longer storing JSON files, as all data is now in the database
+      console.log(`Project data saved to database (${totalNoteCount} notes)`);
       
-      // Write the file
-      fs.writeFileSync(projectFilePath, JSON.stringify(projectData, null, 2));
-      console.log(`Project data saved to ${projectFilePath} for backup and backward compatibility`);
+      // Optional: For debugging purposes, you can enable this to check what would have been saved
+      if (process.env.DEBUG_MODE === 'true') {
+        const projectData = {
+          id,
+          name,
+          user_id: userId,
+          data,
+          description,
+          updated_at: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        };
+        console.log('Project data structure (not saved to file):', 
+          JSON.stringify({
+            id: projectData.id,
+            totalNotes: totalNoteCount
+          }));
+      }
       
       // Return success
       return res.status(200).json({
@@ -319,30 +384,314 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Getting project data for project ${projectId} by user ${userId} (SERVER MODE)`);
       
-      // Check if the project data file exists
+      // First try loading from JSON file as a fallback during transition
+      let fallbackName = "Untitled Project";
+      let fallbackDescription = "";
+      let fallbackNotes: any[] = [];
+      
+      // Check if fallback JSON file exists
       const projectFilePath = path.join(projectsDir, `${projectId}.json`);
       
-      if (!fs.existsSync(projectFilePath)) {
-        return res.status(404).json({ 
-          error: "Project data not found",
-          message: "The project data file does not exist"
-        });
+      if (fs.existsSync(projectFilePath)) {
+        try {
+          console.log('Reading fallback file for basic data:', projectFilePath);
+          const projectDataStr = fs.readFileSync(projectFilePath, 'utf8');
+          const fileProjectData = JSON.parse(projectDataStr);
+          fallbackName = fileProjectData.name || fallbackName;
+          fallbackDescription = fileProjectData.description || fallbackDescription;
+          fallbackNotes = fileProjectData.data?.notes || [];
+        } catch (fileError) {
+          console.error('Error reading fallback file:', fileError);
+        }
       }
       
-      // Read the file
-      const projectDataStr = fs.readFileSync(projectFilePath, 'utf8');
-      const projectData = JSON.parse(projectDataStr);
+      // First, get or create project metadata using direct DB connection
+      let projectMetadata;
+      let dbClient;
       
-      // Validate that this project belongs to the user
-      if (projectData.user_id !== userId) {
-        return res.status(403).json({ 
-          error: "Access denied",
-          message: "You do not have permission to access this project"
+      try {
+        dbClient = await pool.connect();
+        
+        // Check if settings exist
+        const settingsCheckQuery = `
+          SELECT * FROM settings 
+          WHERE id = $1 AND user_id = $2
+        `;
+        
+        const settingsResult = await dbClient.query(settingsCheckQuery, [projectId, userId]);
+        
+        if (settingsResult.rows.length > 0) {
+          // Settings exist, use them
+          projectMetadata = settingsResult.rows[0];
+          console.log(`Found existing settings for project ${projectId}`);
+        } else {
+          // Create new settings
+          console.log(`Creating new settings for project ${projectId}`);
+          const now = new Date().toISOString();
+          
+          const insertQuery = `
+            INSERT INTO settings 
+            (id, user_id, title, description, created_at, updated_at, last_modified_at, note_count)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING *
+          `;
+          
+          const insertResult = await dbClient.query(insertQuery, [
+            projectId,
+            userId,
+            fallbackName,
+            fallbackDescription,
+            now,
+            now,
+            now,
+            0
+          ]);
+          
+          if (insertResult.rows.length > 0) {
+            projectMetadata = insertResult.rows[0];
+            console.log(`Created new settings for project ${projectId}`);
+          } else {
+            throw new Error('Failed to create project settings');
+          }
+        }
+        
+        // Now get notes
+        let notes = [];
+        
+        // Query all notes for this project
+        const notesResult = await dbClient.query(
+          `SELECT * FROM notes WHERE project_id = $1 AND user_id = $2 ORDER BY position`,
+          [projectId, userId]
+        );
+        
+        // If no notes in DB but we have fallback notes, migrate them
+        if (notesResult.rows.length === 0 && fallbackNotes.length > 0) {
+          console.log(`Migrating ${fallbackNotes.length} notes from JSON file to database...`);
+          
+          // Define a recursive function to process notes
+          const migrateNotesToDb = async (notesToMigrate: any[], parentId: string | null = null) => {
+            if (!Array.isArray(notesToMigrate)) return;
+            
+            for (let i = 0; i < notesToMigrate.length; i++) {
+              const note = notesToMigrate[i];
+              
+              // Insert this note
+              try {
+                await dbClient.query(
+                  `INSERT INTO notes (
+                    id, user_id, project_id, parent_id, position, content, 
+                    created_at, updated_at, is_discussion, time_set, 
+                    youtube_url, url, url_display_text
+                  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                  ON CONFLICT (id) DO NOTHING`,
+                  [
+                    note.id,
+                    userId,
+                    projectId,
+                    parentId,
+                    note.position || i,
+                    note.content || '',
+                    note.created_at || new Date().toISOString(),
+                    note.updated_at || new Date().toISOString(),
+                    note.is_discussion || false,
+                    note.time_set || null,
+                    note.youtube_url || null,
+                    note.url || null,
+                    note.url_display_text || null
+                  ]
+                );
+                
+                // Also migrate images
+                if (note.images && Array.isArray(note.images)) {
+                  for (let imgIndex = 0; imgIndex < note.images.length; imgIndex++) {
+                    const image = note.images[imgIndex];
+                    
+                    // Skip if missing required fields
+                    if (!image.storage_path || !image.url) continue;
+                    
+                    // Ensure paths are normalized
+                    const pathParts = image.storage_path.split('/');
+                    const fileName = pathParts[pathParts.length - 1];
+                    const storagePath = `images/${fileName}`;
+                    
+                    await dbClient.query(
+                      `INSERT INTO note_images (
+                        id, note_id, storage_path, url, position, created_at
+                      ) VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW())
+                      ON CONFLICT (id) DO NOTHING`,
+                      [
+                        note.id,
+                        storagePath,
+                        image.url,
+                        image.position || imgIndex
+                      ]
+                    );
+                  }
+                }
+                
+                // Process child notes recursively
+                if (note.children && Array.isArray(note.children)) {
+                  await migrateNotesToDb(note.children, note.id);
+                }
+              } catch (noteError) {
+                console.error(`Error migrating note ${note.id}:`, noteError);
+                // Continue with next note
+              }
+            }
+          };
+          
+          // Start migration
+          await migrateNotesToDb(fallbackNotes);
+          console.log(`Migration from JSON file to database complete!`);
+          
+          // Query notes again after migration
+          const migratedNotesResult = await dbClient.query(
+            `SELECT * FROM notes WHERE project_id = $1 AND user_id = $2 ORDER BY position`,
+            [projectId, userId]
+          );
+          
+          notesResult.rows = migratedNotesResult.rows;
+        }
+        
+        // Build the note hierarchy
+        const notesById = new Map();
+        const rootNotes = [];
+        
+        // First pass: index all notes by ID
+        for (const note of notesResult.rows) {
+          // Add empty children array to each note
+          note.children = [];
+          note.images = []; // Initialize empty images array
+          notesById.set(note.id, note);
+        }
+        
+        // Second pass: build the hierarchy
+        for (const note of notesResult.rows) {
+          if (note.parent_id) {
+            // This is a child note
+            const parent = notesById.get(note.parent_id);
+            if (parent) {
+              parent.children.push(note);
+            } else {
+              // Parent not found, treat as root note
+              rootNotes.push(note);
+            }
+          } else {
+            // This is a root note
+            rootNotes.push(note);
+          }
+        }
+        
+        // Query images for this project's notes
+        try {
+          const imagesQuery = `
+            SELECT * FROM note_images 
+            WHERE note_id IN (
+              SELECT id FROM notes WHERE project_id = $1
+            )
+          `;
+          
+          const imagesResult = await dbClient.query(imagesQuery, [projectId]);
+          
+          // Associate images with their notes
+          for (const image of imagesResult.rows) {
+            const noteId = image.note_id;
+            const note = notesById.get(noteId);
+            
+            if (note) {
+              note.images.push(image);
+            }
+          }
+        } catch (imageError) {
+          console.error('Error fetching images:', imageError);
+          // Continue without images
+        }
+        
+        // Sort children by position
+        const sortChildren = (notesToSort: any[]) => {
+          for (const note of notesToSort) {
+            if (note.children.length > 0) {
+              note.children.sort((a: any, b: any) => a.position - b.position);
+              sortChildren(note.children);
+            }
+          }
+        };
+        
+        // Sort all notes
+        rootNotes.sort((a: any, b: any) => a.position - b.position);
+        sortChildren(rootNotes);
+        
+        notes = rootNotes;
+        console.log(`Retrieved ${notesResult.rowCount} notes from database for project ${projectId}`);
+        
+        // Update note count in settings if needed
+        if (notes.length > 0 && (projectMetadata.note_count === 0 || projectMetadata.note_count === null)) {
+          const countTotalNotes = (notesToCount: any[]): number => {
+            let count = notesToCount.length;
+            
+            for (const note of notesToCount) {
+              if (note.children && Array.isArray(note.children)) {
+                count += countTotalNotes(note.children);
+              }
+            }
+            
+            return count;
+          };
+          
+          const totalNoteCount = countTotalNotes(notes);
+          
+          if (totalNoteCount > 0) {
+            await dbClient.query(
+              `UPDATE settings SET note_count = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3`,
+              [totalNoteCount, projectId, userId]
+            );
+            
+            projectMetadata.note_count = totalNoteCount;
+            console.log(`Updated note count to ${totalNoteCount} for project ${projectId}`);
+          }
+        }
+        
+        // Construct the response
+        const projectData = {
+          id: projectMetadata.id,
+          name: projectMetadata.title,
+          user_id: projectMetadata.user_id,
+          description: projectMetadata.description || '',
+          created_at: projectMetadata.created_at,
+          updated_at: projectMetadata.updated_at,
+          note_count: projectMetadata.note_count || 0,
+          data: { notes: notes }
+        };
+        
+        // Return the project data
+        return res.status(200).json(projectData);
+        
+      } catch (dbError) {
+        console.error('Database error:', dbError);
+        
+        // Handle error and fallback to JSON if available
+        if (fallbackNotes.length > 0) {
+          return res.status(200).json({
+            id: projectId,
+            name: fallbackName,
+            user_id: userId,
+            description: fallbackDescription,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            note_count: 0,
+            data: { notes: fallbackNotes }
+          });
+        }
+        
+        return res.status(500).json({
+          error: "Database error",
+          details: dbError instanceof Error ? dbError.message : String(dbError)
         });
+      } finally {
+        if (dbClient) {
+          dbClient.release();
+        }
       }
-      
-      // Return the project data
-      return res.status(200).json(projectData);
     } catch (error) {
       console.error("Error getting project data:", error);
       return res.status(500).json({
