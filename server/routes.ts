@@ -19,10 +19,22 @@ import { checkRlsPolicies } from "./check-rls-policies";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Initialize Supabase client with service role key for admin access
+// Initialize Supabase clients - one with anon key, one with service role key
 const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || ""; // Using the anon key here
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || ""; 
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || "";
+
+// Default client with anon key
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Admin client with service role key that can bypass RLS
+const supabaseAdmin = supabaseServiceKey ? 
+  createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }) : supabase;
 
 console.log('Supabase URL configured:', !!supabaseUrl);
 
@@ -102,12 +114,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let projectMetadata;
       let notes = [];
       
-      // Attempt to use Supabase client to respect RLS
+      // First attempt to use Supabase admin client with service role key
       try {
-        console.log('Attempting to fetch project data via Supabase client (with RLS)');
+        console.log('Attempting to fetch project data via Supabase admin client (with service role key)');
         
         // Settings data
-        const { data: settingsData, error: settingsError } = await supabase
+        const { data: settingsData, error: settingsError } = await supabaseAdmin
           .from('settings')
           .select('*')
           .eq('id', projectId)
@@ -126,8 +138,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('Found settings via Supabase:', settingsData.title);
           projectMetadata = settingsData;
           
-          // Now fetch notes via Supabase
-          const { data: notesData, error: notesError } = await supabase
+          // Now fetch notes via Supabase admin client
+          const { data: notesData, error: notesError } = await supabaseAdmin
             .from('notes')
             .select('*')
             .eq('project_id', projectId)
@@ -171,9 +183,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
             
-            // Query images for this project's notes
+            // Query images for this project's notes using admin client
             try {
-              const { data: imagesData, error: imagesError } = await supabase
+              const { data: imagesData, error: imagesError } = await supabaseAdmin
                 .from('note_images')
                 .select('*')
                 .in('note_id', notesData.map(n => n.id));
