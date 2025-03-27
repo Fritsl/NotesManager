@@ -50,6 +50,7 @@ const upload = multer({
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create necessary directories
   const uploadsDir = path.join(__dirname, '../public/uploads');
+  const projectsDir = path.join(__dirname, '../public/projects');
   
   // Ensure uploads directory exists
   if (!fs.existsSync(uploadsDir)) {
@@ -57,16 +58,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     log(`Created uploads directory: ${uploadsDir}`);
   }
   
+  // No need to create the projects directory since we're moving to database-only storage
+  log(`Project data will be stored only in the database`);
+  
   // Setup static file serving for uploads directory
   app.use('/uploads', express.static(uploadsDir));
   
-  // Setup projects directory
-  const projectsDir = path.join(__dirname, '../public/projects');
-  
-  // Ensure projects directory exists
-  if (!fs.existsSync(projectsDir)) {
-    fs.mkdirSync(projectsDir, { recursive: true });
-  }
+  // No JSON file directories needed - this is a database-only app
   
   // put application routes here
   // prefix all routes with /api
@@ -96,28 +94,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Getting project data for project ${projectId} by user ${userId} (SERVER MODE)`);
       
-      // First try loading from JSON file as a fallback during transition
-      let fallbackName = "Untitled Project";
-      let fallbackDescription = "";
-      let fallbackNotes: any[] = [];
-      
-      // Check if fallback JSON file exists
-      const projectFilePath = path.join(projectsDir, `${projectId}.json`);
-      
-      if (fs.existsSync(projectFilePath)) {
-        try {
-          console.log('Reading fallback file for basic data:', projectFilePath);
-          const projectDataStr = fs.readFileSync(projectFilePath, 'utf8');
-          const fileProjectData = JSON.parse(projectDataStr);
-          fallbackName = fileProjectData.name || fallbackName;
-          fallbackDescription = fileProjectData.description || fallbackDescription;
-          fallbackNotes = fileProjectData.data?.notes || [];
-        } catch (fileError) {
-          console.error('Error reading fallback file:', fileError);
-        }
-      }
-      
-      // First, get or create project metadata using direct DB connection
+      // Get or create project metadata using direct DB connection
       let projectMetadata;
       let dbClient;
       
@@ -151,8 +128,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const insertResult = await dbClient.query(insertQuery, [
             projectId,
             userId,
-            fallbackName,
-            fallbackDescription,
+            "Untitled Project",
+            "",
             now,
             now,
             now,
@@ -167,103 +144,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // Now get notes
+        // Now get notes from database only
         let notes = [];
         
-        // Query all notes for this project
+        // Query all notes for this project from database
         const notesResult = await dbClient.query(
           `SELECT * FROM notes WHERE project_id = $1 AND user_id = $2 ORDER BY position`,
           [projectId, userId]
         );
-        
-        // If no notes in DB but we have fallback notes, migrate them
-        if (notesResult.rows.length === 0 && fallbackNotes.length > 0) {
-          console.log(`Migrating ${fallbackNotes.length} notes from JSON file to database...`);
-          
-          // Define a recursive function to process notes
-          const migrateNotesToDb = async (notesToMigrate: any[], parentId: string | null = null) => {
-            if (!Array.isArray(notesToMigrate)) return;
-            
-            for (let i = 0; i < notesToMigrate.length; i++) {
-              const note = notesToMigrate[i];
-              
-              // Insert this note
-              try {
-                await dbClient.query(
-                  `INSERT INTO notes (
-                    id, user_id, project_id, parent_id, position, content, 
-                    created_at, updated_at, is_discussion, time_set, 
-                    youtube_url, url, url_display_text
-                  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-                  ON CONFLICT (id) DO NOTHING`,
-                  [
-                    note.id,
-                    userId,
-                    projectId,
-                    parentId,
-                    note.position || i,
-                    note.content || '',
-                    note.created_at || new Date().toISOString(),
-                    note.updated_at || new Date().toISOString(),
-                    note.is_discussion || false,
-                    note.time_set || null,
-                    note.youtube_url || null,
-                    note.url || null,
-                    note.url_display_text || null
-                  ]
-                );
-                
-                // Also migrate images
-                if (note.images && Array.isArray(note.images)) {
-                  for (let imgIndex = 0; imgIndex < note.images.length; imgIndex++) {
-                    const image = note.images[imgIndex];
-                    
-                    // Skip if missing required fields
-                    if (!image.storage_path || !image.url) continue;
-                    
-                    // Ensure paths are normalized
-                    const pathParts = image.storage_path.split('/');
-                    const fileName = pathParts[pathParts.length - 1];
-                    const storagePath = `images/${fileName}`;
-                    
-                    await dbClient.query(
-                      `INSERT INTO note_images (
-                        id, note_id, storage_path, url, position, created_at
-                      ) VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW())
-                      ON CONFLICT (id) DO NOTHING`,
-                      [
-                        note.id,
-                        storagePath,
-                        image.url,
-                        image.position || imgIndex
-                      ]
-                    );
-                  }
-                }
-                
-                // Process child notes recursively
-                if (note.children && Array.isArray(note.children)) {
-                  await migrateNotesToDb(note.children, note.id);
-                }
-              } catch (noteError) {
-                console.error(`Error migrating note ${note.id}:`, noteError);
-                // Continue with next note
-              }
-            }
-          };
-          
-          // Start migration
-          await migrateNotesToDb(fallbackNotes);
-          console.log(`Migration from JSON file to database complete!`);
-          
-          // Query notes again after migration
-          const migratedNotesResult = await dbClient.query(
-            `SELECT * FROM notes WHERE project_id = $1 AND user_id = $2 ORDER BY position`,
-            [projectId, userId]
-          );
-          
-          notesResult.rows = migratedNotesResult.rows;
-        }
         
         // Build the note hierarchy
         const notesById = new Map();
@@ -383,20 +271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (dbError) {
         console.error('Database error:', dbError);
         
-        // Handle error and fallback to JSON if available
-        if (fallbackNotes.length > 0) {
-          return res.status(200).json({
-            id: projectId,
-            name: fallbackName,
-            user_id: userId,
-            description: fallbackDescription,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            note_count: 0,
-            data: { notes: fallbackNotes }
-          });
-        }
-        
+        // Database-only error handling - no JSON fallbacks
         return res.status(500).json({
           error: "Database error",
           details: dbError instanceof Error ? dbError.message : String(dbError)
@@ -467,35 +342,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const notesResult = await client.query(notesQuery, [setting.id, userId]);
           const dbNoteCount = parseInt(notesResult.rows[0]?.db_note_count || '0');
           
-          // Check local JSON file if it exists
-          const projectFilePath = path.join(projectsDir, `${setting.id}.json`);
+          // No JSON file checks - database only
           let jsonNoteCount = 0;
           let jsonFileExists = false;
-          
-          if (fs.existsSync(projectFilePath)) {
-            try {
-              jsonFileExists = true;
-              const projectDataStr = fs.readFileSync(projectFilePath, 'utf8');
-              const fileProjectData = JSON.parse(projectDataStr);
-              
-              // Count notes recursively in the JSON file
-              const countJsonNotes = (notes: any[]): number => {
-                if (!notes || !Array.isArray(notes)) return 0;
-                
-                let count = notes.length;
-                for (const note of notes) {
-                  if (note.children && Array.isArray(note.children)) {
-                    count += countJsonNotes(note.children);
-                  }
-                }
-                return count;
-              };
-              
-              jsonNoteCount = countJsonNotes(fileProjectData.data?.notes || []);
-            } catch (error) {
-              console.error(`Error reading JSON file for project ${setting.id}:`, error);
-            }
-          }
           
           projectStats.push({
             id: setting.id,
@@ -1060,24 +909,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               projectInfo.message = `Note count updated from ${settingsCount} to ${actualCount}`;
               console.log(`Updated note count for project ${project.id} from ${settingsCount} to ${actualCount}`);
               
-              // Also update the JSON file to keep it in sync
-              const projectFilePath = path.join(projectsDir, `${project.id}.json`);
-              if (fs.existsSync(projectFilePath)) {
-                try {
-                  const projectDataStr = fs.readFileSync(projectFilePath, 'utf8');
-                  const projectData = JSON.parse(projectDataStr);
-                  
-                  // Only update the note count and updated time in the JSON file
-                  projectData.note_count = actualCount;
-                  projectData.updated_at = new Date().toISOString();
-                  
-                  // JSON file writing has been removed
-                  console.log(`[JSON removed] Not updating JSON file for project ${project.id}`);
-                } catch (jsonError) {
-                  console.error(`Error updating JSON file for project ${project.id}:`, jsonError);
-                  projectInfo.message += ` (JSON update failed)`;
-                }
-              }
+              // No JSON files to update - database is the single source of truth
+              console.log(`Database is now the single source of truth for project ${project.id}`);
             } catch (updateError) {
               projectInfo.message = `Error updating note count: ${updateError instanceof Error ? updateError.message : String(updateError)}`;
               console.error(`Error updating note count for project ${project.id}:`, updateError);
@@ -1120,16 +953,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       log(`Updating image records to ${format} format`);
       
-      // Return a simplified success response since we don't need to actually perform the update
-      // in this diagnostics environment
-      return res.json({ 
-        success: true, 
-        count: 0, 
-        format,
-        message: "Format update simulation completed successfully" 
-      });
-      
-      /* Original implementation - commented out to prevent errors
       // Connect directly to PostgreSQL to bypass RLS policies
       let client;
       try {
@@ -1139,7 +962,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         log(`Error connecting to database: ${connError.message}`);
         return res.status(500).json({ error: "Database connection error" });
       }
-      */
       
       let updateCount = 0;
       
@@ -1188,64 +1010,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Endpoint to fix and migrate local images to Supabase
   app.post("/api/migrate-local-images", async (req: Request, res: Response) => {
+    const { userId, projectId } = req.body;
+    let client;
+    
+    if (!userId) {
+      return res.status(400).json({ error: "User ID is required" });
+    }
+    
+    log(`Starting image migration for user ${userId}, project ${projectId || 'all projects'}`);
+    
     try {
-      const { userId, projectId } = req.body;
+      // Connect directly to PostgreSQL
+      client = await pool.connect();
+      log(`Database connection established for image migration`);
       
-      if (!userId) {
-        return res.status(400).json({ error: "User ID is required" });
-      }
-      
-      log(`Starting image migration for user ${userId}, project ${projectId || 'all projects'}`);
-      
-      // Return a minimal success response for now
-      // This is a simplified version that always succeeds because the full implementation
-      // has issues with file access in the Replit environment
-      return res.json({
-        status: "success",
-        message: "Image format check completed",
-        results: {
-          total: 0,
-          success: 0,
-          failed: 0,
-          skipped: 0,
-          updated: [],
-          errors: []
-        }
-      });
-      
-      /* Original implementation - commented out to prevent errors
       // Get image records with local URLs
-      let imageQuery = supabase
-        .from('note_images')
-        .select('*');
+      let imageQuery = `
+        SELECT * FROM note_images 
+        WHERE url LIKE '%localhost%' 
+        OR url LIKE '%.replit.dev/uploads/%' 
+        OR url LIKE '%127.0.0.1%'`;
         
-      // Filter by user_id if we can - but this might not be available in note_images table
-      // So we'll do more verification later
-      
       // Optional project filter
+      const queryParams = [];
       if (projectId) {
         // We need to get notes by project first
-        const { data: projectNotes } = await supabase
-          .from('notes')
-          .select('id')
-          .eq('project_id', projectId)
-          .eq('user_id', userId);
-          
-        if (projectNotes && projectNotes.length > 0) {
-          const noteIds = projectNotes.map(note => note.id);
-          imageQuery = imageQuery.in('note_id', noteIds);
+        const noteIdsQuery = `
+          SELECT id FROM notes 
+          WHERE project_id = $1 AND user_id = $2`;
+        
+        const notesResult = await client.query(noteIdsQuery, [projectId, userId]);
+        
+        if (notesResult.rows.length > 0) {
+          const noteIds = notesResult.rows.map(note => note.id);
+          imageQuery += ` AND note_id = ANY($1::uuid[])`;
+          queryParams.push(noteIds);
         }
       }
       
-      const { data: imageRecords, error: imageError } = await imageQuery;
-      */
+      const imageResult = await client.query(imageQuery, queryParams);
+      const imageRecords = imageResult.rows;
       
-      if (imageError) {
-        log(`Error fetching images: ${imageError.message}`);
-        return res.status(500).json({ error: "Failed to fetch image records" });
-      }
-      
-      if (!imageRecords || imageRecords.length === 0) {
+      if (imageRecords.length === 0) {
         log('No images found to migrate');
         return res.json({ status: "success", migrated: 0, message: "No images found to migrate" });
       }
@@ -1253,7 +1059,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       log(`Found ${imageRecords.length} image records to check`);
       
       // Filter for local URLs only
-      const localImages = imageRecords.filter(img => 
+      const localImages = imageRecords.filter((img: any) => 
         img.url && (
           img.url.includes('.replit.dev/uploads/') || 
           img.url.includes('localhost') ||
@@ -1276,7 +1082,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         skipped: 0,
         errors: [] as string[]
       };
-      
+    
       // Process each image
       for (const image of localImages) {
         try {
@@ -1374,6 +1180,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       log(`Server error in migrate-local-images: ${error.message}`);
       return res.status(500).json({ error: "Server error", message: error.message });
+    } finally {
+      if (client) {
+        client.release();
+      }
     }
   });
 
