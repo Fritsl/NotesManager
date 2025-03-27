@@ -71,333 +71,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
   // prefix all routes with /api
   
-  // Store project data endpoint (to overcome RLS restrictions)
+  // Placeholder endpoint for project metadata - doesn't actually save any notes or data
   app.post("/api/store-project-data", async (req: Request, res: Response) => {
-    try {
-      const { id, name, userId, data, description } = req.body;
-      
-      if (!id || !userId || !data) {
-        return res.status(400).json({ 
-          error: "Project ID, User ID, and data are required" 
-        });
-      }
-      
-      console.log(`Storing project data for project ${id} by user ${userId} (SERVER MODE)`);
-      console.log(`Project name: ${name}`);
-      console.log(`Project contains ${data.notes?.length || 0} notes`);
-      
-      // Function to count total notes including children
-      const countTotalNotes = (notes: any[]): number => {
-        let count = notes.length;
-        
-        for (const note of notes) {
-          if (note.children && Array.isArray(note.children)) {
-            count += countTotalNotes(note.children);
-          }
-        }
-        
-        return count;
-      };
-      
-      // Calculate the total number of notes in the project
-      const totalNoteCount = data.notes ? countTotalNotes(data.notes) : 0;
-      console.log(`Total note count (including children): ${totalNoteCount}`);
-      
-      // Use direct DB connection to check/update settings
-      let dbClient;
-      
-      try {
-        dbClient = await pool.connect();
-        console.log('Connected to database directly for settings operations');
-        
-        // Check if settings exist for this project
-        const settingsCheckQuery = `
-          SELECT id FROM settings
-          WHERE id = $1 AND user_id = $2
-        `;
-        
-        const settingsResult = await dbClient.query(settingsCheckQuery, [id, userId]);
-        const settingsExists = settingsResult.rows.length > 0;
-        
-        if (!settingsExists) {
-          // Create settings record if it doesn't exist
-          console.log('Creating settings record for project:', id);
-          const now = new Date().toISOString();
-          
-          const insertQuery = `
-            INSERT INTO settings 
-            (id, user_id, title, description, created_at, updated_at, last_modified_at, note_count)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            RETURNING id
-          `;
-          
-          try {
-            const insertResult = await dbClient.query(insertQuery, [
-              id,
-              userId,
-              name,
-              description || '',
-              now,
-              now,
-              now,
-              totalNoteCount
-            ]);
-            
-            if (insertResult.rows.length > 0) {
-              console.log('Successfully created settings record');
-            } else {
-              console.error('No rows returned when creating settings record');
-            }
-          } catch (insertError) {
-            console.error('Error inserting settings record:', insertError);
-          }
-        } else {
-          // Update existing settings record
-          console.log('Updating existing settings record for project:', id);
-          
-          const updateQuery = `
-            UPDATE settings
-            SET note_count = $1,
-                title = $2,
-                description = $3,
-                updated_at = NOW(),
-                last_modified_at = NOW()
-            WHERE id = $4 AND user_id = $5
-            RETURNING id
-          `;
-          
-          try {
-            const updateResult = await dbClient.query(updateQuery, [
-              totalNoteCount,
-              name,
-              description || '',
-              id,
-              userId
-            ]);
-            
-            if (updateResult.rows.length > 0) {
-              console.log('Successfully updated note_count in settings table');
-            } else {
-              console.error('No rows returned when updating settings record');
-            }
-          } catch (updateError) {
-            console.error('Error updating settings record:', updateError);
-          }
-        }
-      } catch (settingsDbError) {
-        console.error('Database error handling settings:', settingsDbError);
-      } finally {
-        if (dbClient) dbClient.release();
-      }
-      
-      // Process notes and save them to the database
-      // First, delete existing notes for this project to avoid duplication
-      let client;
-      try {
-        client = await pool.connect();
-        
-        // Delete existing notes for this project
-        await client.query('DELETE FROM notes WHERE project_id = $1', [id]);
-        console.log(`Deleted existing notes for project ${id}`);
-        
-        // Helper function to process notes recursively
-        const processNotes = async (notes: any[], parentId: string | null = null) => {
-          if (!Array.isArray(notes)) return;
-          
-          for (let i = 0; i < notes.length; i++) {
-            const note = notes[i];
-            
-            // Insert this note
-            await client.query(
-              `INSERT INTO notes (
-                id, user_id, project_id, parent_id, position, content, 
-                created_at, updated_at, is_discussion, time_set, 
-                youtube_url, url, url_display_text
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-              [
-                note.id,
-                userId,
-                id,
-                parentId,
-                note.position || i,
-                note.content || '',
-                note.created_at || new Date().toISOString(),
-                note.updated_at || new Date().toISOString(),
-                note.is_discussion || false,
-                note.time_set || null,
-                note.youtube_url || null,
-                note.url || null,
-                note.url_display_text || null
-              ]
-            );
-            
-            // Process images for this note
-            if (note.images && Array.isArray(note.images)) {
-              for (let imgIndex = 0; imgIndex < note.images.length; imgIndex++) {
-                const image = note.images[imgIndex];
-                
-                // Ensure storage_path is correctly formatted
-                let storagePath = image.storage_path || '';
-                if (storagePath) {
-                  const pathParts = storagePath.split('/');
-                  const fileName = pathParts[pathParts.length - 1];
-                  
-                  // Fix path format
-                  if (!storagePath.startsWith('images/') || storagePath.includes('/images/images/')) {
-                    storagePath = `images/${fileName}`;
-                  }
-                }
-                
-                // Fix URL if needed
-                let imageUrl = image.url || '';
-                if (imageUrl.includes('/images/images/')) {
-                  const urlObj = new URL(imageUrl);
-                  const newPath = urlObj.pathname.replace('/images/images/', '/images/');
-                  imageUrl = imageUrl.replace(urlObj.pathname, newPath);
-                }
-                
-                try {
-                  // Insert image record if it has the required fields
-                  if (storagePath && imageUrl) {
-                    // Check if image already exists for this note by URL
-                    const existingImageQuery = `
-                      SELECT id FROM note_images 
-                      WHERE note_id = $1 AND url = $2
-                    `;
-                    const existingResult = await client.query(existingImageQuery, [note.id, imageUrl]);
-                    
-                    if (existingResult.rows.length === 0) {
-                      // Image doesn't exist, insert it
-                      const insertImageQuery = `
-                        INSERT INTO note_images (
-                          id, note_id, storage_path, url, position, created_at
-                        ) VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW())
-                      `;
-                      await client.query(insertImageQuery, [
-                        note.id, 
-                        storagePath, 
-                        imageUrl, 
-                        image.position || imgIndex
-                      ]);
-                      console.log(`Saved image for note ${note.id}: ${storagePath}`);
-                    } else {
-                      console.log(`Image already exists for note ${note.id}: ${storagePath}`);
-                    }
-                  }
-                } catch (imageError) {
-                  console.error(`Error saving image for note ${note.id}:`, imageError);
-                  // Continue with next image
-                }
-              }
-            }
-            
-            // Process child notes recursively
-            if (note.children && Array.isArray(note.children)) {
-              await processNotes(note.children, note.id);
-            }
-          }
-        };
-        
-        // Process all notes
-        if (data.notes && Array.isArray(data.notes)) {
-          await processNotes(data.notes);
-          console.log(`Successfully saved ${totalNoteCount} notes to database`);
-        }
-        
-      } catch (dbError) {
-        console.error('Database error while saving notes:', dbError);
-      } finally {
-        if (client) client.release();
-      }
-      
-      // Check if the data contains images
-      let imageCount = 0;
-      const countImages = (notes: any[]) => {
-        for (const note of notes) {
-          if (note.images && Array.isArray(note.images)) {
-            imageCount += note.images.length;
-            
-            // IMPORTANT: Make sure all images follow the standard format
-            // This ensures compatibility with other applications using the same database
-            note.images.forEach((image: any) => {
-              // Ensure storage_path is correctly formatted (should be images/filename.ext)
-              if (image.storage_path) {
-                const pathParts = image.storage_path.split('/');
-                const fileName = pathParts[pathParts.length - 1];
-                
-                // Fix double path segments like "images/images/file.jpg"
-                if (image.storage_path.includes('/images/images/')) {
-                  console.log(`Fixing double path segments in image: ${image.storage_path}`);
-                  image.storage_path = `images/${fileName}`;
-                }
-                
-                // Make sure path starts with "images/"
-                if (!image.storage_path.startsWith('images/')) {
-                  console.log(`Adding images/ prefix to path: ${image.storage_path}`);
-                  image.storage_path = `images/${fileName}`;
-                }
-              }
-              
-              // Fix URL if it has double segments
-              if (image.url && image.url.includes('/images/images/')) {
-                const urlObj = new URL(image.url);
-                const pathParts = urlObj.pathname.split('/');
-                const fileName = pathParts[pathParts.length - 1];
-                
-                // Replace double path in URL
-                console.log(`Fixing double path segments in URL: ${image.url}`);
-                const newPath = urlObj.pathname.replace('/images/images/', '/images/');
-                image.url = image.url.replace(urlObj.pathname, newPath);
-              }
-            });
-          }
-          
-          if (note.children && Array.isArray(note.children)) {
-            countImages(note.children);
-          }
-        }
-      };
-      
-      if (data.notes && Array.isArray(data.notes)) {
-        countImages(data.notes);
-      }
-      
-      console.log(`Project contains ${imageCount} images (normalized)`);
-      
-      // No longer storing JSON files, as all data is now in the database
-      console.log(`Project data saved to database (${totalNoteCount} notes)`);
-      
-      // Optional: For debugging purposes, you can enable this to check what would have been saved
-      if (process.env.DEBUG_MODE === 'true') {
-        const projectData = {
-          id,
-          name,
-          user_id: userId,
-          data,
-          description,
-          updated_at: new Date().toISOString(),
-          created_at: new Date().toISOString()
-        };
-        console.log('Project data structure (not saved to file):', 
-          JSON.stringify({
-            id: projectData.id,
-            totalNotes: totalNoteCount
-          }));
-      }
-      
-      // Return success
-      return res.status(200).json({
-        success: true,
-        message: "Project data stored successfully",
-        notesStored: totalNoteCount
-      });
-    } catch (error) {
-      console.error("Error storing project data:", error);
-      return res.status(500).json({
-        error: "Failed to store project data",
-        details: error instanceof Error ? error.message : String(error)
-      });
-    }
+    console.log("[SAVE DISABLED] Save functionality has been removed");
+    return res.status(200).json({
+      success: true,
+      message: "Save functionality disabled - Project data was not stored",
+    });
   });
   
   // Get project data endpoint (to overcome RLS restrictions)
@@ -695,30 +375,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           data: { notes: notes }
         };
         
-        // Synchronize JSON files with database for compatibility with other applications
-        // Even though we're now using the database as the source of truth, some applications
-        // might still be relying on the JSON files
-        try {
-          // Also update the JSON file to keep it in sync with the database (for other applications)
-          const jsonProjectData = {
-            id: projectMetadata.id,
-            name: projectMetadata.title,
-            user_id: projectMetadata.user_id,
-            data: { notes: notes },
-            description: projectMetadata.description || '',
-            updated_at: new Date().toISOString(),
-            created_at: projectMetadata.created_at
-          };
-          
-          fs.writeFileSync(
-            path.join(projectsDir, `${projectId}.json`),
-            JSON.stringify(jsonProjectData, null, 2)
-          );
-          
-          console.log(`Updated JSON file for project ${projectId} to match database for compatibility`);
-        } catch (syncError) {
-          console.error("Warning: Could not sync JSON file with database (non-critical):", syncError);
-        }
+        // JSON file writing has been removed
         
         // Return the project data
         return res.status(200).json(projectData);
@@ -1414,8 +1071,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   projectData.note_count = actualCount;
                   projectData.updated_at = new Date().toISOString();
                   
-                  fs.writeFileSync(projectFilePath, JSON.stringify(projectData, null, 2));
-                  console.log(`Updated JSON file for project ${project.id} with correct note count`);
+                  // JSON file writing has been removed
+                  console.log(`[JSON removed] Not updating JSON file for project ${project.id}`);
                 } catch (jsonError) {
                   console.error(`Error updating JSON file for project ${project.id}:`, jsonError);
                   projectInfo.message += ` (JSON update failed)`;
@@ -1824,7 +1481,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // Save the file to local storage
             const localFilePath = path.join(uploadsDir, fileName);
-            fs.writeFileSync(localFilePath, fileBuffer);
+            // Local file writing has been removed
+            console.log(`[LOCAL SAVE DISABLED] Would have saved file to ${localFilePath}`);
             
             // Generate a URL for the local file
             const baseUrl = req.protocol + '://' + req.get('host');

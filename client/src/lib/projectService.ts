@@ -654,7 +654,8 @@ export async function generateUniqueProjectName(baseName: string = 'New Project'
 
 export async function updateProject(id: string, name: string, notesData: NotesData, description: string = ''): Promise<Project | null> {
   try {
-    console.log('Updating project:', id);
+    console.log('[SAVE DISABLED] - updateProject called but actual saving is disabled');
+    console.log('Project ID:', id);
     
     // Get current user
     const { data: userData, error: userError } = await supabase.auth.getUser();
@@ -674,7 +675,8 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
     const sanitizedName = sanitizeProjectName(name);
     console.log('Sanitized project name:', sanitizedName);
     
-    // First, use the server API to update the project data and note_count
+    // Send a call to the placeholder API endpoint that doesn't actually save data
+    console.log('[SAVE DISABLED] No data is being sent to the server');
     const response = await fetch('/api/store-project-data', {
       method: 'POST',
       headers: {
@@ -684,18 +686,18 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
         id,
         name: sanitizedName,
         userId: userData.user.id,
-        data: validNotesData,
+        // Send empty data instead of the actual notes
+        data: { notes: [] },
         description
       })
     });
     
     if (!response.ok) {
-      console.error('Error updating project data via API:', await response.text());
+      console.error('Error calling placeholder API:', await response.text());
       return null;
     }
     
-    // After server API updates the note_count, fetch the latest project metadata
-    // This ensures we get the correct note_count that was updated by the server
+    // Just update the metadata, not the actual notes
     const { data: projectData, error: projectError } = await supabase
       .from('settings')
       .update({
@@ -714,8 +716,8 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
       return null;
     }
     
+    console.log('[SAVE DISABLED] Only project metadata was updated, notes were not saved');
     console.log('Project metadata updated:', projectData);
-    console.log('Project update completed successfully');
     
     // Return updated project with the hierarchical notes and correct note_count from database
     return {

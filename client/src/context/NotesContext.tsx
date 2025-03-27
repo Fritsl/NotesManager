@@ -1214,13 +1214,15 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         return;
       }
 
-      // Show "Saving..." toast
+      // Show warning toast that saving is disabled
       toast({
-        title: "Saving...",
-        description: "Saving your changes",
+        title: "SAVE DISABLED",
+        description: "Note data is not being saved to the server. Only your project metadata is updated.",
+        variant: "destructive",
+        duration: 5000,
       });
 
-      console.log('Saving project:', { 
+      console.log('[SAVE DISABLED] Saving project (metadata only):', { 
         id: currentProjectId, 
         name: currentProjectName,
         description: currentProjectDescription,
@@ -1228,10 +1230,10 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         firstNote: notes.length > 0 ? notes[0].content : 'No notes'
       });
 
-      // Create a clean copy of the notes data to save
+      // Create a clean copy of the notes data to save (but it won't actually be saved)
       const notesData: NotesData = { notes: cleanNotePositions([...notes]) };
 
-      // Update the project in the database
+      // Only project metadata will be saved, not the actual note data
       const updatedProject = await updateProject(
         currentProjectId, 
         currentProjectName, 
@@ -1240,10 +1242,10 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       );
 
       if (!updatedProject) {
-        console.error('Failed to update project');
+        console.error('[SAVE DISABLED] Failed to update project metadata');
         toast({
           title: "Error Saving Project",
-          description: "Could not save the project. Please try again.",
+          description: "Could not update project metadata.",
           variant: "destructive",
         });
         return;
@@ -1273,16 +1275,20 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         
         // Manual save via button - show a new toast instead of updating
         toast({
-          title: "Project Saved",
+          title: "SAVE DISABLED ⚠️",
           description: wasNameCorrected 
-            ? `Project saved as "${updatedProject.name}" (corrected from UI name)`
-            : `"${updatedProject.name}" has been saved`,
+            ? `Only metadata updated for "${updatedProject.name}" (notes NOT saved to server)`
+            : `Only metadata for "${updatedProject.name}" was updated (notes NOT saved)`,
+          variant: "destructive",
+          duration: 6000,
         });
       } else {
         // Auto-save after note movement - also show confirmation but with different message
         toast({
-          title: "Changes Saved",
-          description: "Your note changes have been saved successfully",
+          title: "SAVE DISABLED ⚠️",
+          description: "Notes are stored in memory only and NOT saved to the server",
+          variant: "destructive",
+          duration: 6000,
         });
         
         // Clear the pending flag 

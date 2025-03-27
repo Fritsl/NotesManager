@@ -500,14 +500,11 @@ export default function HeaderWithSearch() {
                     if (currentProjectId) {
                       try {
                         await saveProject();
-                        toast({
-                          title: "Saved",
-                          description: "Project saved successfully",
-                        });
+                        // Toast will be shown by saveProject function
                       } catch (err) {
                         toast({
                           title: "Error",
-                          description: "Failed to save project",
+                          description: "Failed to update project metadata",
                           variant: "destructive",
                         });
                       }
@@ -519,9 +516,9 @@ export default function HeaderWithSearch() {
                       });
                     }
                   }}>
-                    <Save className="h-4 w-4 mr-2" />
-                    <span>Save</span>
-                    <span className="ml-auto text-xs text-muted-foreground">{currentProjectId ? "(Manual)" : "(No Project)"}</span>
+                    <AlertTriangle className="h-4 w-4 mr-2 text-yellow-500" />
+                    <span className="text-yellow-500 font-semibold">Save Disabled</span>
+                    <span className="ml-auto text-xs text-yellow-500/80">{currentProjectId ? "(Metadata Only)" : "(No Project)"}</span>
                   </DropdownMenuItem>
 
                   {/* Note Actions */}
