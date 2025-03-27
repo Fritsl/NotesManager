@@ -13,6 +13,7 @@ export interface Project {
   data: NotesData;
   description?: string; // Optional field for project description
   deleted_at?: string; // Timestamp when the project was moved to trash
+  note_count?: number; // The count of notes in the project
 }
 
 // Re-export image functions for backward compatibility
@@ -310,6 +311,7 @@ export async function getProjects(): Promise<Project[]> {
       updated_at: item.updated_at,
       user_id: item.user_id,
       description: item.description || '',
+      note_count: item.note_count || 0, // Include the note count from the database
       data: { notes: [] } // Will be populated below
     })) || [];
     
@@ -360,6 +362,7 @@ export async function getTrashedProjects(): Promise<Project[]> {
       user_id: item.user_id,
       description: item.description || '',
       deleted_at: item.deleted_at, // Include the deletion timestamp
+      note_count: item.note_count || 0, // Include note count
       data: { notes: [] } // We don't load notes for trashed projects in the list view
     })) || [];
     
@@ -428,6 +431,7 @@ export async function getProject(id: string): Promise<Project | null> {
           updated_at: projectData.updated_at || new Date().toISOString(),
           user_id: projectData.user_id || userData.user.id,
           description: projectData.description || '',
+          note_count: projectData.note_count || 0, // Include note count
           data: projectData.data || { notes: [] }
         };
       }
@@ -467,6 +471,7 @@ export async function getProject(id: string): Promise<Project | null> {
       updated_at: projectData.updated_at,
       user_id: projectData.user_id,
       description: projectData.description || '',
+      note_count: projectData.note_count || 0, // Include note count
       data: { notes: [] }
     };
     
@@ -500,7 +505,24 @@ export async function createProject(name: string, notesData: NotesData): Promise
     const sanitizedName = sanitizeProjectName(name);
     console.log('Sanitized project name:', sanitizedName);
     
-    // Insert project metadata into settings table
+    // Function to count total notes including children
+    const countTotalNotes = (notes: any[]): number => {
+      let count = notes.length;
+      
+      for (const note of notes) {
+        if (note.children && Array.isArray(note.children)) {
+          count += countTotalNotes(note.children);
+        }
+      }
+      
+      return count;
+    };
+    
+    // Calculate the initial note count
+    const initialNoteCount = notesData.notes ? countTotalNotes(notesData.notes) : 0;
+    console.log('Initial note count:', initialNoteCount);
+    
+    // Insert project metadata into settings table with the correct note_count
     const { data: projectData, error: projectError } = await supabase
       .from('settings')
       .insert({
@@ -509,7 +531,8 @@ export async function createProject(name: string, notesData: NotesData): Promise
         user_id: userData.user.id,
         created_at: now,
         updated_at: now,
-        last_modified_at: now
+        last_modified_at: now,
+        note_count: initialNoteCount // Set the initial note count
       })
       .select('*')
       .single();
@@ -521,25 +544,40 @@ export async function createProject(name: string, notesData: NotesData): Promise
     
     console.log('Project metadata created:', projectData);
     
-    // Flatten the notes hierarchy for database storage
-    const { notes: flatNotes, images: noteImages } = flattenNoteHierarchy(notesData.notes, projectId, userData.user.id);
-    
-    console.log('Flattened notes to store:', flatNotes);
-    
-    if (flatNotes.length > 0) {
-      // We're using the server API for note storage anyway, so just wait for the
-      // user to save notes if they provided any - this avoids double saving
-      console.log('Skipping initial note insert for empty project');
+    // If there are notes, store them using the server API
+    if (notesData.notes && notesData.notes.length > 0) {
+      // Use the server API to store project data
+      const response = await fetch('/api/store-project-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          id: projectId,
+          name: sanitizedName,
+          userId: userData.user.id,
+          data: notesData,
+          description: ''
+        })
+      });
+      
+      if (!response.ok) {
+        console.error('Error storing initial project data via API:', await response.text());
+        // Continue anyway, as the project metadata is already created
+      } else {
+        console.log('Initial project data stored successfully');
+      }
     }
     
-    // Return the created project with empty notes
+    // Return the created project with notes data and note count
     return {
       id: projectData.id,
       name: projectData.title,
       created_at: projectData.created_at,
       updated_at: projectData.updated_at,
       user_id: projectData.user_id,
-      data: notesData
+      data: notesData,
+      note_count: projectData.note_count // Include note_count from the database
     };
   } catch (error) {
     console.error('Error in createProject:', error);
@@ -636,28 +674,7 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
     const sanitizedName = sanitizeProjectName(name);
     console.log('Sanitized project name:', sanitizedName);
     
-    // Update project metadata in settings table
-    const { data: projectData, error: projectError } = await supabase
-      .from('settings')
-      .update({
-        title: sanitizedName,
-        description: description,
-        updated_at: now,
-        last_modified_at: now
-      })
-      .eq('id', id)
-      .eq('user_id', userData.user.id)
-      .select('*')
-      .single();
-    
-    if (projectError) {
-      console.error('Error updating project metadata:', projectError);
-      return null;
-    }
-    
-    console.log('Project metadata updated:', projectData);
-    
-    // Use the server API to update the project data
+    // First, use the server API to update the project data and note_count
     const response = await fetch('/api/store-project-data', {
       method: 'POST',
       headers: {
@@ -677,9 +694,30 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
       return null;
     }
     
+    // After server API updates the note_count, fetch the latest project metadata
+    // This ensures we get the correct note_count that was updated by the server
+    const { data: projectData, error: projectError } = await supabase
+      .from('settings')
+      .update({
+        title: sanitizedName,
+        description: description,
+        updated_at: now,
+        last_modified_at: now
+      })
+      .eq('id', id)
+      .eq('user_id', userData.user.id)
+      .select('*')
+      .single();
+    
+    if (projectError) {
+      console.error('Error updating project metadata:', projectError);
+      return null;
+    }
+    
+    console.log('Project metadata updated:', projectData);
     console.log('Project update completed successfully');
     
-    // Return updated project with the hierarchical notes
+    // Return updated project with the hierarchical notes and correct note_count from database
     return {
       id: projectData.id,
       name: projectData.title,
@@ -687,7 +725,8 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
       updated_at: projectData.updated_at,
       user_id: projectData.user_id,
       description: projectData.description || '',
-      data: validNotesData
+      data: validNotesData,
+      note_count: projectData.note_count // Include note_count from the database
     };
   } catch (error) {
     console.error('Error in updateProject:', error);
