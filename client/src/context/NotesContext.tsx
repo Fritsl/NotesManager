@@ -1323,6 +1323,15 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
     }
   }, [currentProjectId, currentProjectName, currentProjectDescription, notes, cleanNotePositions, toast, pendingNoteMoves]);
 
+  // Initialize saveQueue after saveProject is defined
+  useEffect(() => {
+    // Initialize the save queue with required functions - this only needs to run once
+    if (!saveQueue.isInitialized()) {
+      console.log("Initializing saveQueue with saveProject and updateNoteInStateTree");
+      saveQueue.initialize(saveProject, updateNoteInStateTree);
+    }
+  }, [saveProject, updateNoteInStateTree]);
+
   // Effect to handle auto-saving when pendingNoteMoves is set
   useEffect(() => {
     if (pendingNoteMoves && currentProjectId) {
@@ -1391,10 +1400,8 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           description: "The image has been attached to the note",
         });
 
-        // Save the project to ensure the image is persisted
-        saveProject().catch(err => {
-          console.error("Error saving project after image upload:", err);
-        });
+        // Queue a save operation instead of calling saveProject directly
+        setPendingNoteMoves(true);
       }
 
       return image;
@@ -1407,7 +1414,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       });
       return null;
     }
-  }, [toast, saveProject]);
+  }, [toast, setPendingNoteMoves]);
 
   // Remove an image from a note
   const removeImage = useCallback(async (imageId: string): Promise<boolean> => {
@@ -1451,10 +1458,8 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           description: "The image has been removed from the note",
         });
 
-        // Save the project to ensure the image removal is persisted
-        saveProject().catch(err => {
-          console.error("Error saving project after image removal:", err);
-        });
+        // Queue a save operation instead of calling saveProject directly
+        setPendingNoteMoves(true);
       }
 
       return success;
@@ -1467,7 +1472,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       });
       return false;
     }
-  }, [toast, saveProject]);
+  }, [toast, setPendingNoteMoves]);
 
   // Reorder images within a note
   const reorderImage = useCallback(async (noteId: string, imageId: string, newPosition: number): Promise<boolean> => {
@@ -1533,10 +1538,8 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           description: "The image position has been updated",
         });
 
-        // Save the project to ensure the image reordering is persisted
-        saveProject().catch(err => {
-          console.error("Error saving project after image reordering:", err);
-        });
+        // Queue a save operation instead of calling saveProject directly
+        setPendingNoteMoves(true);
       }
 
       return success;
@@ -1549,7 +1552,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       });
       return false;
     }
-  }, [toast, saveProject]);
+  }, [toast, setPendingNoteMoves]);
 
   // Debug info function removed
   
