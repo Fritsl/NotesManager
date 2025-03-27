@@ -154,6 +154,13 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       // Store the current project ID in localStorage
       localStorage.setItem('lastProjectId', currentProjectId);
       console.log('Saved last project ID to localStorage:', currentProjectId);
+      
+      // Always set hasActiveProject to true if we have a current project ID
+      // This ensures menu options are available even for empty projects
+      setHasActiveProject(true);
+    } else {
+      // If there's no current project ID, make sure hasActiveProject is false
+      setHasActiveProject(false);
     }
   }, [currentProjectId]);
 
@@ -184,6 +191,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
     console.log('Project name:', projectName);
     console.log('Project ID:', projectId);
 
+    // Safety check: ensure data is valid, but allow empty notes array for new projects
     if (!data) {
       console.error('ImportNotes failed: data is null or undefined');
       toast({
@@ -194,14 +202,10 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       return;
     }
 
+    // Initialize notes to empty array if missing
     if (!data.notes) {
-      console.error('ImportNotes failed: data.notes is missing', data);
-      toast({
-        title: "Import Failed",
-        description: "Invalid notes data format: missing notes array",
-        variant: "destructive",
-      });
-      return;
+      console.log('Notes array missing - initializing to empty array', data);
+      data.notes = [];
     }
 
     if (!Array.isArray(data.notes)) {
