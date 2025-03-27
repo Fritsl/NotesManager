@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Loader2, RefreshCcw, CheckCircle2 } from 'lucide-react';
 import { getProjects } from '../lib/projectService';
 import { supabase } from '../lib/supabase';
 
@@ -25,6 +26,19 @@ interface DiagnosticsData {
   sample_notes: any[];
 }
 
+interface SyncResult {
+  success: boolean;
+  message: string;
+  projects: {
+    id: string;
+    title: string;
+    previous_count: number;
+    actual_count: number;
+    updated: boolean;
+    message: string;
+  }[];
+}
+
 export default function DiagnosticsPage() {
   const [dbProjects, setDbProjects] = useState<any[]>([]);
   const [dbNotes, setDbNotes] = useState<any[]>([]);
@@ -34,6 +48,8 @@ export default function DiagnosticsPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
 
   useEffect(() => {
     async function loadDiagnostics() {
@@ -101,15 +117,70 @@ export default function DiagnosticsPage() {
 
   const refreshData = () => {
     setRefreshKey(prev => prev + 1);
+    setSyncResult(null); // Clear previous sync results
+  };
+  
+  const synchronizeNoteCounts = async () => {
+    if (!userId) return;
+    
+    setIsSyncing(true);
+    setSyncResult(null);
+    
+    try {
+      const response = await fetch(`/api/sync-note-counts?userId=${userId}`);
+      if (!response.ok) {
+        throw new Error(`Failed to synchronize: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      // Transform the response to our expected format if needed
+      if (!result.projects) {
+        setSyncResult({
+          success: result.success || false,
+          message: result.message || result.error || 'Unknown result from synchronization',
+          projects: []
+        });
+      } else {
+        setSyncResult(result);
+      }
+      
+      // Refresh the data after synchronization
+      setTimeout(() => setRefreshKey(prev => prev + 1), 500);
+    } catch (error) {
+      console.error('Error synchronizing note counts:', error);
+      setError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   return (
     <div className="container mx-auto p-4 max-w-5xl text-black dark:text-white">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Database Diagnostics</h1>
-        <Button onClick={refreshData} disabled={isLoading}>
-          {isLoading ? 'Loading...' : 'Refresh Data'}
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={synchronizeNoteCounts} 
+            disabled={isLoading || isSyncing || !userId}
+            className="bg-blue-500 hover:bg-blue-600 text-white"
+          >
+            {isSyncing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Syncing...
+              </>
+            ) : (
+              <>
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                Sync Note Counts
+              </>
+            )}
+          </Button>
+          
+          <Button onClick={refreshData} disabled={isLoading}>
+            {isLoading ? 'Loading...' : 'Refresh Data'}
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -123,6 +194,68 @@ export default function DiagnosticsPage() {
         <h2 className="text-lg font-semibold mb-2">User Information</h2>
         <p><strong>Current User ID:</strong> {userId || 'Not authenticated'}</p>
       </Card>
+      
+      {syncResult && (
+        <Card className={`p-4 mb-6 text-black ${syncResult.success ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+          <div className="flex justify-between items-start">
+            <h2 className="text-lg font-semibold mb-2">
+              {syncResult.success ? (
+                <div className="flex items-center">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mr-2" />
+                  Synchronization Results
+                </div>
+              ) : (
+                'Synchronization Results'
+              )}
+            </h2>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setSyncResult(null)}
+            >
+              Dismiss
+            </Button>
+          </div>
+          
+          <p className="mb-4">{syncResult.message}</p>
+          
+          {syncResult.projects && syncResult.projects.length > 0 && (
+            <div className="overflow-x-auto mt-2">
+              <h3 className="font-medium mb-2">Project Updates</h3>
+              <table className="min-w-full border-collapse">
+                <thead>
+                  <tr className="bg-white">
+                    <th className="border p-2 text-left">Project</th>
+                    <th className="border p-2 text-left">Previous Count</th>
+                    <th className="border p-2 text-left">Actual Count</th>
+                    <th className="border p-2 text-left">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {syncResult.projects.map(project => (
+                    <tr key={project.id} className="hover:bg-white/50">
+                      <td className="border p-2">
+                        <div className="font-semibold">{project.title}</div>
+                        <div className="text-xs font-mono text-gray-500">{project.id}</div>
+                      </td>
+                      <td className="border p-2 text-center">{project.previous_count}</td>
+                      <td className="border p-2 text-center">{project.actual_count}</td>
+                      <td className="border p-2">
+                        {project.updated ? (
+                          <Badge className="bg-green-100 text-green-800">Updated</Badge>
+                        ) : (
+                          <Badge className="bg-gray-100 text-gray-800">No Change</Badge>
+                        )}
+                        <div className="text-xs mt-1">{project.message}</div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      )}
 
       {diagnosticsData && (
         <Card className="p-4 mb-6 bg-blue-50 border-blue-200 text-black">
@@ -175,13 +308,29 @@ export default function DiagnosticsPage() {
                         }
                       </td>
                       <td className="border p-2">
-                        <Badge className={
-                          status === 'ok' ? 'bg-green-100 text-green-800' : 
-                          status === 'warning' ? 'bg-yellow-100 text-yellow-800' : 
-                          'bg-red-100 text-red-800'
-                        }>
-                          {statusText}
-                        </Badge>
+                        <div className="flex flex-col gap-1">
+                          <Badge className={
+                            status === 'ok' ? 'bg-green-100 text-green-800' : 
+                            status === 'warning' ? 'bg-yellow-100 text-yellow-800' : 
+                            'bg-red-100 text-red-800'
+                          }>
+                            {statusText}
+                          </Badge>
+                          
+                          {(status === 'warning' || status === 'error') && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="text-xs px-2 py-0 h-6"
+                              onClick={() => {
+                                synchronizeNoteCounts();
+                              }}
+                              disabled={isSyncing}
+                            >
+                              {isSyncing ? 'Syncing...' : 'Fix Counts'}
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -259,40 +408,44 @@ export default function DiagnosticsPage() {
             <p className="mb-2">Total Notes: {dbNotes.length}</p>
             
             {/* Group notes by project for better organization */}
-            {Object.entries(dbNotes.reduce((acc: any, note) => {
+            {Object.entries(dbNotes.reduce((acc: Record<string, any[]>, note) => {
               if (!acc[note.project_id]) acc[note.project_id] = [];
               acc[note.project_id].push(note);
               return acc;
-            }, {})).map(([projectId, projectNotes]: [string, any[]]) => (
-              <div key={projectId} className="mb-4">
-                <h3 className="font-medium mt-4 mb-2">
-                  Project: <span className="font-mono text-xs">{projectId}</span>
-                  <span className="ml-2">({projectNotes.length} notes)</span>
-                </h3>
-                <div className="overflow-x-auto max-h-60 overflow-y-auto">
-                  <table className="min-w-full border-collapse">
-                    <thead>
-                      <tr className="bg-gray-100 text-black">
-                        <th className="border p-2 text-left">ID</th>
-                        <th className="border p-2 text-left">Position</th>
-                        <th className="border p-2 text-left">Content</th>
-                        <th className="border p-2 text-left">Parent ID</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-black bg-white">
-                      {projectNotes.map(note => (
-                        <tr key={note.id} className="hover:bg-gray-50">
-                          <td className="border p-2 font-mono text-xs">{note.id}</td>
-                          <td className="border p-2">{note.position || note.note_position}</td>
-                          <td className="border p-2 truncate max-w-xs">{note.content?.substring(0, 40)}{note.content?.length > 40 ? '...' : ''}</td>
-                          <td className="border p-2 font-mono text-xs">{note.parent_id || 'null'}</td>
+            }, {} as Record<string, any[]>)).map((entry) => {
+              const projectId = entry[0];
+              const projectNotes = entry[1] as any[];
+              return (
+                <div key={projectId} className="mb-4">
+                  <h3 className="font-medium mt-4 mb-2">
+                    Project: <span className="font-mono text-xs">{projectId}</span>
+                    <span className="ml-2">({projectNotes.length} notes)</span>
+                  </h3>
+                  <div className="overflow-x-auto max-h-60 overflow-y-auto">
+                    <table className="min-w-full border-collapse">
+                      <thead>
+                        <tr className="bg-gray-100 text-black">
+                          <th className="border p-2 text-left">ID</th>
+                          <th className="border p-2 text-left">Position</th>
+                          <th className="border p-2 text-left">Content</th>
+                          <th className="border p-2 text-left">Parent ID</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="text-black bg-white">
+                        {projectNotes.map(note => (
+                          <tr key={note.id} className="hover:bg-gray-50">
+                            <td className="border p-2 font-mono text-xs">{note.id}</td>
+                            <td className="border p-2">{note.position || note.note_position}</td>
+                            <td className="border p-2 truncate max-w-xs">{note.content?.substring(0, 40)}{note.content?.length > 40 ? '...' : ''}</td>
+                            <td className="border p-2 font-mono text-xs">{note.parent_id || 'null'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {dbNotes.length === 0 && (
               <p className="p-2 text-center bg-gray-50 rounded">No notes found in database</p>
@@ -308,7 +461,18 @@ export default function DiagnosticsPage() {
             <li>Notes might be stored in the database but not displayed in the app due to different ID formats</li>
             <li>The app might be using JSON files instead of the database for some operations</li>
             <li>Row-Level Security (RLS) policies might be preventing proper access to data</li>
-            <li>The app and database might be out of sync (note count doesn't match actual notes)</li>
+            <li>The app and database might be out of sync (note count doesn't match actual notes)
+              <ul className="list-circle list-inside ml-6 mt-1">
+                <li className="text-sm">Use the <strong>"Sync Note Counts"</strong> button at the top of this page to fix count discrepancies</li>
+              </ul>
+            </li>
+            <li>If incorrect note counts persist after synchronization, try these steps:
+              <ul className="list-circle list-inside ml-6 mt-1">
+                <li className="text-sm">Verify that all notes are properly stored in the database</li>
+                <li className="text-sm">Check that the client is loading notes from the database, not just from JSON</li>
+                <li className="text-sm">Refresh the application after synchronization to see the updated counts</li>
+              </ul>
+            </li>
           </ul>
         </Card>
       </div>

@@ -1335,6 +1335,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ error: "Server error", message: error.message });
     }
   });
+  
+  // Endpoint to synchronize note counts in settings table with actual count in notes table
+  app.get("/api/sync-note-counts", async (req: Request, res: Response) => {
+    try {
+      const userId = req.query.userId as string;
+      const projectId = req.query.projectId as string; // Optional - if not provided, sync all projects for user
+      
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+      
+      console.log(`Starting note count synchronization for user ${userId}${projectId ? `, project ${projectId}` : ''}`);
+      
+      // Connect to database
+      let dbClient;
+      try {
+        dbClient = await pool.connect();
+        
+        // Get projects for user
+        const projectsQuery = projectId 
+          ? `SELECT id, title, note_count FROM settings WHERE user_id = $1 AND id = $2 AND deleted_at IS NULL`
+          : `SELECT id, title, note_count FROM settings WHERE user_id = $1 AND deleted_at IS NULL`;
+          
+        const projectsParams = projectId ? [userId, projectId] : [userId];
+        const projectsResult = await dbClient.query(projectsQuery, projectsParams);
+        
+        if (projectsResult.rows.length === 0) {
+          return res.status(404).json({ 
+            message: "No projects found to synchronize",
+            success: false
+          });
+        }
+        
+        const updateResults = [];
+        
+        // Process each project
+        for (const project of projectsResult.rows) {
+          console.log(`Processing project ${project.id} (${project.title || 'Untitled'})`);
+          
+          // Count actual notes in database
+          const countQuery = `SELECT COUNT(*) as note_count FROM notes WHERE project_id = $1 AND user_id = $2`;
+          const noteCountResult = await dbClient.query(countQuery, [project.id, userId]);
+          
+          const actualCount = parseInt(noteCountResult.rows[0]?.note_count || '0');
+          const settingsCount = parseInt(project.note_count || '0');
+          
+          // Information about this project
+          const projectInfo = {
+            id: project.id,
+            title: project.title || 'Untitled',
+            previous_count: settingsCount,
+            actual_count: actualCount,
+            updated: false,
+            message: ''
+          };
+          
+          // Update settings if the counts don't match
+          if (actualCount !== settingsCount) {
+            try {
+              await dbClient.query(
+                `UPDATE settings SET note_count = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3`,
+                [actualCount, project.id, userId]
+              );
+              
+              projectInfo.updated = true;
+              projectInfo.message = `Note count updated from ${settingsCount} to ${actualCount}`;
+              console.log(`Updated note count for project ${project.id} from ${settingsCount} to ${actualCount}`);
+              
+              // Also update the JSON file to keep it in sync
+              const projectFilePath = path.join(projectsDir, `${project.id}.json`);
+              if (fs.existsSync(projectFilePath)) {
+                try {
+                  const projectDataStr = fs.readFileSync(projectFilePath, 'utf8');
+                  const projectData = JSON.parse(projectDataStr);
+                  
+                  // Only update the note count and updated time in the JSON file
+                  projectData.note_count = actualCount;
+                  projectData.updated_at = new Date().toISOString();
+                  
+                  fs.writeFileSync(projectFilePath, JSON.stringify(projectData, null, 2));
+                  console.log(`Updated JSON file for project ${project.id} with correct note count`);
+                } catch (jsonError) {
+                  console.error(`Error updating JSON file for project ${project.id}:`, jsonError);
+                  projectInfo.message += ` (JSON update failed)`;
+                }
+              }
+            } catch (updateError) {
+              projectInfo.message = `Error updating note count: ${updateError instanceof Error ? updateError.message : String(updateError)}`;
+              console.error(`Error updating note count for project ${project.id}:`, updateError);
+            }
+          } else {
+            projectInfo.message = `No update needed. Note count is already correct (${actualCount})`;
+          }
+          
+          updateResults.push(projectInfo);
+        }
+        
+        return res.status(200).json({
+          success: true,
+          message: `Synchronized note counts for ${updateResults.length} projects`,
+          projects: updateResults
+        });
+      } finally {
+        if (dbClient) dbClient.release();
+      }
+    } catch (error) {
+      console.error("Error synchronizing note counts:", error);
+      return res.status(500).json({
+        error: "Failed to synchronize note counts",
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
 
   // use storage to perform CRUD operations on the storage interface
   // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
