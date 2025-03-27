@@ -490,9 +490,13 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                                   <span className="ml-2 text-xs text-gray-500 border border-gray-700 rounded px-1 py-0.5">Click to load</span>
                                 </h4>
                               </div>
-                              <p className="text-sm text-gray-400 ml-8">
-                                Updated: {formatDate(project.updated_at)}
-                              </p>
+                              <div className="text-sm text-gray-400 ml-8 flex items-center gap-4">
+                                <span>Updated: {formatDate(project.updated_at)}</span>
+                                <span className="border border-gray-700 rounded px-2 py-0.5 flex items-center">
+                                  <span className="text-xs mr-1">Notes:</span> 
+                                  <span className="font-semibold">{project.note_count ?? 0}</span>
+                                </span>
+                              </div>
                             </div>
                             <div className="flex gap-2">
                               <Button
