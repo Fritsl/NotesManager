@@ -78,7 +78,6 @@ import screenfull from 'screenfull';
 export default function HeaderWithSearch() {
   const { 
     notes,
-    setNotes,
     expandAll, 
     collapseAll, 
     expandToLevel, 
@@ -91,7 +90,6 @@ export default function HeaderWithSearch() {
     createNewProject,
     saveProject,
     currentProjectId,
-    setCurrentProjectId,
     addNote,
     undoLastAction,
     canUndo,
@@ -122,7 +120,6 @@ export default function HeaderWithSearch() {
       document.title = currentProjectName || "Notes";
     }
   };
-  
   const { user, signOut } = useAuth();
   const { toast } = useToast();
 
@@ -143,6 +140,7 @@ export default function HeaderWithSearch() {
     }
   };
 
+  // Remove debug log
   const [showImportModal, setShowImportModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showProjectsModal, setShowProjectsModal] = useState(false);
@@ -285,7 +283,7 @@ export default function HeaderWithSearch() {
   
   // Handle exporting the current level as text
   const handleExportAsText = () => {
-    if (currentProjectId) {
+    if (hasActiveProject) {
       const text = exportCurrentLevelAsText();
       // Use the Clipboard API to copy text to clipboard
       navigator.clipboard.writeText(text)
@@ -339,407 +337,535 @@ export default function HeaderWithSearch() {
 
   return (
     <header className="bg-gray-950 border-b border-gray-800 py-2 px-2 sm:px-4">
-      <div className="flex flex-col space-y-2">
-        {/* Top row with project name and controls */}
-        <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-1 sm:space-x-2">
-            <div className="flex items-center">
-              {!isEditingProjectName ? (
-                <div 
-                  className="flex items-center cursor-pointer group"
-                  onClick={startEditing}
-                >
-                  <h1 className="mobile-text-base font-semibold text-gray-100 flex items-center">
-                    <span className="text-gray-400 hidden sm:inline">Project:</span>
-                    <span className="ml-0 sm:ml-1 max-w-[120px] sm:max-w-[250px] truncate group-hover:text-primary transition-colors">
-                      {currentProjectName || "Untitled Project"}
-                    </span>
-                    <Edit2 className="h-3.5 w-3.5 ml-1 opacity-0 group-hover:opacity-100 text-gray-400 transition-opacity" />
-                  </h1>
-                </div>
-              ) : (
-                <div className="flex items-center">
-                  <span className="text-gray-400 text-sm sm:text-base mr-1 hidden sm:inline">Project:</span>
+      {hasActiveProject ? (
+        <div className="flex flex-col space-y-2">
+          {/* Top row with project name and controls */}
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-1 sm:space-x-2">
+              <div className="flex items-center">
+                {!isEditingProjectName ? (
+                  <div 
+                    className="flex items-center cursor-pointer group"
+                    onClick={startEditing}
+                  >
+                    <h1 className="mobile-text-base font-semibold text-gray-100 flex items-center">
+                      <span className="text-gray-400 hidden sm:inline">Project:</span>
+                      <span className="ml-0 sm:ml-1 max-w-[120px] sm:max-w-[250px] truncate group-hover:text-primary transition-colors">
+                        {currentProjectName}
+                      </span>
+                      <Edit2 className="h-3.5 w-3.5 ml-1 opacity-0 group-hover:opacity-100 text-gray-400 transition-opacity" />
+                    </h1>
+                  </div>
+                ) : (
                   <div className="flex items-center">
-                    <Input
-                      ref={projectNameInputRef}
-                      value={editedProjectName}
-                      onChange={(e) => {
-                        // Filter out non-ASCII characters and problematic characters that database restricts
-                        const rawInput = e.target.value;
-                        const filteredInput = rawInput.replace(/[^\x00-\x7F]|[<>{}[\]\\\/]/g, '');
-                        
-                        // Show a warning if characters were filtered out
-                        if (filteredInput !== rawInput) {
-                          toast({
-                            title: 'Character Removed',
-                            description: 'Some characters are not allowed in project names due to database constraints.',
-                            duration: 3000
-                          });
-                        }
-                        
-                        setEditedProjectName(filteredInput);
-                      }}
-                      onKeyDown={handleKeyDown}
-                      className="h-7 py-0 w-28 sm:w-auto text-sm sm:text-base font-semibold bg-gray-800 border-gray-700 focus-visible:ring-primary text-gray-100"
-                      maxLength={50}
-                      placeholder="ASCII chars only"
-                    />
-                    <div className="flex ml-1">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6 p-0 text-green-500 hover:text-green-400 hover:bg-gray-800 touch-target"
-                        onClick={saveProjectName}
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6 p-0 text-red-500 hover:text-red-400 hover:bg-gray-800 touch-target"
-                        onClick={cancelEditing}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                    <span className="text-gray-400 text-sm sm:text-base mr-1 hidden sm:inline">Project:</span>
+                    <div className="flex items-center">
+                      <Input
+                        ref={projectNameInputRef}
+                        value={editedProjectName}
+                        onChange={(e) => {
+                          // Filter out non-ASCII characters and problematic characters that database restricts
+                          const rawInput = e.target.value;
+                          const filteredInput = rawInput.replace(/[^\x00-\x7F]|[<>{}[\]\\\/]/g, '');
+                          
+                          // Show a warning if characters were filtered out
+                          if (filteredInput !== rawInput) {
+                            toast({
+                              title: 'Character Removed',
+                              description: 'Some characters are not allowed in project names due to database constraints.',
+                              duration: 3000
+                            });
+                          }
+                          
+                          setEditedProjectName(filteredInput);
+                        }}
+                        onKeyDown={handleKeyDown}
+                        className="h-7 py-0 w-28 sm:w-auto text-sm sm:text-base font-semibold bg-gray-800 border-gray-700 focus-visible:ring-primary text-gray-100"
+                        maxLength={50}
+                        placeholder="ASCII chars only"
+                      />
+                      <div className="flex ml-1">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6 p-0 text-green-500 hover:text-green-400 hover:bg-gray-800 touch-target"
+                          onClick={saveProjectName}
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6 p-0 text-red-500 hover:text-red-400 hover:bg-gray-800 touch-target"
+                          onClick={cancelEditing}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+
+              {/* Level Controls (added to top menu) */}
+              <div className="flex items-center gap-1 ml-4">
+                {Array.from({ length: Math.min(maxDepth + 1, 9) }, (_, i) => i).map(level => {
+                  const colorTheme = levelColors[Math.min(level, levelColors.length - 1)];
+                  return (
+                    <Button 
+                      key={level}
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => expandToLevel(level)}
+                      className={cn(
+                        "h-7 w-7 p-0 font-bold text-white",
+                        level > 0 ? "ml-1" : "",
+                        `${colorTheme.bg} border ${colorTheme.border}`,
+                        currentLevel === level ? 'ring-2 ring-white' : ''
+                      )}
+                    >
+                      {level}
+                    </Button>
+                  );
+                })}
+              </div>
             </div>
+            <div className="flex items-center">
+              {/* Viewer Button */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mr-2 text-primary-500 hover:text-primary-400"
+                      onClick={() => {
+                        window.open("https://fastpresenterviwer.netlify.app", "_self");
+                      }}
+                    >
+                      <Presentation className="h-4 w-4 mr-1" />
+                      <span className="hidden sm:inline">Viewer</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Open Presenter Viewer (Shortcut: I)</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
-            {/* Level Controls (added to top menu) */}
-            <div className="flex items-center gap-1 ml-4">
-              {Array.from({ length: Math.min(maxDepth + 1, 9) }, (_, i) => i).map(level => {
-                const colorTheme = levelColors[Math.min(level, levelColors.length - 1)];
-                return (
-                  <Button 
-                    key={level}
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => expandToLevel(level)}
-                    className={cn(
-                      "h-7 w-7 p-0 font-bold text-white",
-                      level > 0 ? "ml-1" : "",
-                      `${colorTheme.bg} border ${colorTheme.border}`,
-                      currentLevel === level ? 'ring-2 ring-white' : ''
-                    )}
-                  >
-                    {level}
-                  </Button>
-                );
-              })}
-            </div>
-          </div>
-          <div className="flex items-center">
-            {/* Viewer Button */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mr-2 text-primary-500 hover:text-primary-400"
-                    onClick={() => {
-                      window.open("https://fastpresenterviwer.netlify.app", "_self");
-                    }}
-                  >
-                    <Presentation className="h-4 w-4 mr-1" />
-                    <span className="hidden sm:inline">Viewer</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Open Presenter Viewer (Shortcut: I)</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+              {/* Fullscreen Toggle Button */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={toggleFullscreen}
+                      className={`ml-2 p-1 rounded-full hover:bg-black/20 transition-colors text-gray-400 ${
+                        isFullscreen ? 'opacity-20 hover:opacity-60' : 'opacity-50 hover:opacity-100'
+                      } py-2`}
+                      aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+                    >
+                      {isFullscreen ? (
+                        <Minimize2 className="w-4 h-4" />
+                      ) : (
+                        <Maximize2 className="w-4 h-4" />
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Toggle Fullscreen Mode</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
-            {/* Fullscreen Toggle Button */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={toggleFullscreen}
-                    className={`ml-2 p-1 rounded-full hover:bg-black/20 transition-colors ${isFullscreen ? 'text-primary' : 'text-gray-400'}`}
-                  >
-                    {isFullscreen ? (
-                      <Minimize2 className="h-5 w-5" />
-                    ) : (
-                      <Maximize2 className="h-5 w-5" />
-                    )}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        </div>
-
-        {/* Second row with search and actions */}
-        <div className="flex justify-between items-center">
-          <div className="flex-1 flex items-center space-x-2">
-            {/* Left side - Hamburger menu and Search */}
-            <div className="flex-shrink-0 flex items-center">
-              {/* Hamburger Menu */}
+              {/* Consolidated Hamburger Menu - Removed mobile level controls */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9 p-0 touch-target">
-                    <Menu className="h-5 w-5 text-gray-300" />
+                  <Button variant="ghost" size="icon" className="h-8 w-8 touch-target">
+                    <Menu className="h-5 w-5" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56 bg-gray-900 border-gray-800 text-gray-300">
-                  {/* Project Management */}
-                  <DropdownMenuItem 
-                    onClick={() => setShowProjectsModal(true)}
-                  >
-                    <FolderOpen className="h-4 w-4 mr-2" />
-                    Open Project
+                <DropdownMenuContent align="end" className="w-56">
+                  {/* File Operations */}
+                  <DropdownMenuItem onClick={() => {
+                    createNewProject('New Project');
+                  }}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    <span>New</span>
                   </DropdownMenuItem>
-                  
-                  {/* Only enable these when a project is active */}
-                  <DropdownMenuItem 
-                    onClick={() => {
-                      if (currentProjectId) {
-                        saveProject().then(() => {
-                          toast({
-                            title: "Project Saved",
-                            description: "Your project has been saved successfully",
-                          });
-                        });
-                      } else {
+                  <DropdownMenuItem onClick={() => setShowProjectsModal(true)}>
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    <span>Projects</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={async () => {
+                    if (currentProjectId) {
+                      try {
+                        await saveProject();
+                        // Toast will be shown by saveProject function
+                      } catch (err) {
                         toast({
-                          title: "No Active Project",
-                          description: "Please create or select a project first",
+                          title: "Error",
+                          description: "Failed to update project metadata",
                           variant: "destructive",
                         });
                       }
-                    }}
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Project
+                    } else {
+                      toast({
+                        title: "No Project",
+                        description: "Cannot save - no active project",
+                        variant: "destructive",
+                      });
+                    }
+                  }}>
+                    <AlertTriangle className="h-4 w-4 mr-2 text-yellow-500" />
+                    <span className="text-yellow-500 font-semibold">Save Disabled</span>
+                    <span className="ml-auto text-xs text-yellow-500/80">{currentProjectId ? "(Metadata Only)" : "(No Project)"}</span>
                   </DropdownMenuItem>
+
+                  {/* Note Actions */}
+                  {/* Always show Add Note option when there's an active project */}
+                  {hasActiveProject && (
+                    <DropdownMenuItem onClick={() => addNote(null)}>
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                      <span>Add Note (Root level)</span>
+                    </DropdownMenuItem>
+                  )}
                   
-                  <DropdownMenuItem
-                    onClick={() => {
-                      // Generate a name for the new project
-                      (async () => {
-                        const defaultName = await generateUniqueProjectName();
-                        setNewProjectName(defaultName);
-                        setShowNewProjectDialog(true);
-                      })();
-                    }}
-                  >
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    New Project
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenuItem 
-                    onClick={() => setShowDescriptionModal(true)}
-                  >
-                    <FileEdit className="h-4 w-4 mr-2" />
-                    Edit Description
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenuSeparator />
-                  
+                  {/* Show Undo option only when there's something to undo */}
+                  {canUndo && (
+                    <DropdownMenuItem onClick={() => {
+                      undoLastAction();
+                      toast({
+                        title: "Undo Complete",
+                        description: "Last action has been undone",
+                      });
+                    }}>
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      <span>Undo: {getUndoDescription()}</span>
+                    </DropdownMenuItem>
+                  )}
+
+                  {/* Always show the separator when there's an active project */}
+                  {hasActiveProject && <DropdownMenuSeparator />}
+
                   {/* Import/Export */}
                   <DropdownMenuItem onClick={() => setShowImportModal(true)}>
                     <FileUp className="h-4 w-4 mr-2" />
-                    Import Notes
+                    <span>Import from JSON</span>
                   </DropdownMenuItem>
-                  
                   <DropdownMenuItem onClick={() => setShowExportModal(true)}>
                     <FileDown className="h-4 w-4 mr-2" />
-                    Export Notes
+                    <span>Export JSON</span>
                   </DropdownMenuItem>
-                  
                   <DropdownMenuItem 
                     onClick={handleExportAsText}
+                    disabled={!hasActiveProject}
                   >
                     <FileText className="h-4 w-4 mr-2" />
-                    Copy as Text
+                    <span>Export Level as Text</span>
                   </DropdownMenuItem>
-                  
+
                   <DropdownMenuSeparator />
-                  
-                  {/* Layout options */}
-                  <DropdownMenuItem onClick={expandAll}>
-                    <ChevronDown className="h-4 w-4 mr-2" />
-                    Expand All
+                  {/* User Options - Incorporating UserMenu items here */}
+                  <DropdownMenuItem onClick={() => setShowPayoffModal(true)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    <span>Edit Profile Payoff</span>
                   </DropdownMenuItem>
-                  
-                  <DropdownMenuItem onClick={collapseAll}>
-                    <ChevronUp className="h-4 w-4 mr-2" />
-                    Collapse All
+                  <DropdownMenuItem onClick={() => setShowDescriptionModal(true)}>
+                    <FileEdit className="h-4 w-4 mr-2" />
+                    <span>Edit Project Description</span>
                   </DropdownMenuItem>
-                  
-                  {canUndo && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        onClick={undoLastAction}
-                      >
-                        <RotateCcw className="h-4 w-4 mr-2" />
-                        {getUndoDescription()}
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  
-                  <DropdownMenuSeparator />
-                  
-                  {/* Move to trash option - only enabled if project exists */}
                   <DropdownMenuItem 
                     onClick={() => {
                       if (currentProjectId) {
                         setShowDeleteConfirm(true);
-                      } else {
-                        toast({
-                          title: "No Active Project",
-                          description: "Please create or select a project first",
-                          variant: "destructive",
-                        });
                       }
                     }}
-                    className="text-red-500 hover:text-red-400"
+                    disabled={!currentProjectId}
+                    className="text-red-500 hover:text-red-400 focus:text-red-400"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Move to Trash
+                    <span>Delete Project</span>
                   </DropdownMenuItem>
+                  
+
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={()=> {/*Add SearchBar here*/}}>
+                    <span>Search</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={()=> {/*Add FilterMenu here*/}}>
+                    <span>Filter</span>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowHelpModal(true)}>
+                    <HelpCircle className="h-4 w-4 mr-2" />
+                    <span>Help</span>
+                  </DropdownMenuItem>
+                  {user ? (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="cursor-default pb-2">
+                        <span className="text-xs">{user.email}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleSignOut}>
+                        <LogOut className="h-4 w-4 mr-2" />
+                        <span>Sign Out</span>
+                      </DropdownMenuItem>
+                    </>
+                  ) : (
+                    <DropdownMenuItem onClick={() => setShowAuthModal(true)}>
+                      <LogIn className="h-4 w-4 mr-2" />
+                      <span>Sign In</span>
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            
-            {/* Search Bar */}
-            <div className="flex-1 flex items-center space-x-2">
-              <div className="flex-grow">
-                <SearchBar />
-              </div>
-              
-              {/* Filter Menu */}
-              <FilterMenu onFilterChange={handleFilterChange} />
-              
-              {/* Help Button */}
+          </div>
+
+        </div>
+      ) : (
+        <>
+          {/* No Project UI */}
+          <div className="flex items-center justify-between">
+            <h1 className="text-base font-semibold text-gray-100">
+              Notes Editor
+            </h1>
+            <div className="flex items-center space-x-2">
+              {/* Viewer Button */}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-9 w-9 p-0 touch-target"
-                      onClick={() => setShowHelpModal(true)}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mr-1 text-primary-500 hover:text-primary-400"
+                      onClick={() => {
+                        window.open("https://fastpresenterviwer.netlify.app", "_self");
+                      }}
                     >
-                      <HelpCircle className="h-5 w-5 text-gray-400" />
+                      <Presentation className="h-4 w-4 mr-1" />
+                      <span className="hidden sm:inline">Viewer</span>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Help & Keyboard Shortcuts</p>
+                    <p>Open Presenter Viewer (Shortcut: I)</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-            </div>
-            
-            {/* Adds User Menu */}
-            <div className="flex-shrink-0">
-              {user ? (
-                <UserMenu />
-              ) : (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setShowAuthModal(true)}
-                  className="h-8 text-gray-100 hover:text-white"
-                >
-                  <LogIn className="h-4 w-4 mr-2" />
-                  <span>Login</span>
-                </Button>
-              )}
+
+              {/* Consolidated Hamburger Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 touch-target">
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  {/* File Operations */}
+                  <DropdownMenuItem onClick={() => {
+                    createNewProject('New Project');
+                  }}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    <span>New</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowProjectsModal(true)}>
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    <span>Projects</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+
+                  {/* Note Actions */}
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      if (hasActiveProject) {
+                        addNote(null);
+                      } else {
+                        toast({
+                          title: "No Active Project",
+                          description: "Please create or open a project first",
+                          variant: "destructive"
+                        });
+                      }
+                    }}
+                    disabled={!hasActiveProject}
+                  >
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    <span>Add Note (Root level)</span>
+                  </DropdownMenuItem>
+
+                  {/* Undo Action - only shown when actions are available to undo */}
+                  {canUndo && (
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        const undoDesc = getUndoDescription();
+                        undoLastAction();
+                        toast({
+                          title: "Undo Complete",
+                          description: `Undid: ${undoDesc}`
+                        });
+                      }}
+                    >
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      <span>{getUndoDescription()} (Ctrl+Z)</span>
+                    </DropdownMenuItem>
+                  )}
+
+                  <DropdownMenuSeparator />
+
+                  {/* Import/Export */}
+                  <DropdownMenuItem onClick={() => setShowImportModal(true)}>
+                    <FileUp className="h-4 w-4 mr-2" />
+                    <span>Import from JSON</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowExportModal(true)}>
+                    <FileDown className="h-4 w-4 mr-2" />
+                    <span>Export JSON</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={handleExportAsText}
+                    disabled={!hasActiveProject}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    <span>Export Level as Text</span>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
+                  {/* User Options */}
+                  <DropdownMenuItem onClick={() => setShowPayoffModal(true)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    <span>Edit Profile Payoff</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setShowDescriptionModal(true)}
+                    disabled={!hasActiveProject}
+                  >
+                    <FileEdit className="h-4 w-4 mr-2" />
+                    <span>Edit Project Description</span>
+                  </DropdownMenuItem>
+
+
+                  <DropdownMenuItem onClick={()=> {/*Add SearchBar here*/}}>
+                    <span>Search</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={()=> {/*Add FilterMenu here*/}}>
+                    <span>Filter</span>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowHelpModal(true)}>
+                    <HelpCircle className="h-4 w-4 mr-2" />
+                    <span>Help</span>
+                  </DropdownMenuItem>
+
+                  {user ? (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="cursor-default pb-2">
+                        <span className="text-xs">{user.email}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleSignOut}>
+                        <LogOut className="h-4 w-4 mr-2" />
+                        <span>Sign Out</span>
+                      </DropdownMenuItem>
+                    </>
+                  ) : (
+                    <DropdownMenuItem onClick={() => setShowAuthModal(true)}>
+                      <LogIn className="h-4 w-4 mr-2" />
+                      <span>Sign In</span>
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
       {/* Modals */}
-      <ImportModal isOpen={showImportModal} onClose={() => setShowImportModal(false)} />
-      <ExportModal onClose={() => setShowExportModal(false)} isOpen={showExportModal} />
-      <ProjectsModal isOpen={showProjectsModal} onClose={() => setShowProjectsModal(false)} />
-      <PayoffModal isOpen={showPayoffModal} onClose={() => setShowPayoffModal(false)} />
-      <ProjectDescriptionModal isOpen={showDescriptionModal} onClose={() => setShowDescriptionModal(false)} />
+      {showImportModal && <ImportModal onClose={() => setShowImportModal(false)} />}
+      {showExportModal && <ExportModal onClose={() => setShowExportModal(false)} />}
+      {showProjectsModal && <ProjectsModal isOpen={showProjectsModal} onClose={() => setShowProjectsModal(false)} />}
+      {showPayoffModal && <PayoffModal isOpen={showPayoffModal} onClose={() => setShowPayoffModal(false)} />}
+      {showDescriptionModal && <ProjectDescriptionModal isOpen={showDescriptionModal} onClose={() => setShowDescriptionModal(false)} />}
       <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
-      
-      {/* Alert for delete confirmation */}
+
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent className="bg-gray-900 border-gray-800 text-gray-100">
+        <AlertDialogContent className="bg-gray-900 border border-gray-800">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-gray-100">Move project to trash?</AlertDialogTitle>
+            <AlertDialogTitle className="text-gray-200 flex items-center">
+              <Trash2 className="mr-2 h-5 w-5 text-red-500" />
+              Move to Trash
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-gray-400">
-              This will move "{currentProjectName}" to the trash. You can restore it later if needed.
+              The project "{currentProjectName}" will be moved to trash. 
+              You can restore it later from the Trash if needed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-gray-800 hover:bg-gray-700 text-gray-100 border-gray-700">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-red-700 hover:bg-red-600 text-white"
+            <AlertDialogCancel className="bg-gray-800 text-gray-300 hover:bg-gray-700 border-gray-700">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
               onClick={async () => {
-                // Handle the trash action here
                 if (currentProjectId) {
                   try {
-                    await moveProjectToTrash(currentProjectId);
-                    toast({
-                      title: "Project Moved to Trash",
-                      description: `"${currentProjectName}" has been moved to trash`,
-                    });
-                    // Reset current project
-                    setCurrentProjectId(null);
-                    setHasActiveProject(false);
-                    setCurrentProjectName('');
-                    // Clear notes
-                    setNotes([]);
+                    const success = await moveProjectToTrash(currentProjectId);
+
+                    if (success) {
+                      toast({
+                        title: 'Moved to Trash',
+                        description: 'Project moved to trash successfully',
+                      });
+                      setHasActiveProject(false);
+                      localStorage.removeItem('lastProjectId');
+                    } else {
+                      toast({
+                        title: 'Error',
+                        description: 'Failed to move project to trash',
+                        variant: 'destructive',
+                      });
+                    }
                   } catch (error) {
-                    console.error("Error moving project to trash:", error);
+                    console.error('Error moving project to trash:', error);
                     toast({
-                      title: "Error",
-                      description: "Failed to move project to trash",
-                      variant: "destructive",
+                      title: 'Error',
+                      description: 'An unexpected error occurred',
+                      variant: 'destructive',
                     });
                   }
                 }
               }}
+              className="bg-red-900 hover:bg-red-800 text-gray-200 border-none"
             >
               Move to Trash
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
       {/* New Project Dialog */}
       <AlertDialog open={showNewProjectDialog} onOpenChange={setShowNewProjectDialog}>
-        <AlertDialogContent className="bg-gray-900 border-gray-800 text-gray-100">
+        <AlertDialogContent className="bg-gray-900 border-gray-800">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-gray-100">Create New Project</AlertDialogTitle>
             <AlertDialogDescription className="text-gray-400">
-              Enter a name for your new project.
+              Enter a name for your new project. The name must contain only ASCII characters.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-4">
             <Input
               ref={newProjectInputRef}
-              className="bg-gray-800 border-gray-700 text-gray-100"
-              placeholder="Project Name"
               value={newProjectName}
               onChange={(e) => {
-                // Filter non-ASCII characters
-                const filteredInput = e.target.value.replace(/[^\x00-\x7F]|[<>{}[\]\\\/]/g, '');
+                // Filter out non-ASCII characters and problematic characters that database restricts
+                const rawInput = e.target.value;
+                const filteredInput = rawInput.replace(/[^\x00-\x7F]|[<>{}[\]\\\/]/g, '');
                 
-                // Show warning if characters were filtered
-                if (filteredInput !== e.target.value) {
+                // Show a warning if characters were filtered out
+                if (filteredInput !== rawInput) {
                   toast({
                     title: 'Character Removed',
-                    description: 'Some characters are not allowed in project names.',
+                    description: 'Some characters are not allowed in project names due to database constraints.',
                     duration: 3000
                   });
                 }
@@ -748,27 +874,29 @@ export default function HeaderWithSearch() {
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  if (newProjectName.trim()) {
+                  // Handle project creation on Enter
+                  if (newProjectName.trim() !== '') {
                     createNewProject(newProjectName.trim());
                     setShowNewProjectDialog(false);
                   }
                 }
               }}
-              maxLength={50}
+              className="w-full bg-gray-800 border-gray-700 text-gray-100"
+              placeholder="Project name (ASCII characters only)"
+              autoFocus
             />
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-gray-800 hover:bg-gray-700 text-gray-100 border-gray-700">
+            <AlertDialogCancel className="bg-gray-800 text-gray-300 hover:bg-gray-700 border-gray-700">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-primary hover:bg-primary/90 text-white"
               onClick={() => {
-                if (newProjectName.trim()) {
+                if (newProjectName.trim() !== '') {
                   createNewProject(newProjectName.trim());
                 }
               }}
-              disabled={!newProjectName.trim()}
+              className="bg-primary hover:bg-primary/90"
             >
               Create Project
             </AlertDialogAction>

@@ -11,11 +11,10 @@ import { useNotes } from "@/context/NotesContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ExportModalProps {
-  isOpen: boolean;
   onClose: () => void;
 }
 
-export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
+export default function ExportModal({ onClose }: ExportModalProps) {
   const { exportNotes } = useNotes();
 
   const handleExport = () => {
@@ -38,7 +37,7 @@ export default function ExportModal({ isOpen, onClose }: ExportModalProps) {
   const previewJson = JSON.stringify(exportNotes(), null, 2);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-xl">Export Notes</DialogTitle>

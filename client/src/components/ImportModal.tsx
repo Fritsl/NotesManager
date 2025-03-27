@@ -16,11 +16,10 @@ import { NotesData } from "@/types/notes";
 import { useToast } from "@/components/ui/use-toast";
 
 interface ImportModalProps {
-  isOpen: boolean;
   onClose: () => void;
 }
 
-export default function ImportModal({ isOpen, onClose }: ImportModalProps) {
+export default function ImportModal({ onClose }: ImportModalProps) {
   const { importNotes, setHasActiveProject, currentProjectName } = useNotes();
   const { toast } = useToast();
   const [fileName, setFileName] = useState<string | null>(null);
@@ -130,7 +129,7 @@ export default function ImportModal({ isOpen, onClose }: ImportModalProps) {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-xl">Import Notes</DialogTitle>
