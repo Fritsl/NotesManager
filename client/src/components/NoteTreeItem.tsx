@@ -424,48 +424,86 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   // Define common save and cancel functions for both mobile and desktop editing
   const handleSaveNote = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsSaving(true);
-
+    
+    /* 
+      MODIFIED VERSION FOR TESTING
+      THIS NEEDS TO BE RE-ENABLED, TEST OUT MODIFIED VERSION ONLY
+      
+      The issue seems to be that state updates during and after saving
+      are causing form jumping issues when reopening the form.
+      
+      We're changing the order of operations:
+      1. Capture all values from refs first
+      2. Close the form by setting isEditing = false
+      3. Then update the note and save to server with the form already closed
+    */
+    
     try {
-      // Get all values directly from refs to avoid cursor jump issues during typing
+      // Show saving indicator
+      setIsSaving(true);
+      
+      // First capture all values from refs
       const currentContent = contentEditRef.current?.value || note.content;
       const currentTimeSet = timeInputRef.current?.value || null;
       const currentYoutubeUrl = youtubeUrlInputRef.current?.value || null;
       const currentUrl = urlInputRef.current?.value || null;
       const currentUrlDisplayText = urlDisplayTextInputRef.current?.value || null;
-
-      // Update the note in memory with all properties
+      
+      // Create the updated note object with captured values
       const updatedNote = {
         ...note,
         content: currentContent,
         time_set: currentTimeSet,
-        is_discussion: editIsDiscussion, // Switch is controlled so we keep this state
+        is_discussion: editIsDiscussion,
         youtube_url: currentYoutubeUrl,
         url: currentUrl,
         url_display_text: currentUrlDisplayText
       };
-
-      // First update in local state
-      updateNote(updatedNote);
-
-      // Then save to server
-      await saveProject();
-
-      toast({
-        title: "Note Updated",
-        description: "Changes have been saved",
+      
+      // Log the values we're about to save
+      console.log('📝 Saving note with values:', {
+        content: currentContent,
+        time_set: currentTimeSet,
+        youtube_url: currentYoutubeUrl,
+        url: currentUrl,
+        url_display_text: currentUrlDisplayText
       });
 
+      // First close the form
       setIsEditing(false);
+      
+      // Wait briefly for the form to close
+      setTimeout(async () => {
+        try {
+          // Now update in local state and save to server
+          updateNote(updatedNote);
+          await saveProject();
+          
+          toast({
+            title: "Note Updated",
+            description: "Changes have been saved",
+          });
+        } catch (error) {
+          console.error('Error in delayed save operation:', error);
+          toast({
+            title: "Save Failed",
+            description: "Could not save your changes. Please try again.",
+            variant: "destructive",
+          });
+        } finally {
+          // Reset saving state
+          setIsSaving(false);
+        }
+      }, 50); // Small delay to ensure form is closed before state updates
+      
     } catch (error) {
-      console.error('Error saving note:', error);
+      console.error('Error in main save handler:', error);
+      setIsSaving(false);
       toast({
         title: "Save Failed",
         description: "Could not save your changes. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsSaving(false);
     }
   };
 
