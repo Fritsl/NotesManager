@@ -496,8 +496,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             try {
               const deleteResult = await client.query(deleteQuery, [batch]);
-              deletedRecords += deleteResult.rowCount;
-              log(`Deleted ${deleteResult.rowCount} records from batch ${Math.floor(i/BATCH_SIZE) + 1}`);
+              deletedRecords += deleteResult.rowCount || 0;
+              log(`Deleted ${deleteResult.rowCount || 0} records from batch ${Math.floor(i/BATCH_SIZE) + 1}`);
             } catch (deleteError) {
               log(`Error deleting image records batch ${Math.floor(i/BATCH_SIZE) + 1}: ${deleteError}`);
               // Continue with next batch
@@ -778,7 +778,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               };
             } else {
               log('Note-images bucket created successfully');
-              noteImagesBucket = newBucket;
+              // Just use the new bucket name instead of the full object to avoid typing issues
               diagnostics.storageTests = {
                 bucketsListed: true,
                 bucketsCount: buckets.length + 1,
