@@ -86,6 +86,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Project name: ${name}`);
       console.log(`Project contains ${data.notes?.length || 0} notes`);
       
+      // Function to count total notes including children
+      const countTotalNotes = (notes: any[]): number => {
+        let count = notes.length;
+        
+        for (const note of notes) {
+          if (note.children && Array.isArray(note.children)) {
+            count += countTotalNotes(note.children);
+          }
+        }
+        
+        return count;
+      };
+      
+      // Calculate the total number of notes in the project
+      const totalNoteCount = data.notes ? countTotalNotes(data.notes) : 0;
+      console.log(`Total note count (including children): ${totalNoteCount}`);
+      
+      // Update the note_count in the settings table
+      const { data: settingsData, error: settingsError } = await supabase
+        .from('settings')
+        .update({
+          note_count: totalNoteCount,
+          last_modified_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .eq('user_id', userId);
+      
+      if (settingsError) {
+        console.error('Error updating note_count in settings:', settingsError);
+        // Continue execution - we'll still save the file even if DB update fails
+      } else {
+        console.log('Successfully updated note_count in settings table');
+      }
+      
       // Check if the data contains images
       let imageCount = 0;
       const countImages = (notes: any[]) => {
