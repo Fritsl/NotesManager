@@ -522,8 +522,8 @@ export default function HeaderWithSearch() {
                   </DropdownMenuItem>
 
                   {/* Note Actions */}
-                  {/* Only show Add Note in menu when there are already notes (not when on blank screen) */}
-                  {hasActiveProject && notes.length > 0 && (
+                  {/* Always show Add Note option when there's an active project */}
+                  {hasActiveProject && (
                     <DropdownMenuItem onClick={() => addNote(null)}>
                       <PlusCircle className="h-4 w-4 mr-2" />
                       <span>Add Note (Root level)</span>
@@ -544,8 +544,8 @@ export default function HeaderWithSearch() {
                     </DropdownMenuItem>
                   )}
 
-                  {/* Only show the separator if we displayed the Add Note menu item */}
-                  {hasActiveProject && notes.length > 0 && <DropdownMenuSeparator />}
+                  {/* Always show the separator when there's an active project */}
+                  {hasActiveProject && <DropdownMenuSeparator />}
 
                   {/* Import/Export */}
                   <DropdownMenuItem onClick={() => setShowImportModal(true)}>
