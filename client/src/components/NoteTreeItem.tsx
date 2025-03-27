@@ -13,6 +13,13 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 import ImageWithFallback from "@/components/ui/image-with-fallback";
+
+// Extend Window interface to include our save lock property
+declare global {
+  interface Window {
+    _savingInProgress?: boolean;
+  }
+}
 import {
   Dialog,
   DialogContent,
@@ -426,20 +433,28 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
     e.stopPropagation();
     
     /* 
-      MODIFIED VERSION FOR TESTING
+      IMPROVED VERSION FOR TESTING
       THIS NEEDS TO BE RE-ENABLED, TEST OUT MODIFIED VERSION ONLY
       
-      The issue seems to be that state updates during and after saving
-      are causing form jumping issues when reopening the form.
-      
-      We're changing the order of operations:
-      1. Capture all values from refs first
-      2. Close the form by setting isEditing = false
-      3. Then update the note and save to server with the form already closed
+      Key changes:
+      1. Added debounce to prevent multiple saves in quick succession
+      2. Proper cleanup of the save process to avoid state conflicts
+      3. Better error handling during the process
+      4. Separate note update from project save to avoid race conditions
     */
     
+    // Flag to track if multiple save operations might be in progress
+    // This helps avoid redundant save calls being triggered
+    if (window._savingInProgress) {
+      console.log('🚫 Save already in progress, ignoring duplicate save request');
+      return;
+    }
+    
     try {
-      // Show saving indicator
+      // Set global save flag to prevent redundant saves
+      window._savingInProgress = true;
+      
+      // Show saving indicator 
       setIsSaving(true);
       
       // First capture all values from refs
@@ -460,45 +475,62 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         url_display_text: currentUrlDisplayText
       };
       
-      // Log the values we're about to save
       console.log('📝 Saving note with values:', {
-        content: currentContent,
+        content: currentContent.substring(0, 20) + (currentContent.length > 20 ? '...' : ''),
         time_set: currentTimeSet,
         youtube_url: currentYoutubeUrl,
         url: currentUrl,
         url_display_text: currentUrlDisplayText
       });
 
-      // First close the form
+      // First close the form to prevent UI jumps
       setIsEditing(false);
+      
+      // Create a cleanup function to reset state no matter what happens
+      const cleanup = () => {
+        setIsSaving(false);
+        // Clear the global save flag after a delay
+        setTimeout(() => {
+          window._savingInProgress = false;
+          console.log('🔄 Save lock released');
+        }, 500); // Half second delay before allowing new saves
+      };
       
       // Wait briefly for the form to close
       setTimeout(async () => {
         try {
-          // Now update in local state and save to server
+          // Step 1: Update the note in local state
           updateNote(updatedNote);
+          
+          // Wait briefly to ensure state updates are processed
+          await new Promise(resolve => setTimeout(resolve, 50));
+          
+          // Step 2: Save the project to server
           await saveProject();
           
+          // Show success notification
           toast({
             title: "Note Updated",
             description: "Changes have been saved",
           });
+          
+          console.log('✅ Note and project saved successfully');
         } catch (error) {
-          console.error('Error in delayed save operation:', error);
+          console.error('Error in save operation:', error);
           toast({
             title: "Save Failed",
             description: "Could not save your changes. Please try again.",
             variant: "destructive",
           });
         } finally {
-          // Reset saving state
-          setIsSaving(false);
+          cleanup();
         }
-      }, 50); // Small delay to ensure form is closed before state updates
+      }, 100); // Slightly longer delay to ensure form is completely closed
       
     } catch (error) {
       console.error('Error in main save handler:', error);
       setIsSaving(false);
+      window._savingInProgress = false;
       toast({
         title: "Save Failed",
         description: "Could not save your changes. Please try again.",
