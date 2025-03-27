@@ -103,11 +103,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalNoteCount = data.notes ? countTotalNotes(data.notes) : 0;
       console.log(`Total note count (including children): ${totalNoteCount}`);
       
+      // Make sure the settings table record exists for this project
+      const { data: settingsExists, error: settingsCheckError } = await supabase
+        .from('settings')
+        .select('id')
+        .eq('id', id)
+        .eq('user_id', userId)
+        .maybeSingle();
+        
+      if (settingsCheckError) {
+        console.error('Error checking if settings record exists:', settingsCheckError);
+      }
+      
+      // If settings record doesn't exist, create it
+      if (!settingsExists) {
+        console.log('Creating settings record for project:', id);
+        const now = new Date().toISOString();
+        const { error: settingsInsertError } = await supabase
+          .from('settings')
+          .insert({
+            id: id,
+            title: name,
+            user_id: userId,
+            description: description || '',
+            created_at: now,
+            updated_at: now,
+            last_modified_at: now,
+            note_count: totalNoteCount
+          });
+          
+        if (settingsInsertError) {
+          console.error('Error inserting settings record:', settingsInsertError);
+        } else {
+          console.log('Successfully created settings record');
+        }
+      }
+      
       // Update the note_count in the settings table
       const { data: settingsData, error: settingsError } = await supabase
         .from('settings')
         .update({
           note_count: totalNoteCount,
+          title: name,
+          description: description || '',
           last_modified_at: new Date().toISOString()
         })
         .eq('id', id)
@@ -118,6 +156,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Continue execution - we'll still save the file even if DB update fails
       } else {
         console.log('Successfully updated note_count in settings table');
+      }
+      
+      // Process notes and save them to the database
+      // First, delete existing notes for this project to avoid duplication
+      let client;
+      try {
+        client = await pool.connect();
+        
+        // Delete existing notes for this project
+        await client.query('DELETE FROM notes WHERE project_id = $1', [id]);
+        console.log(`Deleted existing notes for project ${id}`);
+        
+        // Helper function to process notes recursively
+        const processNotes = async (notes: any[], parentId: string | null = null) => {
+          if (!Array.isArray(notes)) return;
+          
+          for (let i = 0; i < notes.length; i++) {
+            const note = notes[i];
+            
+            // Insert this note
+            await client.query(
+              `INSERT INTO notes (
+                id, user_id, project_id, parent_id, position, content, 
+                created_at, updated_at, is_discussion, time_set, 
+                youtube_url, url, url_display_text
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+              [
+                note.id,
+                userId,
+                id,
+                parentId,
+                note.position || i,
+                note.content || '',
+                note.created_at || new Date().toISOString(),
+                note.updated_at || new Date().toISOString(),
+                note.is_discussion || false,
+                note.time_set || null,
+                note.youtube_url || null,
+                note.url || null,
+                note.url_display_text || null
+              ]
+            );
+            
+            // Process child notes recursively
+            if (note.children && Array.isArray(note.children)) {
+              await processNotes(note.children, note.id);
+            }
+          }
+        };
+        
+        // Process all notes
+        if (data.notes && Array.isArray(data.notes)) {
+          await processNotes(data.notes);
+          console.log(`Successfully saved ${totalNoteCount} notes to database`);
+        }
+        
+      } catch (dbError) {
+        console.error('Database error while saving notes:', dbError);
+      } finally {
+        if (client) client.release();
       }
       
       // Check if the data contains images
@@ -174,7 +272,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Project contains ${imageCount} images (normalized)`);
       
-      // Store the project data in a file to bypass Supabase RLS
+      // Still store the project data in a file for backward compatibility
       const projectFilePath = path.join(projectsDir, `${id}.json`);
       const projectData = {
         id,
@@ -188,12 +286,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Write the file
       fs.writeFileSync(projectFilePath, JSON.stringify(projectData, null, 2));
-      console.log(`Project data saved to ${projectFilePath}`);
+      console.log(`Project data saved to ${projectFilePath} for backup and backward compatibility`);
       
       // Return success
       return res.status(200).json({
         success: true,
-        message: "Project data stored successfully"
+        message: "Project data stored successfully",
+        notesStored: totalNoteCount
       });
     } catch (error) {
       console.error("Error storing project data:", error);
