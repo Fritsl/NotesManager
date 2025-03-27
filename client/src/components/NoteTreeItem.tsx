@@ -480,214 +480,44 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   // Create edit form content that will be used in both mobile dialog and inline editing
   const renderEditForm = () => (
     <>
-      {/* Content editor with more height - Using completely uncontrolled component */}
+      {/* 
+        TEST VERSION: STRIPPED DOWN FORM
+        THIS NEEDS TO BE RE-ENABLED LATER, TEST OUT COMMENTED VERSION ONLY
+        
+        This is a minimal version with almost all event handlers and state updates removed
+        We'll add back functionality one piece at a time to isolate the issue
+      */}
+      
+      {/* Content editor - Completely uncontrolled with minimal handlers */}
       <Textarea 
         ref={contentEditRef}
         rows={Math.min(isMobile ? 3 : 6, note.content.split('\n').length + 1)}
-        className={cn(
-          "w-full p-2 text-sm bg-gray-850 border border-gray-700 focus:border-primary focus:ring-1 focus:ring-primary resize-none mb-3",
-          isMobile && "min-h-[4.5rem]" // Shorter textarea on mobile (3 lines)
-        )}
+        className="w-full p-2 text-sm bg-gray-850 border border-gray-700 focus:border-primary resize-none mb-3"
         placeholder="Enter note content..."
-        defaultValue={note.content} // Initialize with note content, but don't update during typing
-        onMouseDown={(e) => e.stopPropagation()}
+        defaultValue={note.content}
+        // Minimal event handlers to prevent propagation
         onClick={(e) => e.stopPropagation()}
-        // No autoFocus attribute to prevent stealing focus from other fields
+        onMouseDown={(e) => e.stopPropagation()}
       />
 
-      {/* Images Section */}
-      <div className="mt-2 mb-4 border-t border-gray-700 pt-2">
-        <div className="text-xs text-gray-400 flex justify-between items-center mb-2">
-          <span>Images</span>
-          <label 
-            htmlFor={`image-upload-${note.id}`} 
-            className="inline-flex items-center text-primary hover:text-primary-hover cursor-pointer text-xs"
-          >
-            <ImagePlus size={14} className="mr-1" />
-            <span>Add Image</span>
-            <input
-              id={`image-upload-${note.id}`}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={async (e) => {
-                const files = e.target.files;
-                if (!files || files.length === 0) return;
-
-                const file = files[0];
-                if (!file.type.startsWith('image/')) {
-                  console.log("Invalid file type:", file.type);
-                  return;
-                }
-
-                // Check file size (limit to 5MB)
-                if (file.size > 5 * 1024 * 1024) {
-                  console.log("File too large:", file.size);
-                  return;
-                }
-
-                try {
-                  // Show loading state
-                  setIsSaving(true);
-                  
-                  // Upload the image
-                  const image = await uploadImage(note.id, file);
-
-                  if (image) {
-                    // Reset the file input
-                    e.target.value = '';
-                    
-                    // Update the note with the new image
-                    const existingImages = note.images || [];
-                    const updatedNote = {
-                      ...note,
-                      images: [...existingImages, image]
-                    };
-                    
-                    // Update the note in state
-                    updateNote(updatedNote);
-                    
-                    // Make sure the changes are saved to the server
-                    await saveProject();
-                  }
-                } catch (error) {
-                  console.error('Error uploading image:', error);
-                } finally {
-                  setIsSaving(false);
-                }
-              }}
-            />
-          </label>
-        </div>
-
-        {/* Display images if any */}
-        {note.images && note.images.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-            {/* Deduplicate images by converting to a Map using ID as key, then back to array */}
-            {Array.from(
-              // Create a Map with image ID as key to eliminate duplicates
-              new Map(
-                note.images.map(img => [img.id, img])
-              ).values()
-            )
-            // Sort by position after deduplication
-            .sort((a, b) => a.position - b.position)
-            .map((image) => (
-              <div 
-                key={`image-${image.id}`} 
-                className="relative group border border-gray-800 rounded-md overflow-hidden"
-              >
-                <ImageWithFallback 
-                  url={image.url} 
-                  alt="Note attachment" 
-                  className="w-full h-auto object-cover cursor-pointer"
-                />
-                <div className="absolute top-0 right-0 p-1 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
-                  {/* Remove image button */}
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-6 w-6 bg-red-900/80 hover:bg-red-800 rounded-full"
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      try {
-                        setIsSaving(true);
-                        // Ensure image.id is defined before trying to remove it
-                        if (!image.id) {
-                          console.error('Cannot remove image: image ID is undefined');
-                          return;
-                        }
-                        const success = await removeImage(image.id);
-                        if (success) {
-                          // Update the note in state to remove the image
-                          const updatedImages = note.images?.filter(img => img.id !== image.id) || [];
-                          const updatedNote = { ...note, images: updatedImages };
-                          updateNote(updatedNote);
-                          // Save to server
-                          await saveProject();
-                        }
-                      } catch (error) {
-                        console.error('Error removing image:', error);
-                      } finally {
-                        setIsSaving(false);
-                      }
-                    }}
-                  >
-                    <X size={12} />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Properties section (compact, single-line items) */}
-      <div className={cn(
-        "grid gap-x-4 gap-y-2 mb-3",
-        isMobile ? "grid-cols-1" : "grid-cols-2" // Single column on mobile for more space
-      )}>
-        {/* Time settings with enhanced focus handling */}
+      {/* Properties section with minimal formatting and handlers */}
+      <div className="grid grid-cols-1 gap-2 mb-3">
+        {/* Time input - Completely stripped down */}
         <div className="flex items-center">
           <label className="text-xs text-gray-400 w-14" htmlFor={`time-${note.id}`}>Time:</label>
           <input 
             id={`time-${note.id}`}
             ref={timeInputRef}
             type="time" 
-            className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
+            className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700"
             defaultValue={note.time_set || ''}
-            // Only using one onFocus handler
-            onChange={(e) => {
-              e.preventDefault(); 
-              e.stopPropagation();
-              
-              // Mark that we're actively typing to prevent focus jumps
-              isTypingRef.current = true;
-              lastTouchedFieldRef.current = `time-${note.id}`;
-              
-              // Store this input's ID as the last focused element
-              setLastFocusedElementId(`time-${note.id}`);
-              
-              // We don't update state until save button is clicked
-              // This prevents React re-renders during typing
-              
-              // Clear typing status after a delay
-              setTimeout(() => {
-                isTypingRef.current = false;
-              }, 100);
-            }}
-            onKeyDown={(e) => {
-              // Set typing state
-              isTypingRef.current = true;
-              lastTouchedFieldRef.current = `time-${note.id}`;
-              
-              // Don't let the event bubble up to potentially interfere with focus
-              e.stopPropagation();
-            }}
-            onFocus={(e) => {
-              e.stopPropagation();
-              // Track this field as initialized to prevent focus jump on second click
-              const fieldId = `time-${note.id}`;
-              document.body.dataset.activeField = fieldId;
-              setLastFocusedElementId(fieldId);
-            }}
-            onBlur={(e) => {
-              // Clear typing state after a brief delay
-              setTimeout(() => {
-                isTypingRef.current = false;
-              }, 100);
-              
-              // Only clear if this is the current active field
-              if (document.body.dataset.activeField === `time-${note.id}`) {
-                document.body.dataset.activeField = '';
-              }
-            }}
-            onMouseDown={(e) => e.stopPropagation()}
+            // Absolutely minimal handlers - just prevent bubbling
             onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
           />
         </div>
 
-        {/* Discussion toggle */}
+        {/* Discussion toggle - Keep this one controlled as it's a Switch */}
         <div className="flex items-center">
           <label className="text-xs text-gray-400 w-20">Discussion:</label>
           <Switch 
@@ -698,220 +528,52 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             onClick={(e) => e.stopPropagation()}
           />
         </div>
-
-        {/* Test field with dedicated focus management */}
-        <div className="p-2 mb-2 bg-blue-900/30 border border-blue-500 rounded">
-          <div className="text-xs text-blue-300 mb-2 text-center">Test Field (Try editing this one first)</div>
-          <input 
-            id={`test-field-${note.id}`}
-            type="text" 
-            className="w-full h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
-            placeholder="Test field with standalone focus handling..."
-            defaultValue="Type here to test focus"
-            onClick={(e) => {
-              e.stopPropagation();
-              // Mark active to prevent other elements from stealing focus
-              document.body.dataset.activeFocus = `test-field-${note.id}`;
-            }}
-            onFocus={(e) => {
-              e.stopPropagation();
-              setLastFocusedElementId(e.target.id);
-              // Mark this field as currently focused
-              document.body.dataset.activeFocus = e.target.id;
-            }}
-            onBlur={() => {
-              // Clear active focus marker when field loses focus
-              if (document.body.dataset.activeFocus === `test-field-${note.id}`) {
-                document.body.dataset.activeFocus = '';
-              }
-            }}
-          />
-        </div>
         
-        {/* YouTube URL with enhanced focus handling */}
-        <div className="flex items-center col-span-full">
+        {/* YouTube URL - Completely stripped down */}
+        <div className="flex items-center">
           <label className="text-xs text-gray-400 w-20" htmlFor={`youtube-${note.id}`}>YouTube:</label>
           <input 
             id={`youtube-${note.id}`}
             ref={youtubeUrlInputRef}
             type="url" 
-            className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
+            className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700"
             placeholder="https://youtube.com/watch?v=..."
             defaultValue={note.youtube_url || ''}
-            onChange={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              
-              console.log('🔍 DEBUG: YouTube field onChange fired', e.target.value);
-              
-              // SIMPLIFIED FOR DEBUGGING - DON'T DO ANY STATE SETTING AT ALL
-              // Just visually log what's happening without taking any action that might cause rerendering
-              
-              // Comment out all state changes for testing
-              /*
-              // Mark that we're actively typing to prevent focus jumps
-              isTypingRef.current = true;
-              lastTouchedFieldRef.current = `youtube-${note.id}`;
-              
-              // Store this input's ID as the last focused element
-              setLastFocusedElementId(`youtube-${note.id}`);
-              
-              // Clear typing status after a delay
-              setTimeout(() => {
-                isTypingRef.current = false;
-              }, 100);
-              */
-            }}
-            onKeyDown={(e) => {
-              // Set typing state
-              isTypingRef.current = true;
-              lastTouchedFieldRef.current = `youtube-${note.id}`;
-              
-              // Don't let the event bubble up to potentially interfere with focus
-              e.stopPropagation();
-            }}
-            onFocus={(e) => {
-              e.stopPropagation();
-              // Track this field as initialized to prevent focus jump on second click
-              const fieldId = `youtube-${note.id}`;
-              document.body.dataset.activeField = fieldId;
-              setLastFocusedElementId(fieldId);
-            }}
-            onBlur={(e) => {
-              // Clear typing state after a brief delay
-              setTimeout(() => {
-                isTypingRef.current = false;
-              }, 100);
-              
-              // Only clear if this is the current active field
-              if (document.body.dataset.activeField === `youtube-${note.id}`) {
-                document.body.dataset.activeField = '';
-              }
-            }}
-            onMouseDown={(e) => e.stopPropagation()}
+            // Absolutely minimal handlers - just prevent bubbling
             onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
           />
         </div>
 
-        {/* External URL with enhanced focus handling */}
-        <div className="flex items-center col-span-full">
+        {/* External URL - Completely stripped down */}
+        <div className="flex items-center">
           <label className="text-xs text-gray-400 w-20" htmlFor={`url-${note.id}`}>URL:</label>
           <input 
             id={`url-${note.id}`}
             ref={urlInputRef}
             type="url" 
-            className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
+            className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700"
             placeholder="https://..."
             defaultValue={note.url || ''}
-            onChange={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              
-              console.log('🔍 DEBUG: URL field onChange fired', e.target.value);
-              
-              // SIMPLIFIED FOR DEBUGGING - DON'T DO ANY STATE SETTING AT ALL
-              // Just visually log what's happening without taking any action that might cause rerendering
-              
-              // Comment out all state changes for testing
-              /*
-              // Mark that we're actively typing to prevent focus jumps
-              isTypingRef.current = true;
-              lastTouchedFieldRef.current = `url-${note.id}`;
-              
-              // Store this input's ID as the last focused element
-              setLastFocusedElementId(`url-${note.id}`);
-              
-              // Clear typing status after a delay
-              setTimeout(() => {
-                isTypingRef.current = false;
-              }, 100);
-              */
-            }}
-            onKeyDown={(e) => {
-              // Set typing state
-              isTypingRef.current = true;
-              lastTouchedFieldRef.current = `url-${note.id}`;
-              
-              // Don't let the event bubble up to potentially interfere with focus
-              e.stopPropagation();
-            }}
-            onFocus={(e) => {
-              e.stopPropagation();
-              // Track this field as initialized to prevent focus jump on second click
-              const fieldId = `url-${note.id}`;
-              document.body.dataset.activeField = fieldId;
-              setLastFocusedElementId(fieldId);
-            }}
-            onBlur={(e) => {
-              // Clear typing state after a brief delay
-              setTimeout(() => {
-                isTypingRef.current = false;
-              }, 100);
-              
-              // Only clear if this is the current active field
-              if (document.body.dataset.activeField === `url-${note.id}`) {
-                document.body.dataset.activeField = '';
-              }
-            }}
-            onMouseDown={(e) => e.stopPropagation()}
+            // Absolutely minimal handlers - just prevent bubbling
             onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
           />
         </div>
 
-        {/* URL Display Text with enhanced focus handling */}
-        <div className="flex items-center col-span-full">
+        {/* URL Display Text - Completely stripped down */}
+        <div className="flex items-center">
           <label className="text-xs text-gray-400 w-20" htmlFor={`url-text-${note.id}`}>Link text:</label>
           <input 
             id={`url-text-${note.id}`}
             ref={urlDisplayTextInputRef}
             type="text" 
-            className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
+            className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700"
             placeholder="Display text for URL..."
             defaultValue={note.url_display_text || ''}
-            onChange={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              
-              // Mark that we're actively typing to prevent focus jumps
-              isTypingRef.current = true;
-              lastTouchedFieldRef.current = `url-text-${note.id}`;
-              
-              // Store this input's ID as the last focused element
-              setLastFocusedElementId(`url-text-${note.id}`);
-              
-              // Clear typing status after a delay
-              setTimeout(() => {
-                isTypingRef.current = false;
-              }, 100);
-            }}
-            onKeyDown={(e) => {
-              // Set typing state
-              isTypingRef.current = true;
-              lastTouchedFieldRef.current = `url-text-${note.id}`;
-              
-              // Don't let the event bubble up to potentially interfere with focus
-              e.stopPropagation();
-            }}
-            onFocus={(e) => {
-              e.stopPropagation();
-              // Track this field as initialized to prevent focus jump on second click
-              const fieldId = `url-text-${note.id}`;
-              document.body.dataset.activeField = fieldId;
-              setLastFocusedElementId(fieldId);
-            }}
-            onBlur={(e) => {
-              // Clear typing state after a brief delay
-              setTimeout(() => {
-                isTypingRef.current = false;
-              }, 100);
-              
-              // Only clear if this is the current active field
-              if (document.body.dataset.activeField === `url-text-${note.id}`) {
-                document.body.dataset.activeField = '';
-              }
-            }}
-            onMouseDown={(e) => e.stopPropagation()}
+            // Absolutely minimal handlers - just prevent bubbling
             onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
           />
         </div>
       </div>
@@ -931,7 +593,14 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   // Add a stable reference to prevent rerenders when focusing on a field
   const stableLastFocusedRef = React.useRef<string | null>(null);
   
-  // SIMPLIFIED VERSION WITH DEBUGGING - Only handle last focused element tracking
+  /* 
+    COMPLETELY DISABLED FOR TESTING
+    THIS NEEDS TO BE RE-ENABLED, TEST OUT COMMENTED VERSION ONLY
+    
+    This is the main focus handler that was causing the focus jumping issue
+  */
+  
+  /*
   React.useEffect(() => {
     if (isEditing && isMobile && lastFocusedElementId) {
       console.log('🔍 DEBUG: Focus effect triggered for', lastFocusedElementId);
@@ -963,6 +632,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
       // Don't do any focusing at all - this is just for debugging
     }
   }, [isEditing, isMobile, lastFocusedElementId]); // Simplified dependency array
+  */
 
   // Mobile Dialog for fullscreen editing
   const MobileEditDialog = () => (
@@ -979,6 +649,10 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         <div 
           className="form-container"
           onClick={(e) => e.stopPropagation()}
+          /* 
+            DISABLED FOR TESTING
+            Original handler was setting lastFocusedElementId which might be causing re-renders
+          
           onFocus={(e) => {
             // Check if the focused element is one of our inputs and has an ID
             if (e.target instanceof HTMLElement && e.target.id) {
@@ -997,6 +671,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               setLastFocusedElementId(fieldId);
             }
           }}
+          */
         >
           {renderEditForm()}
         </div>
