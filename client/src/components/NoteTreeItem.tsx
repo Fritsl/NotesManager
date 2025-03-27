@@ -86,11 +86,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   const urlInputRef = useRef<HTMLInputElement>(null);
   const urlDisplayTextInputRef = useRef<HTMLInputElement>(null);
 
-  // Additional states for other fields
-  const [editTimeSet, setEditTimeSet] = useState<string | null>(note.time_set);
-  const [editYoutubeUrl, setEditYoutubeUrl] = useState<string | null>(note.youtube_url);
-  const [editUrl, setEditUrl] = useState<string | null>(note.url);
-  const [editUrlDisplayText, setEditUrlDisplayText] = useState<string | null>(note.url_display_text);
+  // Only keep the discussion switch as a controlled component
+  // All other inputs will be fully uncontrolled with refs to prevent focus issues
   const [editIsDiscussion, setEditIsDiscussion] = useState(note.is_discussion);
   
   // Add log when editing mode changes
@@ -400,32 +397,21 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   const startEditing = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsEditing(true);
-    // No need to set content state as we're using uncontrolled components
-    // Initialize other form fields
-    setEditTimeSet(note.time_set);
+    // No need to set any state variables for fields using uncontrolled inputs
+    // Only set the discussion state as it uses a controlled Switch component
     setEditIsDiscussion(note.is_discussion);
-    setEditYoutubeUrl(note.youtube_url);
-    setEditUrl(note.url);
-    setEditUrlDisplayText(note.url_display_text);
     selectNote(note); // Select the note when editing
   };
 
-  // Update the local state whenever the note changes (from other components)
-  // Only update other fields, but not content since we're using uncontrolled component for textarea
+  // Update only the controlled component state when note changes
   useEffect(() => {
-    // Note: don't update editContent as it would conflict with our uncontrolled textarea
-    setEditTimeSet(note.time_set);
+    // Only update the controlled Switch component
     setEditIsDiscussion(note.is_discussion);
-    setEditYoutubeUrl(note.youtube_url);
-    setEditUrl(note.url);
-    setEditUrlDisplayText(note.url_display_text);
+    
+    // For uncontrolled inputs, we would need to manually update their values if needed
+    // But that's not necessary here as they will get new defaultValues when re-rendered
   }, [
-    // note.content, - removed to prevent controlled/uncontrolled conflict
-    note.time_set,
-    note.is_discussion,
-    note.youtube_url, 
-    note.url, 
-    note.url_display_text
+    note.is_discussion
   ]);
 
   // Focus the textarea when entering edit mode
@@ -486,13 +472,9 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   const handleCancelEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsEditing(false);
-    // Reset all edit states, except for content which is handled by the uncontrolled component
-    // No need to update editContent since we'll reset the defaultValue when we reopen the editor
-    setEditTimeSet(note.time_set);
+    // Only reset discussion switch state as it's the only controlled component
     setEditIsDiscussion(note.is_discussion);
-    setEditYoutubeUrl(note.youtube_url);
-    setEditUrl(note.url);
-    setEditUrlDisplayText(note.url_display_text);
+    // No need to reset state for uncontrolled inputs using refs
   };
 
   // Create edit form content that will be used in both mobile dialog and inline editing
@@ -653,7 +635,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             ref={timeInputRef}
             type="time" 
             className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
-            defaultValue={editTimeSet || ''}
+            defaultValue={note.time_set || ''}
             // Only using one onFocus handler
             onChange={(e) => {
               e.preventDefault(); 
@@ -755,7 +737,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             type="url" 
             className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
             placeholder="https://youtube.com/watch?v=..."
-            defaultValue={editYoutubeUrl || ''}
+            defaultValue={note.youtube_url || ''}
             onChange={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -820,7 +802,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             type="url" 
             className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
             placeholder="https://..."
-            defaultValue={editUrl || ''}
+            defaultValue={note.url || ''}
             onChange={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -885,7 +867,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             type="text" 
             className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
             placeholder="Display text for URL..."
-            defaultValue={editUrlDisplayText || ''}
+            defaultValue={note.url_display_text || ''}
             onChange={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -969,7 +951,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
       // Check if we need to refocus at all
       const activeElement = document.activeElement;
       console.log('🔍 DEBUG: Current active element:', activeElement?.id);
-      const isFocusingCorrectField = activeElement && activeElement.id === lastFocusedElementId;
+      const isFocusingCorrectField = activeElement && activeElement.id ? activeElement.id === lastFocusedElementId : false;
       
       // Skip if we're already focusing on the correct element
       if (isFocusingCorrectField) {
