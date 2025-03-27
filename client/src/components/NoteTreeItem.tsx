@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { Note } from "@/types/notes";
 import { Button } from "@/components/ui/button";
@@ -13,20 +13,12 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 import ImageWithFallback from "@/components/ui/image-with-fallback";
-
-// Extend Window interface to include our save lock property
-declare global {
-  interface Window {
-    _savingInProgress?: boolean;
-  }
-}
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -75,8 +67,9 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   const { toast } = useToast();
   const isMobile = useIsMobile(); // Check if we're on a mobile device
 
-  // References for the component and drag/drop
+  // References
   const ref = useRef<HTMLDivElement>(null);
+  const contentEditRef = useRef<HTMLTextAreaElement>(null);
 
   // Dialog states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -85,35 +78,12 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
 
   // Inline editing state
   const [isEditing, setIsEditing] = useState(false);
-  
-  // References for form fields to prevent rerender focus issues
-  const contentEditRef = useRef<HTMLTextAreaElement>(null);
-  const timeInputRef = useRef<HTMLInputElement>(null);
-  const youtubeUrlInputRef = useRef<HTMLInputElement>(null);
-  const urlInputRef = useRef<HTMLInputElement>(null);
-  const urlDisplayTextInputRef = useRef<HTMLInputElement>(null);
-
-  // Only keep the discussion switch as a controlled component
-  // All other inputs will be fully uncontrolled with refs to prevent focus issues
+  const [editContent, setEditContent] = useState(note.content);
+  const [editTimeSet, setEditTimeSet] = useState<string | null>(note.time_set);
   const [editIsDiscussion, setEditIsDiscussion] = useState(note.is_discussion);
-  
-  // Add log when editing mode changes
-  useEffect(() => {
-    if (isEditing) {
-      console.log('🔍 DEBUG: Entering edit mode for note', note.id);
-      
-      // Log values to debug the focus issue
-      console.log('🔍 Initial values:', {
-        content: note.content,
-        time_set: note.time_set,
-        youtube_url: note.youtube_url,
-        url: note.url,
-        url_display_text: note.url_display_text
-      });
-    }
-  }, [isEditing, note.id, note.content, note.time_set, note.youtube_url, note.url, note.url_display_text]);
-  
-  // Log block removed - already replaced with a more detailed version above
+  const [editYoutubeUrl, setEditYoutubeUrl] = useState<string | null>(note.youtube_url);
+  const [editUrl, setEditUrl] = useState<string | null>(note.url);
+  const [editUrlDisplayText, setEditUrlDisplayText] = useState<string | null>(note.url_display_text);
   const [isSaving, setIsSaving] = useState(false);
 
   // Set up drag
@@ -404,21 +374,32 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   const startEditing = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsEditing(true);
-    // No need to set any state variables for fields using uncontrolled inputs
-    // Only set the discussion state as it uses a controlled Switch component
+    // No need to set content state as we're using uncontrolled components
+    // Initialize other form fields
+    setEditTimeSet(note.time_set);
     setEditIsDiscussion(note.is_discussion);
+    setEditYoutubeUrl(note.youtube_url);
+    setEditUrl(note.url);
+    setEditUrlDisplayText(note.url_display_text);
     selectNote(note); // Select the note when editing
   };
 
-  // Update only the controlled component state when note changes
+  // Update the local state whenever the note changes (from other components)
+  // Only update other fields, but not content since we're using uncontrolled component for textarea
   useEffect(() => {
-    // Only update the controlled Switch component
+    // Note: don't update editContent as it would conflict with our uncontrolled textarea
+    setEditTimeSet(note.time_set);
     setEditIsDiscussion(note.is_discussion);
-    
-    // For uncontrolled inputs, we would need to manually update their values if needed
-    // But that's not necessary here as they will get new defaultValues when re-rendered
+    setEditYoutubeUrl(note.youtube_url);
+    setEditUrl(note.url);
+    setEditUrlDisplayText(note.url_display_text);
   }, [
-    note.is_discussion
+    // note.content, - removed to prevent controlled/uncontrolled conflict
+    note.time_set,
+    note.is_discussion,
+    note.youtube_url, 
+    note.url, 
+    note.url_display_text
   ]);
 
   // Focus the textarea when entering edit mode
@@ -431,163 +412,223 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   // Define common save and cancel functions for both mobile and desktop editing
   const handleSaveNote = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    
-    /* 
-      IMPROVED VERSION FOR TESTING
-      THIS NEEDS TO BE RE-ENABLED, TEST OUT MODIFIED VERSION ONLY
-      
-      Key changes:
-      1. Added debounce to prevent multiple saves in quick succession
-      2. Proper cleanup of the save process to avoid state conflicts
-      3. Better error handling during the process
-      4. Separate note update from project save to avoid race conditions
-    */
-    
-    // Flag to track if multiple save operations might be in progress
-    // This helps avoid redundant save calls being triggered
-    if (window._savingInProgress) {
-      console.log('🚫 Save already in progress, ignoring duplicate save request');
-      return;
-    }
-    
+    setIsSaving(true);
+
     try {
-      // Set global save flag to prevent redundant saves
-      window._savingInProgress = true;
-      
-      // Show saving indicator 
-      setIsSaving(true);
-      
-      // First capture all values from refs
+      // Get content directly from the textarea ref to avoid cursor jump issues
       const currentContent = contentEditRef.current?.value || note.content;
-      const currentTimeSet = timeInputRef.current?.value || null;
-      const currentYoutubeUrl = youtubeUrlInputRef.current?.value || null;
-      const currentUrl = urlInputRef.current?.value || null;
-      const currentUrlDisplayText = urlDisplayTextInputRef.current?.value || null;
-      
-      // Create the updated note object with captured values
+
+      // Update the note in memory with all properties
       const updatedNote = {
         ...note,
         content: currentContent,
-        time_set: currentTimeSet,
+        time_set: editTimeSet,
         is_discussion: editIsDiscussion,
-        youtube_url: currentYoutubeUrl,
-        url: currentUrl,
-        url_display_text: currentUrlDisplayText
+        youtube_url: editYoutubeUrl,
+        url: editUrl,
+        url_display_text: editUrlDisplayText
       };
-      
-      console.log('📝 Saving note with values:', {
-        content: currentContent.substring(0, 20) + (currentContent.length > 20 ? '...' : ''),
-        time_set: currentTimeSet,
-        youtube_url: currentYoutubeUrl,
-        url: currentUrl,
-        url_display_text: currentUrlDisplayText
+
+      // First update in local state
+      updateNote(updatedNote);
+
+      // Then save to server
+      await saveProject();
+
+      toast({
+        title: "Note Updated",
+        description: "Changes have been saved",
       });
 
-      // First close the form to prevent UI jumps
       setIsEditing(false);
-      
-      // Create a cleanup function to reset state no matter what happens
-      const cleanup = () => {
-        setIsSaving(false);
-        // Clear the global save flag after a delay
-        setTimeout(() => {
-          window._savingInProgress = false;
-          console.log('🔄 Save lock released');
-        }, 500); // Half second delay before allowing new saves
-      };
-      
-      // Wait briefly for the form to close
-      setTimeout(async () => {
-        try {
-          // Step 1: Update the note in local state
-          updateNote(updatedNote);
-          
-          // Wait briefly to ensure state updates are processed
-          await new Promise(resolve => setTimeout(resolve, 50));
-          
-          // Step 2: Save the project to server
-          await saveProject();
-          
-          // Show success notification
-          toast({
-            title: "Note Updated",
-            description: "Changes have been saved",
-          });
-          
-          console.log('✅ Note and project saved successfully');
-        } catch (error) {
-          console.error('Error in save operation:', error);
-          toast({
-            title: "Save Failed",
-            description: "Could not save your changes. Please try again.",
-            variant: "destructive",
-          });
-        } finally {
-          cleanup();
-        }
-      }, 100); // Slightly longer delay to ensure form is completely closed
-      
     } catch (error) {
-      console.error('Error in main save handler:', error);
-      setIsSaving(false);
-      window._savingInProgress = false;
+      console.error('Error saving note:', error);
       toast({
         title: "Save Failed",
         description: "Could not save your changes. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleCancelEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsEditing(false);
-    // Only reset discussion switch state as it's the only controlled component
+    // Reset all edit states, except for content which is handled by the uncontrolled component
+    // No need to update editContent since we'll reset the defaultValue when we reopen the editor
+    setEditTimeSet(note.time_set);
     setEditIsDiscussion(note.is_discussion);
-    // No need to reset state for uncontrolled inputs using refs
+    setEditYoutubeUrl(note.youtube_url);
+    setEditUrl(note.url);
+    setEditUrlDisplayText(note.url_display_text);
   };
 
   // Create edit form content that will be used in both mobile dialog and inline editing
   const renderEditForm = () => (
     <>
-      {/* 
-        TEST VERSION: STRIPPED DOWN FORM
-        THIS NEEDS TO BE RE-ENABLED LATER, TEST OUT COMMENTED VERSION ONLY
-        
-        This is a minimal version with almost all event handlers and state updates removed
-        We'll add back functionality one piece at a time to isolate the issue
-      */}
-      
-      {/* Content editor - Completely uncontrolled with minimal handlers */}
+      {/* Content editor with more height - Using completely uncontrolled component */}
       <Textarea 
         ref={contentEditRef}
         rows={Math.min(isMobile ? 3 : 6, note.content.split('\n').length + 1)}
-        className="w-full p-2 text-sm bg-gray-850 border border-gray-700 focus:border-primary resize-none mb-3"
+        className={cn(
+          "w-full p-2 text-sm bg-gray-850 border border-gray-700 focus:border-primary focus:ring-1 focus:ring-primary resize-none mb-3",
+          isMobile && "min-h-[4.5rem]" // Shorter textarea on mobile (3 lines)
+        )}
         placeholder="Enter note content..."
-        defaultValue={note.content}
-        // Minimal event handlers to prevent propagation
-        onClick={(e) => e.stopPropagation()}
+        defaultValue={note.content} // Initialize with note content, but don't update during typing
         onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        autoFocus
       />
 
-      {/* Properties section with minimal formatting and handlers */}
-      <div className="grid grid-cols-1 gap-2 mb-3">
-        {/* Time input - Completely stripped down */}
+      {/* Images Section */}
+      <div className="mt-2 mb-4 border-t border-gray-700 pt-2">
+        <div className="text-xs text-gray-400 flex justify-between items-center mb-2">
+          <span>Images</span>
+          <label 
+            htmlFor={`image-upload-${note.id}`} 
+            className="inline-flex items-center text-primary hover:text-primary-hover cursor-pointer text-xs"
+          >
+            <ImagePlus size={14} className="mr-1" />
+            <span>Add Image</span>
+            <input
+              id={`image-upload-${note.id}`}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const files = e.target.files;
+                if (!files || files.length === 0) return;
+
+                const file = files[0];
+                if (!file.type.startsWith('image/')) {
+                  console.log("Invalid file type:", file.type);
+                  return;
+                }
+
+                // Check file size (limit to 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                  console.log("File too large:", file.size);
+                  return;
+                }
+
+                try {
+                  // Show loading state
+                  setIsSaving(true);
+                  
+                  // Upload the image
+                  const image = await uploadImage(note.id, file);
+
+                  if (image) {
+                    // Reset the file input
+                    e.target.value = '';
+                    
+                    // Update the note with the new image
+                    const existingImages = note.images || [];
+                    const updatedNote = {
+                      ...note,
+                      images: [...existingImages, image]
+                    };
+                    
+                    // Update the note in state
+                    updateNote(updatedNote);
+                    
+                    // Make sure the changes are saved to the server
+                    await saveProject();
+                  }
+                } catch (error) {
+                  console.error('Error uploading image:', error);
+                } finally {
+                  setIsSaving(false);
+                }
+              }}
+            />
+          </label>
+        </div>
+
+        {/* Display images if any */}
+        {note.images && note.images.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+            {/* Deduplicate images by converting to a Map using ID as key, then back to array */}
+            {Array.from(
+              // Create a Map with image ID as key to eliminate duplicates
+              new Map(
+                note.images.map(img => [img.id, img])
+              ).values()
+            )
+            // Sort by position after deduplication
+            .sort((a, b) => a.position - b.position)
+            .map((image) => (
+              <div 
+                key={`image-${image.id}`} 
+                className="relative group border border-gray-800 rounded-md overflow-hidden"
+              >
+                <ImageWithFallback 
+                  url={image.url} 
+                  alt="Note attachment" 
+                  className="w-full h-auto object-cover cursor-pointer"
+                />
+                <div className="absolute top-0 right-0 p-1 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
+                  {/* Remove image button */}
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6 bg-red-900/80 hover:bg-red-800 rounded-full"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      try {
+                        setIsSaving(true);
+                        // Ensure image.id is defined before trying to remove it
+                        if (!image.id) {
+                          console.error('Cannot remove image: image ID is undefined');
+                          return;
+                        }
+                        const success = await removeImage(image.id);
+                        if (success) {
+                          // Update the note in state to remove the image
+                          const updatedImages = note.images?.filter(img => img.id !== image.id) || [];
+                          const updatedNote = { ...note, images: updatedImages };
+                          updateNote(updatedNote);
+                          // Save to server
+                          await saveProject();
+                        }
+                      } catch (error) {
+                        console.error('Error removing image:', error);
+                      } finally {
+                        setIsSaving(false);
+                      }
+                    }}
+                  >
+                    <X size={12} />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Properties section (compact, single-line items) */}
+      <div className={cn(
+        "grid gap-x-4 gap-y-2 mb-3",
+        isMobile ? "grid-cols-1" : "grid-cols-2" // Single column on mobile for more space
+      )}>
+        {/* Time settings */}
         <div className="flex items-center">
-          <label className="text-xs text-gray-400 w-14" htmlFor={`time-${note.id}`}>Time:</label>
+          <label className="text-xs text-gray-400 w-14">Time:</label>
           <input 
-            id={`time-${note.id}`}
-            ref={timeInputRef}
             type="time" 
-            className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700"
-            defaultValue={note.time_set || ''}
-            // Absolutely minimal handlers - just prevent bubbling
-            onClick={(e) => e.stopPropagation()}
+            className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
+            value={editTimeSet || ''}
+            onChange={(e) => setEditTimeSet(e.target.value ? e.target.value : null)}
             onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           />
         </div>
 
-        {/* Discussion toggle - Keep this one controlled as it's a Switch */}
+        {/* Discussion toggle */}
         <div className="flex items-center">
           <label className="text-xs text-gray-400 w-20">Discussion:</label>
           <Switch 
@@ -598,111 +639,51 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             onClick={(e) => e.stopPropagation()}
           />
         </div>
-        
-        {/* YouTube URL - Completely stripped down */}
-        <div className="flex items-center">
-          <label className="text-xs text-gray-400 w-20" htmlFor={`youtube-${note.id}`}>YouTube:</label>
+
+        {/* YouTube URL */}
+        <div className="flex items-center col-span-full">
+          <label className="text-xs text-gray-400 w-20">YouTube:</label>
           <input 
-            id={`youtube-${note.id}`}
-            ref={youtubeUrlInputRef}
             type="url" 
-            className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700"
+            className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
             placeholder="https://youtube.com/watch?v=..."
-            defaultValue={note.youtube_url || ''}
-            // Absolutely minimal handlers - just prevent bubbling
-            onClick={(e) => e.stopPropagation()}
+            value={editYoutubeUrl || ''}
+            onChange={(e) => setEditYoutubeUrl(e.target.value || null)}
             onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           />
         </div>
 
-        {/* External URL - Completely stripped down */}
-        <div className="flex items-center">
-          <label className="text-xs text-gray-400 w-20" htmlFor={`url-${note.id}`}>URL:</label>
+        {/* External URL */}
+        <div className="flex items-center col-span-full">
+          <label className="text-xs text-gray-400 w-20">URL:</label>
           <input 
-            id={`url-${note.id}`}
-            ref={urlInputRef}
             type="url" 
-            className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700"
+            className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
             placeholder="https://..."
-            defaultValue={note.url || ''}
-            // Absolutely minimal handlers - just prevent bubbling
-            onClick={(e) => e.stopPropagation()}
+            value={editUrl || ''}
+            onChange={(e) => setEditUrl(e.target.value || null)}
             onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           />
         </div>
 
-        {/* URL Display Text - Completely stripped down */}
-        <div className="flex items-center">
-          <label className="text-xs text-gray-400 w-20" htmlFor={`url-text-${note.id}`}>Link text:</label>
+        {/* URL Display Text */}
+        <div className="flex items-center col-span-full">
+          <label className="text-xs text-gray-400 w-20">Link text:</label>
           <input 
-            id={`url-text-${note.id}`}
-            ref={urlDisplayTextInputRef}
             type="text" 
-            className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700"
+            className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
             placeholder="Display text for URL..."
-            defaultValue={note.url_display_text || ''}
-            // Absolutely minimal handlers - just prevent bubbling
-            onClick={(e) => e.stopPropagation()}
+            value={editUrlDisplayText || ''}
+            onChange={(e) => setEditUrlDisplayText(e.target.value || null)}
             onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           />
         </div>
       </div>
     </>
   );
-
-  // Track the last focused element in the mobile dialog to restore focus after state updates
-  const [lastFocusedElementId, setLastFocusedElementId] = React.useState<string | null>(null);
-  
-  // Add a ref to track when we're actively typing to prevent focus jumps
-  const isTypingRef = React.useRef(false);
-  const lastTouchedFieldRef = React.useRef<string | null>(null);
-  
-  // Variable to track if we've handled the initial field setup
-  const [initialFieldSetupComplete, setInitialFieldSetupComplete] = React.useState<{[key: string]: boolean}>({});
-  
-  // Add a stable reference to prevent rerenders when focusing on a field
-  const stableLastFocusedRef = React.useRef<string | null>(null);
-  
-  /* 
-    COMPLETELY DISABLED FOR TESTING
-    THIS NEEDS TO BE RE-ENABLED, TEST OUT COMMENTED VERSION ONLY
-    
-    This is the main focus handler that was causing the focus jumping issue
-  */
-  
-  /*
-  React.useEffect(() => {
-    if (isEditing && isMobile && lastFocusedElementId) {
-      console.log('🔍 DEBUG: Focus effect triggered for', lastFocusedElementId);
-      
-      // FOR DEBUGGING - Completely disable auto-focusing to see if this is the cause
-      return; // <-- TEMPORARY DISABLE ALL AUTO-FOCUSING TO TEST
-      
-      // Update our stable ref so we can check it elsewhere
-      stableLastFocusedRef.current = lastFocusedElementId;
-      
-      // Skip if we're actively typing as that will break cursor position
-      if (isTypingRef.current) {
-        console.log('🔍 DEBUG: Skipping focus - user is actively typing');
-        return;
-      }
-      
-      // Check if we need to refocus at all
-      const activeElement = document.activeElement;
-      console.log('🔍 DEBUG: Current active element:', activeElement?.id);
-      const isFocusingCorrectField = activeElement && activeElement.id ? activeElement.id === lastFocusedElementId : false;
-      
-      // Skip if we're already focusing on the correct element
-      if (isFocusingCorrectField) {
-        console.log('🔍 DEBUG: Already focused on correct field, skipping');
-        return;
-      }
-      
-      console.log('🔍 DEBUG: Would normally try to focus on', lastFocusedElementId);
-      // Don't do any focusing at all - this is just for debugging
-    }
-  }, [isEditing, isMobile, lastFocusedElementId]); // Simplified dependency array
-  */
 
   // Mobile Dialog for fullscreen editing
   const MobileEditDialog = () => (
@@ -712,37 +693,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
       <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto top-[5%] translate-y-0">
         <DialogHeader>
           <DialogTitle>Edit Note</DialogTitle>
-          <DialogDescription className="text-xs text-gray-400">
-            Edit note details
-          </DialogDescription>
         </DialogHeader>
-        <div 
-          className="form-container"
-          onClick={(e) => e.stopPropagation()}
-          /* 
-            DISABLED FOR TESTING
-            Original handler was setting lastFocusedElementId which might be causing re-renders
-          
-          onFocus={(e) => {
-            // Check if the focused element is one of our inputs and has an ID
-            if (e.target instanceof HTMLElement && e.target.id) {
-              // Store the ID of the focused element
-              const fieldId = e.target.id;
-              
-              // Add this field to our initialization tracking if needed,
-              // but don't actually set focus to prevent the jump on first click
-              if (!initialFieldSetupComplete[fieldId]) {
-                setInitialFieldSetupComplete({
-                  ...initialFieldSetupComplete,
-                  [fieldId]: true 
-                });
-              }
-              
-              setLastFocusedElementId(fieldId);
-            }
-          }}
-          */
-        >
+        <div onClick={(e) => e.stopPropagation()}>
           {renderEditForm()}
         </div>
         <DialogFooter className="flex justify-end gap-2">
@@ -823,16 +775,15 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                   defaultValue={note.content} // Initialize with note content, but don't track changes
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
-                  // Removed autoFocus to prevent it from stealing focus from other fields
+                  autoFocus
                 />
 
                 {/* Properties section (compact, single-line items) */}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-3">
                   {/* Time settings */}
                   <div className="flex items-center">
-                    <label className="text-xs text-gray-400 w-14" htmlFor={`desktop-time-${note.id}`}>Time:</label>
+                    <label className="text-xs text-gray-400 w-14">Time:</label>
                     <input 
-                      id={`desktop-time-${note.id}`}
                       type="time" 
                       className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
                       value={editTimeSet || ''}
@@ -856,9 +807,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
 
                   {/* YouTube URL */}
                   <div className="flex items-center col-span-2">
-                    <label className="text-xs text-gray-400 w-20" htmlFor={`desktop-youtube-${note.id}`}>YouTube:</label>
+                    <label className="text-xs text-gray-400 w-20">YouTube:</label>
                     <input 
-                      id={`desktop-youtube-${note.id}`}
                       type="url" 
                       className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
                       placeholder="https://youtube.com/watch?v=..."
@@ -871,9 +821,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
 
                   {/* External URL */}
                   <div className="flex items-center col-span-2">
-                    <label className="text-xs text-gray-400 w-20" htmlFor={`desktop-url-${note.id}`}>URL:</label>
+                    <label className="text-xs text-gray-400 w-20">URL:</label>
                     <input 
-                      id={`desktop-url-${note.id}`}
                       type="url" 
                       className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
                       placeholder="https://..."
@@ -887,9 +836,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                   {/* Display text (only if URL exists) */}
                   {editUrl && (
                     <div className="flex items-center col-span-2">
-                      <label className="text-xs text-gray-400 w-20" htmlFor={`desktop-url-text-${note.id}`}>Link text:</label>
+                      <label className="text-xs text-gray-400 w-20">Link text:</label>
                       <input 
-                        id={`desktop-url-text-${note.id}`}
                         type="text" 
                         className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
                         placeholder="Link display text"
