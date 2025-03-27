@@ -11,6 +11,7 @@ import {
   createProject, 
   moveProjectToTrash, 
   updateProject,
+  syncNoteCounts,
   Project 
 } from '../lib/projectService';
 import TrashModal from './TrashModal';
@@ -329,6 +330,39 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
     await handleUpdateProject(editingProject, editName, editDescription);
     cancelEditing();
   };
+  
+  // Function to handle syncing note counts for all projects
+  const handleSyncNoteCounts = async () => {
+    if (isSyncing) return;
+    
+    setIsSyncing(true);
+    try {
+      const success = await syncNoteCounts();
+      
+      if (success) {
+        toast({
+          title: 'Note Counts Synchronized',
+          description: 'Project note counts have been synchronized with the database.',
+        });
+        await fetchProjects(); // Refresh the project list to show updated counts
+      } else {
+        toast({
+          title: 'Synchronization Failed',
+          description: 'Failed to synchronize note counts. Please try again or check the diagnostics page.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error synchronizing note counts:', error);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred while synchronizing.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   return (
     <>
@@ -385,20 +419,57 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
             </div>
 
             <div className="border border-gray-800 rounded-md p-4 bg-gray-900">
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex justify-between items-center mb-1">
                 <h3 className="font-medium text-gray-300">Your Projects</h3>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="bg-gray-850 border-gray-700 text-gray-300 hover:bg-gray-700 flex items-center gap-1"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowTrashModal(true);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 text-gray-400" />
-                  <span>Trash</span>
-                </Button>
+                <div className="flex gap-2">
+                  {/* Sync Note Counts button */}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="bg-gray-850 border-gray-700 text-gray-300 hover:bg-blue-900 hover:text-blue-200 flex items-center gap-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSyncNoteCounts();
+                    }}
+                    disabled={isSyncing}
+                  >
+                    {isSyncing ? (
+                      <>
+                        <LoaderCircle className="h-4 w-4 animate-spin mr-1" />
+                        <span>Syncing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span>Sync Counts</span>
+                      </>
+                    )}
+                  </Button>
+                  
+                  {/* Trash button */}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="bg-gray-850 border-gray-700 text-gray-300 hover:bg-gray-700 flex items-center gap-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowTrashModal(true);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 text-gray-400" />
+                    <span>Trash</span>
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Informational hint text */}
+              <div className="flex items-center mb-3 text-gray-500 text-xs">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Use the "Sync Counts" button to fix projects with inaccurate note counts. Highlighted projects may have database inconsistencies.
               </div>
 
               {loading ? (
@@ -493,11 +564,30 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                               </div>
                               <div className="text-sm text-gray-400 ml-8 flex items-center gap-4">
                                 <span>Updated: {formatDate(project.updated_at)}</span>
-                                <span className="border border-gray-700 rounded px-2 py-0.5 flex items-center" title="Number of notes">
+                                <span 
+                                  className={`border ${
+                                    // Highlight projects with problematic note counts (0 notes but should have notes)
+                                    (project.id === '0e785690-ec48-416d-b4b0-c4951b308877' || project.note_count === 0) 
+                                      ? 'border-amber-500 bg-amber-100/10 text-amber-400' 
+                                      : 'border-gray-700'
+                                  } rounded px-2 py-0.5 flex items-center`} 
+                                  title={
+                                    // Special message for the problematic project
+                                    project.id === '0e785690-ec48-416d-b4b0-c4951b308877' 
+                                      ? "This project may have database inconsistencies. Click 'Sync Counts' to fix." 
+                                      : "Number of notes"
+                                  }
+                                >
                                   <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                   </svg>
                                   <span className="font-semibold">{project.note_count ?? 0}</span>
+                                  {/* Show warning icon for known problem project */}
+                                  {project.id === '0e785690-ec48-416d-b4b0-c4951b308877' && (
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 ml-1 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                  )}
                                 </span>
                               </div>
                             </div>
