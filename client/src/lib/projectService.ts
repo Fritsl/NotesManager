@@ -22,6 +22,40 @@ export const removeImageFromNote = imageService.removeImageFromNote;
 export const updateImagePosition = imageService.updateImagePosition;
 export const migrateLocalImages = imageService.migrateLocalImages;
 
+/**
+ * Syncs note counts in the database to ensure they accurately reflect the actual number of notes
+ * @returns Promise resolving to true if sync was successful, false otherwise
+ */
+export async function syncNoteCounts(): Promise<boolean> {
+  try {
+    console.log('Syncing note counts...');
+    
+    // Get current user
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !userData.user) {
+      console.error('User not authenticated:', userError);
+      return false;
+    }
+    
+    // Call the sync-note-counts endpoint
+    const response = await fetch(`/api/sync-note-counts?userId=${userData.user.id}`);
+    
+    if (!response.ok) {
+      console.error('Error syncing note counts:', await response.text());
+      return false;
+    }
+    
+    const result = await response.json();
+    console.log('Sync result:', result);
+    
+    return result.success === true;
+  } catch (error) {
+    console.error('Error in syncNoteCounts:', error);
+    return false;
+  }
+}
+
 // Interface for database note records
 interface DbNote {
   id: string;
