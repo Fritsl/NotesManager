@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, RefreshCcw, CheckCircle2 } from 'lucide-react';
+import { Loader2, RefreshCcw, CheckCircle2, Trash2 } from 'lucide-react';
 import { getProjects } from '../lib/projectService';
 import { supabase } from '../lib/supabase';
 
@@ -49,7 +49,9 @@ export default function DiagnosticsPage() {
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isCleaningUp, setIsCleaningUp] = useState(false);
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
+  const [cleanupResult, setCleanupResult] = useState<{success: boolean; message: string; deletedFiles: string[]} | null>(null);
 
   useEffect(() => {
     async function loadDiagnostics() {
@@ -151,6 +153,46 @@ export default function DiagnosticsPage() {
       setError(error instanceof Error ? error.message : String(error));
     } finally {
       setIsSyncing(false);
+    }
+  };
+  
+  // Function to clean up JSON files
+  const cleanupJsonFiles = async () => {
+    if (!userId) return;
+    
+    if (!confirm("Are you sure you want to delete all JSON files? This cannot be undone.")) {
+      return;
+    }
+    
+    setIsCleaningUp(true);
+    setCleanupResult(null);
+    setError(null);
+    
+    try {
+      const response = await fetch(`/api/cleanup-json-files?userId=${userId}`, {
+        method: 'POST'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to clean up files: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('Cleanup result:', result);
+      
+      setCleanupResult({
+        success: result.status === 'success',
+        message: result.message || 'Unknown result from cleanup operation',
+        deletedFiles: result.deletedFiles || []
+      });
+      
+      // Refresh the data after cleanup
+      setTimeout(() => setRefreshKey(prev => prev + 1), 500);
+    } catch (error) {
+      console.error('Error cleaning up JSON files:', error);
+      setError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setIsCleaningUp(false);
     }
   };
 
@@ -259,11 +301,67 @@ export default function DiagnosticsPage() {
 
       {diagnosticsData && (
         <Card className="p-4 mb-6 bg-blue-50 border-blue-200 text-black">
-          <h2 className="text-lg font-semibold mb-2">Server Diagnostics Summary</h2>
+          <div className="flex justify-between items-start mb-2">
+            <h2 className="text-lg font-semibold">Server Diagnostics Summary</h2>
+            <Button 
+              onClick={cleanupJsonFiles} 
+              disabled={isLoading || isCleaningUp || !userId}
+              variant="destructive"
+              size="sm"
+              className="flex items-center"
+            >
+              {isCleaningUp ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Cleaning...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Clean Up JSON Files
+                </>
+              )}
+            </Button>
+          </div>
           <p className="mb-2">
             <strong>Projects:</strong> {diagnosticsData.project_count} | 
             <strong className="ml-2">Timestamp:</strong> {new Date(diagnosticsData.timestamp).toLocaleString()}
           </p>
+          
+          {cleanupResult && (
+            <div className={`mb-4 p-3 rounded border ${cleanupResult.success ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+              <div className="flex justify-between">
+                <p className="font-medium">
+                  {cleanupResult.success ? (
+                    <span className="flex items-center">
+                      <CheckCircle2 className="h-4 w-4 text-green-600 mr-2" />
+                      {cleanupResult.message}
+                    </span>
+                  ) : (
+                    cleanupResult.message
+                  )}
+                </p>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setCleanupResult(null)}
+                  className="h-5 w-5 p-0"
+                >
+                  ×
+                </Button>
+              </div>
+              {cleanupResult.deletedFiles.length > 0 && (
+                <div className="mt-2 max-h-24 overflow-y-auto text-sm">
+                  <p className="text-gray-600 mb-1">Deleted files:</p>
+                  <ul className="list-disc list-inside text-gray-700">
+                    {cleanupResult.deletedFiles.map((file, index) => (
+                      <li key={index} className="font-mono text-xs">{file}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
           <div className="overflow-x-auto mt-4">
             <table className="min-w-full border-collapse">
               <thead>

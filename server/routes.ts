@@ -295,6 +295,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
   
+  // Endpoint to safely clean up old JSON files
+  app.post("/api/cleanup-json-files", async (req: Request, res: Response) => {
+    try {
+      const userId = req.query.userId as string;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required for safety" });
+      }
+      
+      console.log(`Requested cleanup of legacy JSON files for user ${userId}`);
+      
+      // Get the path to the projects directory
+      const projectsDir = path.join(__dirname, '../public/projects');
+      
+      // Make sure the directory exists
+      if (!fs.existsSync(projectsDir)) {
+        return res.status(404).json({ 
+          status: "skipped", 
+          message: "Projects directory does not exist",
+          path: projectsDir
+        });
+      }
+      
+      // Read all files in the directory
+      const files = fs.readdirSync(projectsDir);
+      
+      // Filter out only JSON files
+      const jsonFiles = files.filter(file => file.endsWith('.json'));
+      console.log(`Found ${jsonFiles.length} JSON files to clean up`);
+      
+      // Keep track of what was deleted
+      const deletedFiles = [];
+      
+      // Delete each JSON file
+      for (const file of jsonFiles) {
+        const filePath = path.join(projectsDir, file);
+        
+        // Remove the file
+        fs.unlinkSync(filePath);
+        deletedFiles.push(file);
+        console.log(`Deleted JSON file: ${file}`);
+      }
+      
+      return res.status(200).json({
+        status: "success",
+        message: `Deleted ${deletedFiles.length} JSON files`,
+        deletedFiles: deletedFiles
+      });
+      
+    } catch (error) {
+      console.error("Error during JSON cleanup:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to clean up JSON files",
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
   // Diagnostic endpoint for database analysis
   app.get("/api/diagnostics", async (req: Request, res: Response) => {
     try {
@@ -342,9 +401,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const notesResult = await client.query(notesQuery, [setting.id, userId]);
           const dbNoteCount = parseInt(notesResult.rows[0]?.db_note_count || '0');
           
-          // No JSON file checks - database only
+          // Check for JSON files (for diagnostics only)
           let jsonNoteCount = 0;
           let jsonFileExists = false;
+          
+          // Check if a JSON file exists for this project
+          const jsonFilePath = path.join(__dirname, `../public/projects/${setting.id}.json`);
+          if (fs.existsSync(jsonFilePath)) {
+            jsonFileExists = true;
+            
+            // Try to count notes in the JSON file
+            try {
+              const fileContent = fs.readFileSync(jsonFilePath, 'utf8');
+              const jsonData = JSON.parse(fileContent);
+              
+              if (jsonData && jsonData.data && Array.isArray(jsonData.data.notes)) {
+                // Count all notes including children
+                const countNotesInJson = (notes: any[]): number => {
+                  let count = notes.length;
+                  for (const note of notes) {
+                    if (note.children && Array.isArray(note.children)) {
+                      count += countNotesInJson(note.children);
+                    }
+                  }
+                  return count;
+                };
+                
+                jsonNoteCount = countNotesInJson(jsonData.data.notes);
+              }
+            } catch (jsonError) {
+              console.error(`Error reading JSON file for project ${setting.id}:`, jsonError);
+              // Continue with default values
+            }
+          }
           
           projectStats.push({
             id: setting.id,
