@@ -78,6 +78,7 @@ import screenfull from 'screenfull';
 export default function HeaderWithSearch() {
   const { 
     notes,
+    setNotes,
     expandAll, 
     collapseAll, 
     expandToLevel, 
@@ -90,6 +91,7 @@ export default function HeaderWithSearch() {
     createNewProject,
     saveProject,
     currentProjectId,
+    setCurrentProjectId,
     addNote,
     undoLastAction,
     canUndo,
@@ -641,10 +643,7 @@ export default function HeaderWithSearch() {
             {/* Adds User Menu */}
             <div className="flex-shrink-0">
               {user ? (
-                <UserMenu 
-                  displayName={user.email || "User"} 
-                  handleSignOut={handleSignOut}
-                />
+                <UserMenu />
               ) : (
                 <Button 
                   variant="outline" 
