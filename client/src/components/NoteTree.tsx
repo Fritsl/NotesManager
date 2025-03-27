@@ -80,9 +80,6 @@ export default function NoteTree() {
   // Set up keyboard shortcuts for expand/collapse
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle keyboard shortcuts if there are notes
-      if (notes.length === 0) return;
-      
       // If user is typing in an input or textarea, don't handle keyboard shortcuts
       if (
         e.target instanceof HTMLInputElement || 
@@ -91,10 +88,17 @@ export default function NoteTree() {
         return;
       }
       
-      // Ctrl+E to expand all
+      // Check if we have notes
+      const hasNotes = notes.length > 0;
+      
+      // Ctrl+E to expand all - only if we have notes
       if (e.ctrlKey && e.key === 'e') {
-        e.preventDefault();
-        expandAll();
+        // Only prevent default if we have notes to expand
+        if (hasNotes) {
+          e.preventDefault();
+          expandAll();
+        }
+        // If no notes, allow the browser to handle normally (for menu shortcuts)
       }
       
       // Ctrl+C to collapse all
@@ -102,37 +106,54 @@ export default function NoteTree() {
         // Skip if the user is trying to copy text
         if (window.getSelection()?.toString()) return;
         
-        e.preventDefault();
-        collapseAll();
+        // Only prevent default if we have notes to collapse
+        if (hasNotes) {
+          e.preventDefault();
+          collapseAll();
+        }
+        // If no notes, allow the browser to handle normally
       }
       
       // Z - Collapse one level (no modifier needed - dedicated keys for tree navigation)
       if (e.key === 'z' && !e.ctrlKey && !e.shiftKey && !e.altKey) {
-        e.preventDefault();
-        collapseOneLevel();
+        // Only prevent default if we have notes
+        if (hasNotes) {
+          e.preventDefault();
+          collapseOneLevel();
+        }
+        // If no notes, allow the key to function normally
       }
       
       // X - Expand one more level
       if (e.key === 'x' && !e.ctrlKey && !e.shiftKey && !e.altKey) {
-        e.preventDefault();
-        expandMoreLevel();
+        // Only prevent default if we have notes
+        if (hasNotes) {
+          e.preventDefault();
+          expandMoreLevel();
+        }
+        // If no notes, allow the key to function normally
       }
       
       // Number keys 0-5 with Ctrl to expand to specific levels
-      // Keep these as they can be convenient for quick jumps
       if (e.ctrlKey && ['0', '1', '2', '3', '4', '5'].includes(e.key)) {
-        e.preventDefault();
-        const level = parseInt(e.key);
-        expandToLevel(level);
+        // Only prevent default if we have notes
+        if (hasNotes) {
+          e.preventDefault();
+          const level = parseInt(e.key);
+          expandToLevel(level);
+        }
+        // If no notes, allow these key combinations to work normally
       }
       
-      // Ctrl+Z for undo
+      // Ctrl+Z for undo - this should work regardless of notes
       if (e.ctrlKey && e.key === 'z') {
-        e.preventDefault();
+        // Only prevent default if we actually have something to undo
         if (canUndo) {
+          e.preventDefault();
           console.log('Undoing last action');
           undoLastAction();
         }
+        // Otherwise let the browser handle it normally
       }
     };
     
