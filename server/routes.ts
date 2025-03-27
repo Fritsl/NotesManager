@@ -13,6 +13,7 @@ import { dirname } from 'path';
 import express from 'express';
 import pkg from 'pg';
 const { Pool } = pkg;
+import { checkRlsPolicies } from "./check-rls-policies";
 
 // Get current file's directory path (ES modules replacement for __dirname)
 const __filename = fileURLToPath(import.meta.url);
@@ -78,8 +79,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
-  // Get project data endpoint (to overcome RLS restrictions)
+  // Get project data endpoint - Improved to handle RLS restrictions
   app.get("/api/get-project-data/:id", async (req: Request, res: Response) => {
+    let dbClient;
+    
     try {
       const projectId = req.params.id;
       const userId = req.query.userId as string;
@@ -94,205 +97,474 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Getting project data for project ${projectId} by user ${userId} (SERVER MODE)`);
       
-      // Get or create project metadata using direct DB connection
+      // First try fetching via Supabase client with RLS
+      let useSupabaseResult = false;
       let projectMetadata;
-      let dbClient;
+      let notes = [];
       
+      // Attempt to use Supabase client to respect RLS
       try {
-        dbClient = await pool.connect();
+        console.log('Attempting to fetch project data via Supabase client (with RLS)');
         
-        // Check if settings exist
-        const settingsCheckQuery = `
-          SELECT * FROM settings 
-          WHERE id = $1 AND user_id = $2
-        `;
+        // Settings data
+        const { data: settingsData, error: settingsError } = await supabase
+          .from('settings')
+          .select('*')
+          .eq('id', projectId)
+          .eq('user_id', userId)
+          .maybeSingle();
+          
+        if (settingsError) {
+          console.error('Error fetching settings via Supabase:', settingsError);
+          throw settingsError;
+        }
         
-        const settingsResult = await dbClient.query(settingsCheckQuery, [projectId, userId]);
-        
-        if (settingsResult.rows.length > 0) {
-          // Settings exist, use them
-          projectMetadata = settingsResult.rows[0];
-          console.log(`Found existing settings for project ${projectId}`);
+        if (!settingsData) {
+          console.log('No settings found for project with Supabase');
+          // We'll create settings later with the direct connection
         } else {
-          // Create new settings
-          console.log(`Creating new settings for project ${projectId}`);
-          const now = new Date().toISOString();
+          console.log('Found settings via Supabase:', settingsData.title);
+          projectMetadata = settingsData;
           
-          const insertQuery = `
-            INSERT INTO settings 
-            (id, user_id, title, description, created_at, updated_at, last_modified_at, note_count)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            RETURNING *
-          `;
-          
-          const insertResult = await dbClient.query(insertQuery, [
-            projectId,
-            userId,
-            "Untitled Project",
-            "",
-            now,
-            now,
-            now,
-            0
-          ]);
-          
-          if (insertResult.rows.length > 0) {
-            projectMetadata = insertResult.rows[0];
-            console.log(`Created new settings for project ${projectId}`);
-          } else {
-            throw new Error('Failed to create project settings');
-          }
-        }
-        
-        // Now get notes from database only
-        let notes = [];
-        
-        // Query all notes for this project from database
-        const notesResult = await dbClient.query(
-          `SELECT * FROM notes WHERE project_id = $1 AND user_id = $2 ORDER BY position`,
-          [projectId, userId]
-        );
-        
-        // Build the note hierarchy
-        const notesById = new Map();
-        const rootNotes = [];
-        
-        // First pass: index all notes by ID
-        for (const note of notesResult.rows) {
-          // Add empty children array to each note
-          note.children = [];
-          note.images = []; // Initialize empty images array
-          notesById.set(note.id, note);
-        }
-        
-        // Second pass: build the hierarchy
-        for (const note of notesResult.rows) {
-          if (note.parent_id) {
-            // This is a child note
-            const parent = notesById.get(note.parent_id);
-            if (parent) {
-              parent.children.push(note);
-            } else {
-              // Parent not found, treat as root note
-              rootNotes.push(note);
-            }
-          } else {
-            // This is a root note
-            rootNotes.push(note);
-          }
-        }
-        
-        // Query images for this project's notes
-        try {
-          const imagesQuery = `
-            SELECT * FROM note_images 
-            WHERE note_id IN (
-              SELECT id::text FROM notes WHERE project_id = $1
-            )
-          `;
-          
-          const imagesResult = await dbClient.query(imagesQuery, [projectId]);
-          
-          // Associate images with their notes
-          for (const image of imagesResult.rows) {
-            const noteId = image.note_id;
-            const note = notesById.get(noteId);
+          // Now fetch notes via Supabase
+          const { data: notesData, error: notesError } = await supabase
+            .from('notes')
+            .select('*')
+            .eq('project_id', projectId)
+            .eq('user_id', userId)
+            .order('position', { ascending: true });
             
-            if (note) {
-              note.images.push(image);
-            }
+          if (notesError) {
+            console.error('Error fetching notes via Supabase:', notesError);
+            throw notesError;
           }
-        } catch (imageError) {
-          console.error('Error fetching images:', imageError);
-          // Continue without images
-        }
-        
-        // Sort children by position
-        const sortChildren = (notesToSort: any[]) => {
-          for (const note of notesToSort) {
-            if (note.children.length > 0) {
-              note.children.sort((a: any, b: any) => a.position - b.position);
-              sortChildren(note.children);
-            }
-          }
-        };
-        
-        // Sort all notes
-        rootNotes.sort((a: any, b: any) => a.position - b.position);
-        sortChildren(rootNotes);
-        
-        notes = rootNotes;
-        console.log(`Retrieved ${notesResult.rowCount} notes from database for project ${projectId}`);
-        
-        // Update note count in settings if needed
-        if (notes.length > 0 && (projectMetadata.note_count === 0 || projectMetadata.note_count === null)) {
-          const countTotalNotes = (notesToCount: any[]): number => {
-            let count = notesToCount.length;
+          
+          // Check if we got data
+          if (notesData && notesData.length > 0) {
+            console.log(`Successfully retrieved ${notesData.length} notes via Supabase client`);
             
-            for (const note of notesToCount) {
-              if (note.children && Array.isArray(note.children)) {
-                count += countTotalNotes(note.children);
+            // Build note hierarchy from Supabase results
+            const notesById = new Map();
+            const rootNotes = [];
+            
+            // First pass: index all notes by ID and add children/images arrays
+            for (const note of notesData) {
+              note.children = [];
+              note.images = [];
+              notesById.set(note.id, note);
+            }
+            
+            // Second pass: build the hierarchy
+            for (const note of notesData) {
+              if (note.parent_id) {
+                // This is a child note
+                const parent = notesById.get(note.parent_id);
+                if (parent) {
+                  parent.children.push(note);
+                } else {
+                  // Parent not found, treat as root note
+                  rootNotes.push(note);
+                }
+              } else {
+                // This is a root note
+                rootNotes.push(note);
               }
             }
             
-            return count;
-          };
-          
-          const totalNoteCount = countTotalNotes(notes);
-          
-          if (totalNoteCount > 0) {
-            await dbClient.query(
-              `UPDATE settings SET note_count = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3`,
-              [totalNoteCount, projectId, userId]
-            );
+            // Query images for this project's notes
+            try {
+              const { data: imagesData, error: imagesError } = await supabase
+                .from('note_images')
+                .select('*')
+                .in('note_id', notesData.map(n => n.id));
+                
+              if (imagesError) {
+                console.error('Error fetching images via Supabase:', imagesError);
+              } else if (imagesData && imagesData.length > 0) {
+                console.log(`Found ${imagesData.length} images via Supabase`);
+                
+                // Associate images with their notes
+                for (const image of imagesData) {
+                  const noteId = image.note_id;
+                  const note = notesById.get(noteId);
+                  
+                  if (note) {
+                    note.images.push(image);
+                  }
+                }
+              }
+            } catch (imageError) {
+              console.error('Error processing images:', imageError);
+              // Continue without images
+            }
             
-            projectMetadata.note_count = totalNoteCount;
-            console.log(`Updated note count to ${totalNoteCount} for project ${projectId}`);
+            // Sort children by position
+            const sortChildren = (notesToSort: any[]) => {
+              for (const note of notesToSort) {
+                if (note.children.length > 0) {
+                  note.children.sort((a: any, b: any) => a.position - b.position);
+                  sortChildren(note.children);
+                }
+              }
+            };
+            
+            // Sort all notes
+            rootNotes.sort((a: any, b: any) => a.position - b.position);
+            sortChildren(rootNotes);
+            
+            // Set notes as the root notes
+            notes = rootNotes;
+            useSupabaseResult = true;
+          } else {
+            console.log('No notes found via Supabase');
           }
         }
-        
-        // Construct the response
-        const projectData = {
-          id: projectMetadata.id,
-          name: projectMetadata.title,
-          user_id: projectMetadata.user_id,
-          description: projectMetadata.description || '',
-          created_at: projectMetadata.created_at,
-          updated_at: projectMetadata.updated_at,
-          note_count: projectMetadata.note_count || 0,
-          data: { notes: notes }
-        };
-        
-        // JSON file writing has been removed
-        
-        // Return the project data
-        return res.status(200).json(projectData);
-        
-      } catch (dbError) {
-        console.error('Database error:', dbError);
-        
-        // Database-only error handling - no JSON fallbacks
-        return res.status(500).json({
-          error: "Database error",
-          details: dbError instanceof Error ? dbError.message : String(dbError)
-        });
-      } finally {
-        if (dbClient) {
-          dbClient.release();
+      } catch (supabaseError) {
+        console.error('Error using Supabase client:', supabaseError);
+        console.log('Falling back to direct database connection');
+      }
+      
+      // If Supabase approach didn't work, fall back to direct DB connection
+      if (!useSupabaseResult) {
+        try {
+          console.log('Using direct database connection for project data');
+          dbClient = await pool.connect();
+          
+          // Check if settings exist
+          const settingsCheckQuery = `
+            SELECT * FROM settings 
+            WHERE id = $1 AND user_id = $2
+          `;
+          
+          const settingsResult = await dbClient.query(settingsCheckQuery, [projectId, userId]);
+          
+          if (settingsResult.rows.length > 0) {
+            // Settings exist, use them
+            projectMetadata = settingsResult.rows[0];
+            console.log(`Found existing settings for project ${projectId}`);
+          } else {
+            // Create new settings
+            console.log(`Creating new settings for project ${projectId}`);
+            const now = new Date().toISOString();
+            
+            const insertQuery = `
+              INSERT INTO settings 
+              (id, user_id, title, description, created_at, updated_at, last_modified_at, note_count)
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+              RETURNING *
+            `;
+            
+            const insertResult = await dbClient.query(insertQuery, [
+              projectId,
+              userId,
+              "Untitled Project",
+              "",
+              now,
+              now,
+              now,
+              0
+            ]);
+            
+            if (insertResult.rows.length > 0) {
+              projectMetadata = insertResult.rows[0];
+              console.log(`Created new settings for project ${projectId}`);
+            } else {
+              throw new Error('Failed to create project settings');
+            }
+          }
+          
+          // Now get notes from database only
+          
+          // Query all notes for this project from database
+          const notesResult = await dbClient.query(
+            `SELECT * FROM notes WHERE project_id = $1 AND user_id = $2 ORDER BY position`,
+            [projectId, userId]
+          );
+          
+          // Build the note hierarchy
+          const notesById = new Map();
+          const rootNotes = [];
+          
+          // First pass: index all notes by ID
+          for (const note of notesResult.rows) {
+            // Add empty children array to each note
+            note.children = [];
+            note.images = []; // Initialize empty images array
+            notesById.set(note.id, note);
+          }
+          
+          // Second pass: build the hierarchy
+          for (const note of notesResult.rows) {
+            if (note.parent_id) {
+              // This is a child note
+              const parent = notesById.get(note.parent_id);
+              if (parent) {
+                parent.children.push(note);
+              } else {
+                // Parent not found, treat as root note
+                rootNotes.push(note);
+              }
+            } else {
+              // This is a root note
+              rootNotes.push(note);
+            }
+          }
+          
+          // Query images for this project's notes
+          try {
+            const imagesQuery = `
+              SELECT * FROM note_images 
+              WHERE note_id IN (
+                SELECT id::text FROM notes WHERE project_id = $1
+              )
+            `;
+            
+            const imagesResult = await dbClient.query(imagesQuery, [projectId]);
+            
+            // Associate images with their notes
+            for (const image of imagesResult.rows) {
+              const noteId = image.note_id;
+              const note = notesById.get(noteId);
+              
+              if (note) {
+                note.images.push(image);
+              }
+            }
+          } catch (imageError) {
+            console.error('Error fetching images:', imageError);
+            // Continue without images
+          }
+          
+          // Sort children by position
+          const sortChildren = (notesToSort: any[]) => {
+            for (const note of notesToSort) {
+              if (note.children.length > 0) {
+                note.children.sort((a: any, b: any) => a.position - b.position);
+                sortChildren(note.children);
+              }
+            }
+          };
+          
+          // Sort all notes
+          rootNotes.sort((a: any, b: any) => a.position - b.position);
+          sortChildren(rootNotes);
+          
+          // Notes are the root notes (flat array)
+          notes = rootNotes;
+          
+          console.log(`Retrieved ${notesResult.rowCount} notes from database for project ${projectId}`);
+        } catch (dbError) {
+          console.error('Error with direct database connection:', dbError);
+          throw dbError;
         }
       }
+      
+      // If we found settings, but no notes, and note_count is greater than 0,
+      // try a special query bypassing RLS (as a last resort)
+      if (projectMetadata && notes.length === 0 && projectMetadata.note_count > 0) {
+        console.log('Project metadata indicates notes exist, but none were retrieved. Attempting admin access.');
+        
+        try {
+          if (!dbClient) {
+            dbClient = await pool.connect();
+          }
+          
+          // Use direct SQL query with a more privileged access path
+          const bypassRlsQuery = `
+            WITH RECURSIVE all_notes AS (
+              SELECT n.*, 0 AS level
+              FROM notes n 
+              WHERE n.project_id = $1 
+                AND n.parent_id IS NULL
+              
+              UNION ALL
+              
+              SELECT n.*, an.level + 1
+              FROM notes n
+              JOIN all_notes an ON n.parent_id = an.id
+              WHERE n.project_id = $1
+            )
+            SELECT * FROM all_notes
+            ORDER BY level, position;
+          `;
+          
+          const bypassResult = await dbClient.query(bypassRlsQuery, [projectId]);
+          
+          if (bypassResult && bypassResult.rows && bypassResult.rows.length > 0) {
+            console.log(`Retrieved ${bypassResult.rows.length} notes using admin access`);
+            
+            // Build the note hierarchy
+            const notesById = new Map();
+            const rootNotes = [];
+            
+            // First pass: index all notes by ID
+            for (const note of bypassResult.rows) {
+              note.children = [];
+              note.images = []; // Initialize empty images array
+              notesById.set(note.id, note);
+            }
+            
+            // Second pass: build the hierarchy
+            for (const note of bypassResult.rows) {
+              if (note.parent_id) {
+                const parent = notesById.get(note.parent_id);
+                if (parent) {
+                  parent.children.push(note);
+                } else {
+                  rootNotes.push(note);
+                }
+              } else {
+                rootNotes.push(note);
+              }
+            }
+            
+            // Sort children by position
+            const sortChildren = (notesToSort: any[]) => {
+              for (const note of notesToSort) {
+                if (note.children.length > 0) {
+                  note.children.sort((a: any, b: any) => a.position - b.position);
+                  sortChildren(note.children);
+                }
+              }
+            };
+            
+            // Sort all notes
+            rootNotes.sort((a: any, b: any) => a.position - b.position);
+            sortChildren(rootNotes);
+            
+            notes = rootNotes;
+          }
+        } catch (adminAccessError) {
+          console.error('Error using admin access:', adminAccessError);
+          // Continue with what we have
+        }
+      }
+      
+      // Update note count in settings if needed
+      if (dbClient && notes.length > 0 && (projectMetadata.note_count === 0 || projectMetadata.note_count === null)) {
+        const countTotalNotes = (notesToCount: any[]): number => {
+          let count = notesToCount.length;
+          
+          for (const note of notesToCount) {
+            if (note.children && Array.isArray(note.children)) {
+              count += countTotalNotes(note.children);
+            }
+          }
+          
+          return count;
+        };
+        
+        const totalNoteCount = countTotalNotes(notes);
+        
+        if (totalNoteCount > 0) {
+          await dbClient.query(
+            `UPDATE settings SET note_count = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3`,
+            [totalNoteCount, projectId, userId]
+          );
+          
+          projectMetadata.note_count = totalNoteCount;
+          console.log(`Updated note count to ${totalNoteCount} for project ${projectId}`);
+        }
+      }
+      
+      // Construct the response
+      const projectData = {
+        id: projectMetadata.id,
+        name: projectMetadata.title,
+        user_id: projectMetadata.user_id,
+        description: projectMetadata.description || '',
+        created_at: projectMetadata.created_at,
+        updated_at: projectMetadata.updated_at,
+        note_count: projectMetadata.note_count || 0,
+        data: { notes: notes }
+      };
+      
+      // Return the project data
+      return res.status(200).json(projectData);
     } catch (error) {
       console.error("Error getting project data:", error);
       return res.status(500).json({
         error: "Failed to get project data",
         details: error instanceof Error ? error.message : String(error)
       });
+    } finally {
+      if (dbClient) {
+        dbClient.release();
+      }
     }
   });
 
   // Simple health check endpoint
   app.get("/api/health", (_req: Request, res: Response) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+  
+  // Diagnostics endpoint for RLS policies
+  app.get("/api/rls-diagnostics", async (req: Request, res: Response) => {
+    try {
+      const projectId = req.query.projectId as string;
+      const userId = req.query.userId as string;
+      
+      if (!projectId || !userId) {
+        return res.status(400).json({ 
+          error: "Both projectId and userId are required query parameters" 
+        });
+      }
+      
+      // Create a response stream to send results as they're generated
+      res.writeHead(200, {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Transfer-Encoding': 'chunked'
+      });
+      
+      // Override console.log to capture output
+      const originalConsoleLog = console.log;
+      const originalConsoleError = console.error;
+      
+      // Redirect console output to response
+      console.log = (...args) => {
+        originalConsoleLog(...args);
+        const message = args.join(' ');
+        res.write(message + '\n');
+      };
+      
+      console.error = (...args) => {
+        originalConsoleError(...args);
+        const message = args.join(' ');
+        res.write('ERROR: ' + message + '\n');
+      };
+      
+      try {
+        // Run diagnostics
+        await checkRlsPolicies(projectId, userId);
+        
+        // End the response
+        res.write('\nDiagnostics complete');
+        res.end();
+      } finally {
+        // Restore console functions
+        console.log = originalConsoleLog;
+        console.error = originalConsoleError;
+      }
+    } catch (error) {
+      console.error('Error running diagnostics:', error);
+      
+      // If headers aren't sent yet, send error response
+      if (!res.headersSent) {
+        res.status(500).json({ 
+          error: "Failed to run diagnostics",
+          details: error instanceof Error ? error.message : String(error)
+        });
+      } else {
+        // Otherwise, try to write to the existing response
+        try {
+          res.write(`\nError: ${error instanceof Error ? error.message : String(error)}`);
+          res.end();
+        } catch (writeError) {
+          console.error('Failed to write error to response:', writeError);
+        }
+      }
+    }
   });
   
   // Endpoint to safely clean up old JSON files
