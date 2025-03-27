@@ -119,7 +119,7 @@ export default function DiagnosticsPage() {
         </Card>
       )}
 
-      <Card className="p-4 mb-6">
+      <Card className="p-4 mb-6 text-black bg-gray-50">
         <h2 className="text-lg font-semibold mb-2">User Information</h2>
         <p><strong>Current User ID:</strong> {userId || 'Not authenticated'}</p>
       </Card>
@@ -221,7 +221,7 @@ export default function DiagnosticsPage() {
       )}
 
       <div className="grid grid-cols-1 gap-6 mb-6">
-        <Card className="p-4 text-black">
+        <Card className="p-4 text-black bg-gray-50">
           <h2 className="text-lg font-semibold mb-2">Projects from API</h2>
           <p className="mb-2">Total Projects: {dbProjects.length}</p>
           <div className="overflow-x-auto">
@@ -234,7 +234,7 @@ export default function DiagnosticsPage() {
                   <th className="border p-2 text-left">Updated</th>
                 </tr>
               </thead>
-              <tbody className="text-black">
+              <tbody className="text-black bg-white">
                 {dbProjects.map(project => (
                   <tr key={project.id} className="hover:bg-gray-50">
                     <td className="border p-2 font-mono text-xs">{project.id}</td>
@@ -254,7 +254,7 @@ export default function DiagnosticsPage() {
         </Card>
 
         {dbNotes.length > 0 && (
-          <Card className="p-4 text-black">
+          <Card className="p-4 text-black bg-gray-50">
             <h2 className="text-lg font-semibold mb-2">Notes in Database (via Supabase)</h2>
             <p className="mb-2">Total Notes: {dbNotes.length}</p>
             
@@ -279,7 +279,7 @@ export default function DiagnosticsPage() {
                         <th className="border p-2 text-left">Parent ID</th>
                       </tr>
                     </thead>
-                    <tbody className="text-black">
+                    <tbody className="text-black bg-white">
                       {projectNotes.map(note => (
                         <tr key={note.id} className="hover:bg-gray-50">
                           <td className="border p-2 font-mono text-xs">{note.id}</td>
@@ -303,7 +303,7 @@ export default function DiagnosticsPage() {
 
       <div className="mt-8">
         <h2 className="text-lg font-semibold mb-2">Common Issues & Solutions</h2>
-        <Card className="p-4 text-black">
+        <Card className="p-4 text-black bg-gray-50">
           <ul className="list-disc list-inside space-y-2">
             <li>Notes might be stored in the database but not displayed in the app due to different ID formats</li>
             <li>The app might be using JSON files instead of the database for some operations</li>
