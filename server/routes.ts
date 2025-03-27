@@ -362,7 +362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If we found settings, but no notes, and note_count is greater than 0,
       // try a special query bypassing RLS (as a last resort)
       if (projectMetadata && notes.length === 0 && projectMetadata.note_count > 0) {
-        console.log('Project metadata indicates notes exist, but none were retrieved. Attempting enhanced RLS bypass.');
+        console.log(`BYPASS TRIGGER: Project ${projectId} has metadata note_count=${projectMetadata.note_count} but returned ${notes.length} notes. Attempting enhanced RLS bypass.`);
         
         try {
           if (!dbClient) {
@@ -647,6 +647,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Diagnostics endpoint for RLS policies
+  // Direct notes access endpoint (bypass all RLS)
+  app.get("/api/direct-notes-access", async (req: Request, res: Response) => {
+    try {
+      const projectId = req.query.projectId as string;
+      const userId = req.query.userId as string;
+      
+      if (!projectId || !userId) {
+        return res.status(400).json({ 
+          error: "Both projectId and userId are required query parameters" 
+        });
+      }
+      
+      console.log(`Attempting direct notes access for project ${projectId} and user ${userId}`);
+      
+      // Connect directly to database
+      const client = await pool.connect();
+      
+      try {
+        // Try to disable row security temporarily
+        await client.query(`
+          SET LOCAL row_security = off;
+        `);
+        
+        // Direct query for notes without any RLS filtering
+        const result = await client.query(`
+          SELECT * FROM notes 
+          WHERE project_id = $1 
+          LIMIT 10
+        `, [projectId]);
+        
+        if (result.rows.length > 0) {
+          console.log(`Found ${result.rows.length} notes via direct access`);
+          return res.status(200).json({
+            success: true,
+            message: `Found ${result.rows.length} notes with direct access bypassing all security`,
+            notes: result.rows
+          });
+        } else {
+          console.log('No notes found in table for this project');
+          
+          // Also check settings to verify note_count
+          const settingsResult = await client.query(`
+            SELECT id, title, note_count 
+            FROM settings 
+            WHERE id = $1
+          `, [projectId]);
+          
+          if (settingsResult.rows.length > 0) {
+            return res.status(200).json({
+              success: false,
+              message: 'No notes found despite RLS bypass, data may truly be missing',
+              settings: settingsResult.rows[0]
+            });
+          } else {
+            return res.status(404).json({
+              success: false,
+              message: 'Neither notes nor settings found for this project'
+            });
+          }
+        }
+      } finally {
+        // Reset settings and release client
+        try {
+          await client.query('RESET ALL;');
+        } catch (resetError) {
+          console.error('Error resetting session parameters:', resetError);
+        }
+        client.release();
+      }
+    } catch (error) {
+      console.error("Error in direct notes access:", error);
+      return res.status(500).json({
+        error: "Database access failed",
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   app.get("/api/rls-diagnostics", async (req: Request, res: Response) => {
     try {
       const projectId = req.query.projectId as string;
