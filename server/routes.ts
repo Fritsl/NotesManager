@@ -695,6 +695,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           data: { notes: notes }
         };
         
+        // Synchronize JSON files with database for compatibility with other applications
+        // Even though we're now using the database as the source of truth, some applications
+        // might still be relying on the JSON files
+        try {
+          // Also update the JSON file to keep it in sync with the database (for other applications)
+          const jsonProjectData = {
+            id: projectMetadata.id,
+            name: projectMetadata.title,
+            user_id: projectMetadata.user_id,
+            data: { notes: notes },
+            description: projectMetadata.description || '',
+            updated_at: new Date().toISOString(),
+            created_at: projectMetadata.created_at
+          };
+          
+          fs.writeFileSync(
+            path.join(projectsDir, `${projectId}.json`),
+            JSON.stringify(jsonProjectData, null, 2)
+          );
+          
+          console.log(`Updated JSON file for project ${projectId} to match database for compatibility`);
+        } catch (syncError) {
+          console.error("Warning: Could not sync JSON file with database (non-critical):", syncError);
+        }
+        
         // Return the project data
         return res.status(200).json(projectData);
         

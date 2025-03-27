@@ -5,9 +5,14 @@
   "data": {
     "notes": [
       {
-        "id": "41a70669-9266-4bc3-8ecb-efd302443910",
-        "content": "1233  er en note",
+        "id": "dff5ee0b-df22-4533-aec2-095272747144",
+        "user_id": "2df0798b-b535-4015-8c5e-15ed98a09481",
+        "project_id": "283f7794-81c8-4bbd-a761-3c4bdaf8e74c",
+        "parent_id": null,
         "position": 0,
+        "content": "1233  er en note",
+        "created_at": "2025-03-27T16:32:21.595Z",
+        "updated_at": "2025-03-27T16:32:21.595Z",
         "is_discussion": false,
         "time_set": null,
         "youtube_url": null,
@@ -17,9 +22,48 @@
         "images": []
       },
       {
-        "id": "7c873705-736c-4c7b-bea8-8bd914aad1b7",
-        "content": "1233  part 2",
+        "id": "9cb712fc-c612-4df7-a010-14b4910f1a9e",
+        "user_id": "2df0798b-b535-4015-8c5e-15ed98a09481",
+        "project_id": "283f7794-81c8-4bbd-a761-3c4bdaf8e74c",
+        "parent_id": null,
         "position": 1,
+        "content": "1233  part 2",
+        "created_at": "2025-03-27T16:32:21.637Z",
+        "updated_at": "2025-03-27T16:32:21.637Z",
+        "is_discussion": false,
+        "time_set": null,
+        "youtube_url": null,
+        "url": null,
+        "url_display_text": null,
+        "children": [],
+        "images": []
+      },
+      {
+        "id": "449a18cc-6eda-491f-a633-e501ba8e451c",
+        "user_id": "2df0798b-b535-4015-8c5e-15ed98a09481",
+        "project_id": "283f7794-81c8-4bbd-a761-3c4bdaf8e74c",
+        "parent_id": null,
+        "position": 2,
+        "content": "dfsasdasddsafsdf 555",
+        "created_at": "2025-03-27T16:36:22.932Z",
+        "updated_at": "2025-03-27T16:36:22.932Z",
+        "is_discussion": false,
+        "time_set": null,
+        "youtube_url": "s",
+        "url": null,
+        "url_display_text": null,
+        "children": [],
+        "images": []
+      },
+      {
+        "id": "dae3935f-29a0-433b-b252-be44c4a2b569",
+        "user_id": "2df0798b-b535-4015-8c5e-15ed98a09481",
+        "project_id": "283f7794-81c8-4bbd-a761-3c4bdaf8e74c",
+        "parent_id": null,
+        "position": 3,
+        "content": "ekstra note",
+        "created_at": "2025-03-27T16:47:06.991Z",
+        "updated_at": "2025-03-27T16:47:06.991Z",
         "is_discussion": false,
         "time_set": null,
         "youtube_url": null,
@@ -31,6 +75,6 @@
     ]
   },
   "description": "1233 er projeckt beskrivelsen",
-  "updated_at": "2025-03-27T16:11:32.796Z",
-  "created_at": "2025-03-27T16:11:32.796Z"
+  "updated_at": "2025-03-27T16:55:12.821Z",
+  "created_at": "2025-03-27T16:32:21.507Z"
 }
