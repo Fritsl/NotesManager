@@ -3,7 +3,6 @@ import { Note, NotesData, NoteImage } from "@/types/notes";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import { createProject, updateProject, addImageToNote, removeImageFromNote, updateImagePosition, getProject } from "@/lib/projectService";
-import { saveQueue } from "@/lib/saveQueue";
 
 // State to track pending note movements that need to be saved
 let pendingNoteMoves = false;
@@ -92,47 +91,6 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
   // Ref for auto-save timeout
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
-
-  // Function to update a note in the state tree without queuing save operations
-  const updateNoteInStateTree = useCallback((note: Note) => {
-    setNotes((prevNotes) => {
-      const updatedNotes = [...prevNotes];
-      
-      // Find and update the note in the tree
-      const updateNoteInTree = (nodes: Note[]): boolean => {
-        for (let i = 0; i < nodes.length; i++) {
-          if (nodes[i].id === note.id) {
-            // Preserve the children and images if not provided
-            if (!note.children || note.children.length === 0) {
-              note.children = nodes[i].children;
-            }
-            if (!note.images || !Array.isArray(note.images)) {
-              note.images = nodes[i].images || [];
-            }
-            
-            // Update the node
-            nodes[i] = { ...note, images: note.images };
-            return true;
-          }
-          
-          if (nodes[i].children.length > 0) {
-            if (updateNoteInTree(nodes[i].children)) {
-              return true;
-            }
-          }
-        }
-        return false;
-      };
-      
-      updateNoteInTree(updatedNotes);
-      return updatedNotes;
-    });
-    
-    // Update selected note reference if it's the same note
-    if (selectedNote && selectedNote.id === note.id) {
-      setSelectedNote(note);
-    }
-  }, [selectedNote]);
 
   // Auto-load the last accessed project on initial mount
   useEffect(() => {
@@ -545,9 +503,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
   }, [findNoteAndPath, selectNote, cleanNotePositions, toast]);
 
   // Update a note
-  const updateNote = useCallback((updatedNote: Note, skipToast = false) => {
-    console.log(`updateNote called with skipToast=${skipToast} for note:`, updatedNote.id);
-    
+  const updateNote = useCallback((updatedNote: Note) => {
     // Format the time_set correctly if present (ensure no seconds)
     let formattedNote = { ...updatedNote };
     if (formattedNote.time_set) {
@@ -559,27 +515,67 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       }
     }
 
-    // Queue the note for immediate memory update and delayed database save
-    saveQueue.enqueue({
-      note: formattedNote,
-      saveToDatabase: true,
-      // Only show a toast if this isn't a bulk/background update
-      onSuccess: () => {
-        if (!skipToast) {
-          toast({
-            title: "Note Updated",
-            description: "Your changes have been saved",
-          });
+    setNotes((prevNotes) => {
+      const updatedNotes = [...prevNotes];
+
+      // Find the note at any level in the tree
+      const updateNoteInTree = (nodes: Note[]): boolean => {
+        for (let i = 0; i < nodes.length; i++) {
+          if (nodes[i].id === formattedNote.id) {
+            // Preserve critical properties if not provided in the update
+            if (!formattedNote.children || formattedNote.children.length === 0) {
+              formattedNote.children = nodes[i].children;
+            }
+
+            // CRITICAL: Preserve the images array if not explicitly provided
+            // This ensures images don't get lost during regular note updates
+            if (!formattedNote.images || !Array.isArray(formattedNote.images)) {
+              formattedNote.images = nodes[i].images || [];
+            }
+
+            // Update the node with the formatted note that preserves images
+            nodes[i] = { 
+              ...formattedNote,
+              // Double ensure images are preserved by explicitly setting them
+              images: formattedNote.images
+            };
+            return true;
+          }
+
+          if (nodes[i].children.length > 0) {
+            if (updateNoteInTree(nodes[i].children)) {
+              return true;
+            }
+          }
         }
-      },
-      onError: (error) => {
-        console.error("Error updating note:", error);
-        toast({
-          title: "Update Failed",
-          description: error.message || "Could not update the note",
-          variant: "destructive",
-        });
+
+        return false;
+      };
+
+      updateNoteInTree(updatedNotes);
+      return updatedNotes;
+    });
+
+    // Make sure the selected note also has the images preserved
+    setSelectedNote(formattedNote);
+
+    // Schedule an auto-save by setting a timeout
+    if (currentProjectId) {
+      // Use a timeout to avoid saving on every keystroke
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
       }
+      
+      // Set a new timeout to trigger auto-save
+      autoSaveTimeoutRef.current = setTimeout(() => {
+        // Just mark notes as needing to be saved - the effect will handle it
+        setPendingNoteMoves(true);
+      }, 1000); // 1 second debounce
+    }
+
+    toast({
+      title: "Note Updated",
+      description: "Your changes have been saved",
     });
   }, [toast, currentProjectId]);
 
@@ -1205,43 +1201,32 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
     }
   }, [toast, setCurrentProjectId, setCurrentProjectName]);
 
-  // Save the current project with optional silent mode
-  const saveProject = useCallback(async (silent: boolean = false) => {
+  // Save the current project
+  const saveProject = useCallback(async () => {
     try {
       if (!currentProjectId) {
         console.warn('Cannot save: No current project ID');
-        if (!silent) {
-          toast({
-            title: "Cannot Save",
-            description: "No active project. Create or load a project first.",
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "Cannot Save",
+          description: "No active project. Create or load a project first.",
+          variant: "destructive",
+        });
         return;
       }
 
-      // Show "Saving..." toast only when not in silent mode and not when called from saveQueue
-      if (!silent) {
-        toast({
-          title: "Saving...",
-          description: "Saving your changes",
-        });
-      }
+      // Show "Saving..." toast
+      toast({
+        title: "Saving...",
+        description: "Saving your changes",
+      });
 
       console.log('Saving project:', { 
         id: currentProjectId, 
         name: currentProjectName,
         description: currentProjectDescription,
         notesCount: notes.length,
-        firstNote: notes.length > 0 ? notes[0].content : 'No notes',
-        silent
+        firstNote: notes.length > 0 ? notes[0].content : 'No notes'
       });
-
-      // Process any pending changes in the saveQueue first to ensure all updates are persisted
-      if (saveQueue.hasPendingOperations()) {
-        console.log("Processing pending save operations before project save");
-        await saveQueue.forceSave();
-      }
 
       // Create a clean copy of the notes data to save
       const notesData: NotesData = { notes: cleanNotePositions([...notes]) };
@@ -1287,50 +1272,33 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         const wasNameCorrected = updatedProject.name !== currentProjectName;
         
         // Manual save via button - show a new toast instead of updating
-        if (!silent) {
-          toast({
-            title: "Project Saved",
-            description: wasNameCorrected 
-              ? `Project saved as "${updatedProject.name}" (corrected from UI name)`
-              : `"${updatedProject.name}" has been saved`,
-          });
-        }
+        toast({
+          title: "Project Saved",
+          description: wasNameCorrected 
+            ? `Project saved as "${updatedProject.name}" (corrected from UI name)`
+            : `"${updatedProject.name}" has been saved`,
+        });
       } else {
         // Auto-save after note movement - also show confirmation but with different message
-        if (!silent) {
-          toast({
-            title: "Changes Saved",
-            description: "Your note changes have been saved successfully",
-          });
-        }
+        toast({
+          title: "Changes Saved",
+          description: "Your note changes have been saved successfully",
+        });
         
         // Clear the pending flag 
         setPendingNoteMoves(false);
       }
 
-      return updatedProject;
     } catch (error) {
       console.error('Error saving project:', error);
       // Show error toast
-      if (!silent) {
-        toast({
-          title: "Error Saving Project",
-          description: error instanceof Error ? error.message : "An unknown error occurred",
-          variant: "destructive",
-        });
-      }
-      throw error; // Rethrow to allow saveQueue to handle the error
+      toast({
+        title: "Error Saving Project",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      });
     }
   }, [currentProjectId, currentProjectName, currentProjectDescription, notes, cleanNotePositions, toast, pendingNoteMoves]);
-
-  // Initialize saveQueue after saveProject is defined
-  useEffect(() => {
-    // Initialize the save queue with required functions - this only needs to run once
-    if (!saveQueue.isInitialized()) {
-      console.log("Initializing saveQueue with saveProject and updateNoteInStateTree");
-      saveQueue.initialize(saveProject, updateNoteInStateTree);
-    }
-  }, [saveProject, updateNoteInStateTree]);
 
   // Effect to handle auto-saving when pendingNoteMoves is set
   useEffect(() => {
@@ -1400,8 +1368,10 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           description: "The image has been attached to the note",
         });
 
-        // Queue a save operation instead of calling saveProject directly
-        setPendingNoteMoves(true);
+        // Save the project to ensure the image is persisted
+        saveProject().catch(err => {
+          console.error("Error saving project after image upload:", err);
+        });
       }
 
       return image;
@@ -1414,7 +1384,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       });
       return null;
     }
-  }, [toast, setPendingNoteMoves]);
+  }, [toast, saveProject]);
 
   // Remove an image from a note
   const removeImage = useCallback(async (imageId: string): Promise<boolean> => {
@@ -1458,8 +1428,10 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           description: "The image has been removed from the note",
         });
 
-        // Queue a save operation instead of calling saveProject directly
-        setPendingNoteMoves(true);
+        // Save the project to ensure the image removal is persisted
+        saveProject().catch(err => {
+          console.error("Error saving project after image removal:", err);
+        });
       }
 
       return success;
@@ -1472,7 +1444,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       });
       return false;
     }
-  }, [toast, setPendingNoteMoves]);
+  }, [toast, saveProject]);
 
   // Reorder images within a note
   const reorderImage = useCallback(async (noteId: string, imageId: string, newPosition: number): Promise<boolean> => {
@@ -1538,8 +1510,10 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           description: "The image position has been updated",
         });
 
-        // Queue a save operation instead of calling saveProject directly
-        setPendingNoteMoves(true);
+        // Save the project to ensure the image reordering is persisted
+        saveProject().catch(err => {
+          console.error("Error saving project after image reordering:", err);
+        });
       }
 
       return success;
@@ -1552,7 +1526,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       });
       return false;
     }
-  }, [toast, setPendingNoteMoves]);
+  }, [toast, saveProject]);
 
   // Debug info function removed
   

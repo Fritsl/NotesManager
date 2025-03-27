@@ -22,7 +22,7 @@ interface FilteredNotesViewProps {
 }
 
 export default function FilteredNotesView({ filteredNotes, filterType }: FilteredNotesViewProps) {
-  const { notes, selectNote, updateNote, uploadImage, removeImage, setPendingNoteMoves } = useNotes();
+  const { notes, selectNote, updateNote, saveProject, uploadImage, removeImage } = useNotes();
   const { toast } = useToast();
   
   // State for keeping track of which note is being edited
@@ -150,8 +150,8 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
       // First update in local state
       updateNote(updatedNote);
       
-      // Queue a save operation
-      setPendingNoteMoves(true);
+      // Then save to server
+      await saveProject();
       
       toast({
         title: "Note Updated",
@@ -197,8 +197,8 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
         // First update the note in the state
         updateNote(updatedNote);
         
-        // Queue a save operation to ensure images are synced with server
-        setPendingNoteMoves(true);
+        // Then save the project to ensure images are synced with server
+        await saveProject();
       }
     } catch (err) {
       console.error("Failed to upload image:", err);
@@ -233,8 +233,8 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
         };
         updateNote(updatedNote);
         
-        // Queue a save operation to ensure changes are synced
-        setPendingNoteMoves(true);
+        // Then save the project to ensure changes are synced
+        await saveProject();
       }
     } catch (err) {
       console.error("Failed to remove image:", err);
