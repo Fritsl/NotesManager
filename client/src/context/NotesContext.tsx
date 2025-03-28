@@ -523,7 +523,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
             }
 
             // Ensure color property is preserved if not explicitly set in the update
-            if (typeof formattedNote.color !== 'number' && formattedNote.color !== 0) {
+            if (formattedNote.color === undefined || formattedNote.color === null) {
               formattedNote.color = nodes[i].color || 0;
             }
 
