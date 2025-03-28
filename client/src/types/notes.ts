@@ -18,6 +18,7 @@ export interface Note {
   url_display_text: string | null;
   children: Note[];
   images?: NoteImage[];
+  color?: string | null;
 }
 
 export interface NotesData {
