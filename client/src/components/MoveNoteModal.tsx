@@ -171,18 +171,18 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
             className={cn(
               "flex items-center rounded-md py-1.5 my-1 px-2 group",
               "hover:bg-gray-800/50 border-l-2 border-transparent",
-              "transition-colors"
+              "transition-colors overflow-hidden"
             )}
           >
             {/* Indentation and expand/collapse button */}
             <div 
-              className="flex items-center gap-1 flex-grow" 
+              className="flex items-center gap-1 min-w-0 flex-shrink" 
               style={{ marginLeft: `${level * 12}px` }}
             >
               {/* Expand/collapse button - only visible for notes with children */}
               <button 
                 className={cn(
-                  "text-gray-400 hover:text-gray-200 p-1",
+                  "text-gray-400 hover:text-gray-200 p-1 flex-shrink-0",
                   hasChildren ? "visible" : "invisible"
                 )}
                 onClick={(e) => {
@@ -203,7 +203,7 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
               {/* Note content */}
               <div 
                 className={cn(
-                  "truncate text-sm font-medium",
+                  "truncate text-sm font-medium max-w-[150px] sm:max-w-[250px] md:max-w-[300px]",
                   color.text
                 )}
               >
@@ -212,7 +212,7 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
             </div>
             
             {/* Placement buttons - always visible but more opacity on hover */}
-            <div className="flex gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+            <div className="flex gap-1 sm:gap-2 opacity-60 group-hover:opacity-100 transition-opacity ml-auto flex-shrink-0">
               {/* Place inside button */}
               <button
                 className="text-gray-300 hover:text-primary p-1 rounded-md hover:bg-gray-700 text-xs flex items-center gap-1 border border-gray-700"
