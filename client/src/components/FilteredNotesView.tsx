@@ -104,29 +104,42 @@ const countNotesBetween = (notes: Note[], startNoteId: string, endNoteId: string
 const calculateTimeAllocation = (currentNote: Note, allNotes: Note[]): string | null => {
   if (!currentNote.time_set) return null;
   
+  console.log("Calculating time allocation for note:", currentNote.id, currentNote.content);
+  
   // Find the next note with time_set
   const nextTimedNote = findNextNoteWithTime(allNotes, currentNote.id);
+  console.log("Next timed note:", nextTimedNote ? `${nextTimedNote.id} (${nextTimedNote.time_set})` : "none");
+  
   if (!nextTimedNote || !nextTimedNote.time_set) return null;
   
   // Parse time values
   const currentTime = parseTimeSet(currentNote.time_set);
   const nextTime = parseTimeSet(nextTimedNote.time_set);
+  console.log("Times:", currentTime, nextTime);
   
   if (currentTime === null || nextTime === null) return null;
   
   // Calculate time difference in minutes
   const timeDiff = nextTime - currentTime;
+  console.log("Time difference in minutes:", timeDiff);
+  
   if (timeDiff <= 0) return null; // Handle case where next time is before current time
   
   // Count notes between (including current, excluding next)
   const noteCount = countNotesBetween(allNotes, currentNote.id, nextTimedNote.id);
+  console.log("Note count between:", noteCount);
+  
   if (noteCount <= 0) return null;
   
   // Calculate time per note in minutes
   const timePerNote = timeDiff / noteCount;
+  console.log("Time per note (minutes):", timePerNote);
   
   // Format as MM:SS
-  return formatTimeAllocation(timePerNote);
+  const formattedTime = formatTimeAllocation(timePerNote);
+  console.log("Formatted time:", formattedTime);
+  
+  return formattedTime;
 };
 import { levelColors } from "@/lib/level-colors";
 import { cn } from "@/lib/utils";
@@ -422,6 +435,18 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
     
     return { displayContent, previewLines, hasMoreLines };
   };
+  
+  // Debug logs
+  console.log("FilteredNotesView - Available notes:", notes.length);
+  console.log("FilteredNotesView - Filtered notes:", filteredNotes.length);
+  
+  // Log a sample note with time
+  const timeNoteExample = filteredNotes.find(note => note.time_set);
+  if (timeNoteExample) {
+    console.log("Example time note:", timeNoteExample.id, timeNoteExample.time_set);
+    const allocation = calculateTimeAllocation(timeNoteExample, notes);
+    console.log("Allocation result:", allocation);
+  }
 
   return (
     <div className="p-4">
