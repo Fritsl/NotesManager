@@ -704,13 +704,13 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           )}
           onClick={() => selectNote(note)}
         >
-          {/* Unfold children button in top-right corner, far from delete button */}
+          {/* Unfold children button in bottom-left corner, far from all delete buttons */}
           {hasChildren && (
-            <div className="absolute top-1 right-1 z-20">
+            <div className="absolute bottom-1 left-1 z-20">
               <Button
                 variant="ghost" 
                 size="sm" 
-                className="h-7 w-7 min-w-[1.75rem] p-0 flex items-center justify-center bg-gray-800/80 text-gray-300 hover:text-white rounded-full shadow-sm touch-target"
+                className="h-7 w-auto min-w-[1.75rem] p-1 px-2 flex items-center justify-center bg-gray-800/70 text-gray-300 hover:text-white rounded-md shadow-sm touch-target border border-gray-700/30"
                 title={isExpanded ? "Collapse children" : `Expand ${note.children.length} children`}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -718,14 +718,12 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                 }}
               >
                 {isExpanded 
-                  ? <ChevronDown size={16} /> 
-                  : <div className="flex items-center">
-                      <ChevronRight size={16} />
-                      {note.children.length > 0 && (
-                        <span className="ml-0.5 text-xs text-gray-300 font-mono">{note.children.length}</span>
-                      )}
-                    </div>
+                  ? <ChevronDown size={16} className="mr-1" /> 
+                  : <ChevronRight size={16} className="mr-1" />
                 }
+                <span className="text-xs text-gray-300 font-mono">
+                  {note.children.length}
+                </span>
               </Button>
             </div>
           )}
