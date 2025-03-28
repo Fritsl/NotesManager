@@ -687,6 +687,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
 
   return (
     <div className="note-tree-item">
+
       <div className="relative">
         {/* Main note card */}
         <div 
@@ -1213,9 +1214,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                 </AlertDialogContent>
               </AlertDialog>
             </div>
-          )}
+          </div>
         </div>
-      </div>
 
       {/* Children container */}
       {hasChildren && isExpanded && (
