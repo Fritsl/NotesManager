@@ -138,8 +138,9 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
     // Find the parent of the selected note to get siblings
     const findParentAndSiblings = (notesToSearch: Note[], target: string): { parent: Note | null, siblings: Note[] } | null => {
       for (const note of notesToSearch) {
-        // Check if this note is the target, use it as a parent for children
+        // Check if this note is the target, use it as a parent
         if (note.id === target) {
+          // Return this note as the parent regardless of whether it has children or not
           return { 
             parent: note, 
             siblings: note.children.filter(child => child.id !== noteToMove?.id)
@@ -224,7 +225,7 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
               className="flex items-center gap-1" 
               style={{ marginLeft: `${level * 12}px` }}
             >
-              {/* Expand/collapse button */}
+              {/* Expand/collapse button - only visible for notes with children */}
               <button 
                 className={cn(
                   "text-gray-400 hover:text-gray-200 p-1",
@@ -232,8 +233,11 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
                 )}
                 onClick={(e) => {
                   e.stopPropagation();
-                  toggleNode(note.id);
+                  if (hasChildren) {
+                    toggleNode(note.id);
+                  }
                 }}
+                disabled={!hasChildren}
               >
                 {isExpanded ? (
                   <ChevronDown className="h-3.5 w-3.5" />
@@ -260,20 +264,18 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
             
             {/* Quick placement buttons */}
             <div className="opacity-0 group-hover:opacity-100 flex gap-1.5 transition-opacity">
-              {/* Make this a child or place inside */}
-              {hasChildren && (
-                <button
-                  className="text-gray-400 hover:text-primary p-1 rounded-full hover:bg-gray-700"
-                  title="Move inside as a child"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveNoteId(note.id);
-                    setShowPlacementOptions(true);
-                  }}
-                >
-                  <PlusCircle className="h-3.5 w-3.5" />
-                </button>
-              )}
+              {/* Place inside - available for all notes, not just those with children */}
+              <button
+                className="text-gray-400 hover:text-primary p-1 rounded-full hover:bg-gray-700"
+                title="Move inside as a child"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveNoteId(note.id);
+                  setShowPlacementOptions(true);
+                }}
+              >
+                <PlusCircle className="h-3.5 w-3.5" />
+              </button>
               
               {/* Place above */}
               <button
