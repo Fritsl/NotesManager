@@ -233,23 +233,9 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           children: note.children ? note.children.map(child => processNote(child)) : []
         };
 
-        // Process images if present
-        if (note.images && note.images.length > 0) {
-          processedNote.images = note.images.map((image, index) => {
-            // Always generate new IDs for images too
-            const enhancedImage: NoteImage = {
-              ...image,
-              id: uuidv4(), // Always generate a new ID
-              note_id: newId, // Use the new note ID
-              created_at: image.created_at || new Date().toISOString(),
-              url: image.url,
-              storage_path: image.storage_path,
-              position: image.position !== undefined ? image.position : index
-            };
-
-            return enhancedImage;
-          });
-        }
+        // When importing notes, don't import image references
+        // This prevents cross-user dependencies and potential data privacy issues
+        processedNote.images = [];
 
         return processedNote;
       };
@@ -299,7 +285,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
 
     toast({
       title: "Import Successful",
-      description: `Imported ${data.notes.length} notes${projectName ? ` from "${projectName}"` : ''}`,
+      description: `Imported ${data.notes.length} notes${projectName ? ` from "${projectName}"` : ''} (images excluded)`,
     });
   }, [toast, cleanNotePositions]);
 
