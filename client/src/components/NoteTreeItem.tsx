@@ -1150,6 +1150,9 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             >
               <MoveHorizontal size={16} />
             </Button>
+            
+            {/* Spacer div to create distance between Move button and Delete button */}
+            <div className="w-2"></div>
 
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
               <AlertDialogTrigger asChild>
