@@ -110,7 +110,10 @@ const calculateTimeAllocation = (currentNote: Note, allNotes: Note[]): string | 
   const nextTimedNote = findNextNoteWithTime(allNotes, currentNote.id);
   console.log("Next timed note:", nextTimedNote ? `${nextTimedNote.id} (${nextTimedNote.time_set})` : "none");
   
-  if (!nextTimedNote || !nextTimedNote.time_set) return null;
+  if (!nextTimedNote || !nextTimedNote.time_set) {
+    // If this is the last timed note, show a default time allocation
+    return "10:00"; // Default 10 minutes for the last timed note
+  }
   
   // Parse time values
   const currentTime = parseTimeSet(currentNote.time_set);
@@ -119,17 +122,20 @@ const calculateTimeAllocation = (currentNote: Note, allNotes: Note[]): string | 
   
   if (currentTime === null || nextTime === null) return null;
   
-  // Calculate time difference in minutes
-  const timeDiff = nextTime - currentTime;
-  console.log("Time difference in minutes:", timeDiff);
-  
-  if (timeDiff <= 0) return null; // Handle case where next time is before current time
+  // Calculate time difference in minutes, handle wrapping across midnight
+  let timeDiff = nextTime - currentTime;
+  if (timeDiff <= 0) {
+    // If next time is earlier than current time, assume it's the next day
+    // Add 24 hours (1440 minutes) to get proper difference
+    timeDiff = timeDiff + (24 * 60);
+  }
+  console.log("Adjusted time difference in minutes:", timeDiff);
   
   // Count notes between (including current, excluding next)
   const noteCount = countNotesBetween(allNotes, currentNote.id, nextTimedNote.id);
   console.log("Note count between:", noteCount);
   
-  if (noteCount <= 0) return null;
+  if (noteCount <= 0) return "05:00"; // Default 5 minutes if there are no notes between
   
   // Calculate time per note in minutes
   const timePerNote = timeDiff / noteCount;
