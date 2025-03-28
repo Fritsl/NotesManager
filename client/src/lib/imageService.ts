@@ -74,20 +74,9 @@ export async function addImageToNote(noteId: string, file: File): Promise<NoteIm
     
     console.log('Uploading image directly to Supabase storage with path:', filePath);
     
-    // Ensure the note-images bucket exists (this is a best-effort, may fail due to permissions)
-    try {
-      const { data: buckets } = await supabase.storage.listBuckets();
-      if (buckets && !buckets.some(b => b.name === 'note-images')) {
-        console.log('Attempting to create note-images bucket');
-        await supabase.storage.createBucket('note-images', {
-          public: true,
-          fileSizeLimit: 1024 * 1024 * 5 // 5MB limit
-        });
-      }
-    } catch (bucketError) {
-      console.warn('Bucket check/create error:', bucketError);
-      // Continue anyway, as the bucket might already exist or be created by admin
-    }
+    // We assume bucket already exists - bucket creation should be done by admin/setup process
+    // Trying to create buckets from the client often fails due to permissions
+    console.log('Assuming note-images bucket already exists')
     
     // Normalize the file path to ensure consistent format
     // This fixes any issues with path formats before uploading
