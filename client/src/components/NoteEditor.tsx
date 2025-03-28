@@ -589,12 +589,12 @@ export default function NoteEditor() {
                 )}
 
                 {/* Bottom Row with Checkboxes and Time */}
-                <div className="flex items-center justify-between mt-2 pt-1 border-t border-gray-800">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between mt-2 pt-1 border-t border-gray-800">
                   {/* Discussion Checkbox */}
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 mb-2 sm:mb-0">
                     <Checkbox
                       id="isDiscussion"
-                      className="h-4 w-4 border-gray-600"
+                      className="h-5 w-5 border-gray-600"
                       checked={isDiscussion}
                       onCheckedChange={handleDiscussionChange}
                     />

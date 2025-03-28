@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 import ImageWithFallback from "@/components/ui/image-with-fallback";
+import { handleToast } from "@/lib/errorToast";
 import {
   Dialog,
   DialogContent,
@@ -631,15 +632,12 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
       // Then save to server
       await saveProject();
 
-      toast({
-        title: "Note Updated",
-        description: "Changes have been saved",
-      });
-
+      // Success toast removed - silently update
+      
       setIsEditing(false);
     } catch (error) {
       console.error('Error saving note:', error);
-      toast({
+      handleToast({
         title: "Save Failed",
         description: "Could not save your changes. Please try again.",
         variant: "destructive",
@@ -983,11 +981,11 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
 
                   {/* Discussion toggle */}
                   <div className="flex items-center">
-                    <label className="text-xs text-gray-400 w-20">Discussion:</label>
+                    <label className="text-xs text-gray-400 mr-2">Discussion:</label>
                     <Switch 
                       checked={editIsDiscussion} 
                       onCheckedChange={setEditIsDiscussion}
-                      className="ml-1 data-[state=checked]:bg-blue-600"
+                      className="data-[state=checked]:bg-blue-600 h-5 w-10"
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => e.stopPropagation()}
                     />
@@ -1075,11 +1073,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                                   setIsSaving(true);
                                   const success = await removeImage(image.id || '');
                                   if (success) {
-                                    toast({
-                                      title: "Image Removed",
-                                      description: "Image has been removed from the note",
-                                    });
-
+                                    // Success toast removed - silently update
+                                    
                                     // First update the note in local state
                                     const updatedNote = {
                                       ...note,
@@ -1092,7 +1087,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                                   }
                                 } catch (err) {
                                   console.error("Failed to remove image:", err);
-                                  toast({
+                                  handleToast({
                                     title: "Remove Failed",
                                     description: "Could not remove image. Please try again.",
                                     variant: "destructive",
@@ -1124,10 +1119,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                           setIsSaving(true); // Show loading state
                           const result = await uploadImage(note.id, file);
                           if (result) {
-                            toast({
-                              title: "Image Uploaded",
-                              description: "Image has been added to the note",
-                            });
+                            // Success toast removed - silently update
 
                             // Ensure the note has an images array
                             const existingImages = note.images || [];
@@ -1147,7 +1139,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                           e.target.value = '';
                         } catch (err) {
                           console.error("Failed to upload image:", err);
-                          toast({
+                          handleToast({
                             title: "Upload Failed",
                             description: "Could not upload image. Please try again.",
                             variant: "destructive",
