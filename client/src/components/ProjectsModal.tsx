@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { PlusCircle, LoaderCircle, Trash2, Save, FileDown, Edit, Archive } from 'lucide-react';
+import { PlusCircle, LoaderCircle, Trash2, Save, FileDown, Edit, Archive, Copy } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 import { 
   getProjects, 
@@ -11,6 +11,7 @@ import {
   createProject, 
   moveProjectToTrash, 
   updateProject,
+  duplicateProject,
   Project 
 } from '../lib/projectService';
 import TrashModal from './TrashModal';
@@ -315,6 +316,37 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
     setEditName(project.name);
     setEditDescription(project.description || '');
   };
+  
+  const handleDuplicateProject = async (e: React.MouseEvent, project: Project) => {
+    e.stopPropagation(); // Prevent loading the project
+    try {
+      setLoading(true);
+      const duplicated = await duplicateProject(project.id, `${project.name} (Copy)`);
+      setLoading(false);
+      
+      if (duplicated) {
+        toast({
+          title: 'Success',
+          description: `Project "${project.name}" duplicated successfully`,
+        });
+        await fetchProjects();
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to duplicate project',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error duplicating project:', error);
+      toast({
+        title: 'Error',
+        description: 'An error occurred while duplicating the project',
+        variant: 'destructive',
+      });
+      setLoading(false);
+    }
+  };
 
   const cancelEditing = () => {
     setEditingProject(null);
@@ -515,6 +547,15 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
                                 onClick={(e) => startEditingProject(e, project)}
                               >
                                 <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-gray-700 hover:bg-green-900 hover:text-green-200" 
+                                onClick={(e) => handleDuplicateProject(e, project)}
+                                title="Duplicate project"
+                              >
+                                <Copy className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="outline"

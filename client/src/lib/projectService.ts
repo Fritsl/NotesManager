@@ -517,6 +517,50 @@ export async function getProject(id: string): Promise<Project | null> {
   }
 }
 
+// Helper function to count total notes including children
+const countTotalNotes = (notes: any[]): number => {
+  if (!notes || !Array.isArray(notes)) return 0;
+  
+  let count = notes.length;
+  
+  for (const note of notes) {
+    if (note.children && Array.isArray(note.children)) {
+      count += countTotalNotes(note.children);
+    }
+  }
+  
+  return count;
+};
+
+/**
+ * Duplicates an existing project with all its notes
+ * @param projectId ID of the project to duplicate
+ * @param newName Name for the duplicated project
+ * @returns Promise resolving to the newly created Project object or null
+ */
+export async function duplicateProject(projectId: string, newName?: string): Promise<Project | null> {
+  try {
+    console.log('Duplicating project:', projectId);
+    
+    // Get the source project with all its notes
+    const sourceProject = await getProject(projectId);
+    
+    if (!sourceProject) {
+      console.error('Source project not found');
+      return null;
+    }
+    
+    // Generate a new name if not provided
+    const duplicateName = newName || `${sourceProject.name} (Copy)`;
+    
+    // Create a new project with the same notes
+    return await createProject(duplicateName, sourceProject.data);
+  } catch (error) {
+    console.error('Error duplicating project:', error);
+    return null;
+  }
+}
+
 export async function createProject(name: string, notesData: NotesData): Promise<Project | null> {
   try {
     console.log('Creating new project with name:', name);
@@ -538,19 +582,6 @@ export async function createProject(name: string, notesData: NotesData): Promise
     // Sanitize project name
     const sanitizedName = sanitizeProjectName(name);
     console.log('Sanitized project name:', sanitizedName);
-    
-    // Function to count total notes including children
-    const countTotalNotes = (notes: any[]): number => {
-      let count = notes.length;
-      
-      for (const note of notes) {
-        if (note.children && Array.isArray(note.children)) {
-          count += countTotalNotes(note.children);
-        }
-      }
-      
-      return count;
-    };
     
     // Calculate the initial note count
     const initialNoteCount = notesData.notes ? countTotalNotes(notesData.notes) : 0;
