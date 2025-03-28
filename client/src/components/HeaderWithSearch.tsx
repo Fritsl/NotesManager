@@ -431,27 +431,6 @@ export default function HeaderWithSearch() {
               </div>
             </div>
             <div className="flex items-center">
-              {/* Viewer Button */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mr-2 text-primary-500 hover:text-primary-400"
-                      onClick={() => {
-                        window.open("https://fastpresenterviwer.netlify.app", "_self");
-                      }}
-                    >
-                      <Presentation className="h-4 w-4 mr-1" />
-                      <span className="hidden sm:inline">Viewer</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Open Presenter Viewer (Shortcut: I)</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
 
               {/* Fullscreen Toggle Button */}
               <TooltipProvider>
@@ -632,27 +611,6 @@ export default function HeaderWithSearch() {
               Notes Editor
             </h1>
             <div className="flex items-center space-x-2">
-              {/* Viewer Button */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mr-1 text-primary-500 hover:text-primary-400"
-                      onClick={() => {
-                        window.open("https://fastpresenterviwer.netlify.app", "_self");
-                      }}
-                    >
-                      <Presentation className="h-4 w-4 mr-1" />
-                      <span className="hidden sm:inline">Viewer</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Open Presenter Viewer (Shortcut: I)</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
 
               {/* Consolidated Hamburger Menu */}
               <DropdownMenu>

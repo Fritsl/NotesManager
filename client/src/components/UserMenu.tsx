@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { Avatar, AvatarFallback } from './ui/avatar';
-import { User, LogIn, LogOut, FolderOpen, Save, Edit, Download, Undo } from 'lucide-react';
+import { User, LogIn, LogOut, FolderOpen, Save, Edit, Download, Undo, Presentation } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import AuthModal from './AuthModal';
 import ProjectsModal from './ProjectsModal';
@@ -211,6 +211,12 @@ export default function UserMenu() {
                 Edit Profile Payoff
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => window.open("https://fastpresenterviwer.netlify.app", "_self")}
+              >
+                <Presentation className="h-4 w-4 mr-2" />
+                Open Presenter Viewer <span className="ml-1 text-gray-500 text-xs">(I)</span>
+              </DropdownMenuItem>
               {canUndo && (
                 <DropdownMenuItem onClick={undoLastAction}>
                   <Undo className="h-4 w-4 mr-2" />
@@ -240,14 +246,18 @@ export default function UserMenu() {
                 <LogIn className="h-4 w-4 mr-2" />
                 Log In / Register
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => window.open("https://fastpresenterviwer.netlify.app", "_self")}
+              >
+                <Presentation className="h-4 w-4 mr-2" />
+                Open Presenter Viewer <span className="ml-1 text-gray-500 text-xs">(I)</span>
+              </DropdownMenuItem>
               {isPwaInstallable && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleInstallPwa}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Install App
-                  </DropdownMenuItem>
-                </>
+                <DropdownMenuItem onClick={handleInstallPwa}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Install App
+                </DropdownMenuItem>
               )}
               {isOffline && (
                 <DropdownMenuItem className="text-amber-500">
