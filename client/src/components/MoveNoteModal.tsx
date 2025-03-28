@@ -7,18 +7,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { 
   ArrowDown, 
   ArrowUp, 
   ChevronDown, 
   ChevronRight,
-  ChevronLeft,
-  XCircle, 
   Search,
-  FolderOpen,
-  PlusCircle,
-  Folder
+  PlusCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { levelColors } from "@/lib/level-colors";
@@ -34,23 +29,15 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
   const { notes, moveNote, scrollToNote, setPendingNoteMoves } = useNotes();
   const { toast } = useToast();
   
-  // State for tree view
+  // State for tree view only
   const [expandedNodes, setExpandedNodes] = useState<string[]>([]);
-  const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
   const [searchText, setSearchText] = useState("");
-  const [showPlacementOptions, setShowPlacementOptions] = useState(false);
-  const [siblingNotes, setSiblingNotes] = useState<Note[]>([]);
-  const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
   
-  // Reset selection when modal opens or note changes
+  // Reset state when modal opens or note changes
   useEffect(() => {
     if (isOpen && noteToMove) {
       setExpandedNodes([]);
-      setActiveNoteId(null);
       setSearchText("");
-      setShowPlacementOptions(false);
-      setSelectedParentId(null);
-      setSiblingNotes([]);
     }
   }, [isOpen, noteToMove]);
   
@@ -113,101 +100,68 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
     return filtered;
   }
   
-  // When a note is selected, determine its siblings for placement context
-  useEffect(() => {
-    if (activeNoteId === null) {
-      // Root level siblings
-      const rootSiblings = notes.filter(note => note.id !== noteToMove?.id);
-      setSiblingNotes(rootSiblings);
-      setSelectedParentId(null);
-    } else {
-      // Find the parent and siblings of the active note
-      findPlacementContext(activeNoteId);
-    }
-  }, [activeNoteId, notes, noteToMove]);
-
-  // Find the placement context (parent and siblings) for the selected note
-  const findPlacementContext = (noteId: string) => {
-    // If selecting the note itself, get its children
-    if (noteId === noteToMove?.id) {
-      setSelectedParentId(null);
-      setSiblingNotes([]);
-      return;
-    }
-    
-    // Find the parent of the selected note to get siblings
-    const findParentAndSiblings = (notesToSearch: Note[], target: string): { parent: Note | null, siblings: Note[] } | null => {
-      for (const note of notesToSearch) {
-        // Check if this note is the target, use it as a parent
-        if (note.id === target) {
-          // Return this note as the parent regardless of whether it has children or not
-          return { 
-            parent: note, 
-            siblings: note.children.filter(child => child.id !== noteToMove?.id)
-          };
-        }
-        
-        // Check if target is a direct child of this note
-        const childIndex = note.children.findIndex(child => child.id === target);
-        if (childIndex >= 0) {
-          return { 
-            parent: note, 
-            siblings: note.children.filter(child => child.id !== noteToMove?.id)
-          };
-        }
-        
-        // Recursively check children
-        const result = findParentAndSiblings(note.children, target);
-        if (result) return result;
+  // Find parent of a note
+  const findParentNote = (noteId: string): { parent: Note | null, position: number } => {
+    // Function to search recursively
+    const findInChildren = (
+      notesToSearch: Note[], 
+      targetId: string
+    ): { parent: Note | null, position: number } => {
+      // Check if target is in the root level
+      const rootIndex = notesToSearch.findIndex(n => n.id === targetId);
+      if (rootIndex >= 0) {
+        return { parent: null, position: rootIndex };
       }
       
-      return null;
+      // Search in children of each note
+      for (const note of notesToSearch) {
+        const childIndex = note.children.findIndex(child => child.id === targetId);
+        if (childIndex >= 0) {
+          return { parent: note, position: childIndex };
+        }
+        
+        // Recursively search deeper
+        if (note.children.length > 0) {
+          const result = findInChildren(note.children, targetId);
+          if (result.parent !== null || result.position >= 0) {
+            return result;
+          }
+        }
+      }
+      
+      return { parent: null, position: -1 };
     };
     
-    const result = findParentAndSiblings(notes, noteId);
-    
-    if (result) {
-      if (result.parent) {
-        setSelectedParentId(result.parent.id);
-        setSiblingNotes(result.siblings);
-      }
-    }
+    return findInChildren(notes, noteId);
   };
   
-  // Handle note movement
-  const handleMoveNote = (position: number) => {
+  // Handle moving the note
+  const handleMoveNote = (
+    targetParentId: string | null, 
+    position: number
+  ) => {
     if (!noteToMove) return;
     
     // Execute the move
-    moveNote(noteToMove.id, selectedParentId, position);
+    moveNote(noteToMove.id, targetParentId, position);
     
     // Set the pending flag to trigger auto-save
     setPendingNoteMoves(true);
     
-    // Close the modal first
+    // Close the modal
     onClose();
     
-    // No success toast - only scroll to the moved note
     // Highlight and scroll to the note in its new position
     setTimeout(() => scrollToNote(noteToMove.id), 300);
   };
   
-  // Get the name of the currently selected parent
-  const getSelectedParentName = () => {
-    if (selectedParentId === null) return "Root Level";
-    
-    const parent = findNoteById(notes, selectedParentId);
-    return parent ? parent.content : "Selected Location";
-  };
-  
-  // Render a tree node with its children
+  // Render the tree
   const renderNoteTree = (notesToRender: Note[], level = 0) => {
     return notesToRender.map(note => {
       // Skip the note being moved in the tree
       if (note.id === noteToMove?.id) return null;
       
       const isExpanded = expandedNodes.includes(note.id);
-      const isActive = activeNoteId === note.id;
       const hasChildren = note.children.length > 0;
       const color = levelColors[Math.min(level, levelColors.length - 1)];
       
@@ -216,13 +170,13 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
           <div 
             className={cn(
               "flex items-center rounded-md py-1.5 my-1 px-2 group",
-              isActive ? "bg-gray-800 border-l-2 border-primary" : 
-                "hover:bg-gray-800/50 border-l-2 border-transparent",
+              "hover:bg-gray-800/50 border-l-2 border-transparent",
               "transition-colors"
             )}
           >
+            {/* Indentation and expand/collapse button */}
             <div 
-              className="flex items-center gap-1" 
+              className="flex items-center gap-1 flex-grow" 
               style={{ marginLeft: `${level * 12}px` }}
             >
               {/* Expand/collapse button - only visible for notes with children */}
@@ -249,95 +203,50 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
               {/* Note content */}
               <div 
                 className={cn(
-                  "truncate text-sm font-medium flex-1",
-                  color.text,
-                  "cursor-pointer"
+                  "truncate text-sm font-medium",
+                  color.text
                 )}
-                onClick={() => {
-                  setActiveNoteId(note.id);
-                  // Only show placement options UI for notes that have children
-                  // or for root level - prevents opening empty UI for deepest children notes
-                  if (hasChildren) {
-                    setShowPlacementOptions(true);
-                  } else {
-                    // For childless notes, immediately show placement buttons: place above/below
-                    findPlacementContext(note.id);
-                  }
-                }}
               >
                 {note.content}
               </div>
             </div>
             
-            {/* Quick placement buttons */}
-            <div className="opacity-0 group-hover:opacity-100 flex gap-1.5 transition-opacity">
+            {/* Placement buttons - always visible but more opacity on hover */}
+            <div className="flex gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
               {/* Place inside button */}
               <button
-                className="text-gray-400 hover:text-primary p-1 rounded-full hover:bg-gray-700"
-                title="Move inside as a child"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveNoteId(note.id);
-                  // If note has children, show placement options UI
-                  // If not, just select it as the parent without showing additional UI
-                  if (hasChildren) {
-                    setShowPlacementOptions(true);
-                  } else {
-                    // For childless notes, make it the parent but don't show a nested UI
-                    // Just show "place at top" since there are no children yet
-                    setSiblingNotes([]);
-                    setSelectedParentId(note.id);
-                    handleMoveNote(0); // 0 = first position (top)
-                  }
-                }}
+                className="text-gray-300 hover:text-primary p-1 rounded-md hover:bg-gray-700 text-xs flex items-center gap-1 border border-gray-700"
+                title="Move inside as child"
+                onClick={() => handleMoveNote(note.id, 0)}
               >
                 <PlusCircle className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Inside</span>
               </button>
               
-              {/* Place above */}
+              {/* Place above button */}
               <button
-                className="text-gray-400 hover:text-primary p-1 rounded-full hover:bg-gray-700"
+                className="text-gray-300 hover:text-primary p-1 rounded-md hover:bg-gray-700 text-xs flex items-center gap-1 border border-gray-700"
                 title="Place above"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Find index of this note in its parent's children
-                  setActiveNoteId(note.id);
-                  findPlacementContext(note.id);
-                  // Find the index where this note appears in its siblings
-                  const parent = selectedParentId ? 
-                    findNoteById(notes, selectedParentId) : null;
-                  const siblings = parent ? 
-                    parent.children : notes;
-                  const index = siblings.findIndex(n => n.id === note.id);
-                  if (index >= 0) {
-                    handleMoveNote(index);
-                  }
+                onClick={() => {
+                  const { parent, position } = findParentNote(note.id);
+                  handleMoveNote(parent?.id ?? null, position);
                 }}
               >
                 <ArrowUp className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Above</span>
               </button>
               
-              {/* Place below */}
+              {/* Place below button */}
               <button
-                className="text-gray-400 hover:text-primary p-1 rounded-full hover:bg-gray-700"
+                className="text-gray-300 hover:text-primary p-1 rounded-md hover:bg-gray-700 text-xs flex items-center gap-1 border border-gray-700"
                 title="Place below"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Find index of this note in its parent's children
-                  setActiveNoteId(note.id);
-                  findPlacementContext(note.id);
-                  // Find the index where this note appears in its siblings
-                  const parent = selectedParentId ? 
-                    findNoteById(notes, selectedParentId) : null;
-                  const siblings = parent ? 
-                    parent.children : notes;
-                  const index = siblings.findIndex(n => n.id === note.id);
-                  if (index >= 0) {
-                    handleMoveNote(index + 1);
-                  }
+                onClick={() => {
+                  const { parent, position } = findParentNote(note.id);
+                  handleMoveNote(parent?.id ?? null, position + 1);
                 }}
               >
                 <ArrowDown className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Below</span>
               </button>
             </div>
           </div>
@@ -351,88 +260,6 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
         </div>
       );
     });
-  };
-  
-  // Render placement options UI
-  const renderPlacementOptions = () => {
-    return (
-      <div className="border-t border-gray-800 pt-4 mt-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-primary-400 font-medium flex items-center gap-1.5">
-            <Folder className="h-4 w-4" />
-            <span>
-              {selectedParentId === null ? "Root Level" : 
-                `"${getSelectedParentName().substring(0, 30)}${getSelectedParentName().length > 30 ? "..." : ""}"`}
-            </span>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs h-7 border-gray-700 text-gray-300 hover:bg-gray-800"
-            onClick={() => setShowPlacementOptions(false)}
-          >
-            <ChevronLeft className="h-3.5 w-3.5 mr-1" />
-            Back
-          </Button>
-        </div>
-        
-        <div className="space-y-2 mb-4">
-          {/* Place at Top - Always visible regardless of children */}
-          <Button 
-            variant="outline"
-            className="w-full justify-between bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-200 px-4 py-2.5"
-            onClick={() => handleMoveNote(0)}
-          >
-            <span className="text-base">Place at Top</span>
-            <ArrowUp className="h-5 w-5 ml-2 text-primary-400" />
-          </Button>
-          
-          {/* List of existing notes */}
-          {siblingNotes.length > 0 && (
-            <div className="mt-3 border-l-2 border-gray-700 pl-2 py-2">
-              <h4 className="text-gray-400 text-xs mb-2 font-medium ml-2">EXISTING NOTES:</h4>
-              {siblingNotes.map((note, index) => (
-                <div key={note.id} className="space-y-1.5 mb-3">
-                  <div className="flex items-center rounded px-3 py-2 bg-gray-900/70 border border-gray-700">
-                    <span className="text-gray-400 text-xs mr-2">{index + 1}.</span>
-                    <span className="text-gray-300 text-sm truncate">{note.content}</span>
-                  </div>
-                  
-                  <Button 
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-between ml-3 bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-200 text-sm px-4 py-2"
-                    onClick={() => handleMoveNote(index + 1)}
-                  >
-                    <span>Place below this note</span>
-                    <ArrowDown className="h-5 w-5 ml-2 text-primary-400" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-          
-          {/* Message when no siblings exist */}
-          {siblingNotes.length === 0 && (
-            <div className="mt-3 mb-3 py-3 border border-dashed border-gray-700 rounded-md">
-              <div className="text-gray-400 text-center py-1 text-sm">
-                No existing notes at this level
-              </div>
-            </div>
-          )}
-          
-          {/* Place at Bottom - Always visible regardless of children */}
-          <Button 
-            variant="outline"
-            className="w-full justify-between bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-200 mt-2 px-4 py-2.5"
-            onClick={() => handleMoveNote(siblingNotes.length)}
-          >
-            <span className="text-base">Place at Bottom</span>
-            <ArrowDown className="h-5 w-5 ml-2 text-primary-400" />
-          </Button>
-        </div>
-      </div>
-    );
   };
   
   return (
@@ -458,52 +285,51 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
             <input
               type="text"
               placeholder="Search notes..."
-              className="w-full pl-9 pr-9 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-200 focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-sm"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
             />
-            {searchText && (
+          </div>
+          
+          {/* Root level placement options */}
+          <div className="mb-4 px-2 py-3 bg-gray-800/50 rounded-md border border-gray-700">
+            <div className="text-sm text-gray-300 mb-2 font-medium">
+              Place at Root Level:
+            </div>
+            <div className="flex flex-wrap gap-2">
               <button
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200"
-                onClick={() => setSearchText("")}
+                className="text-gray-300 hover:text-primary p-1.5 rounded-md hover:bg-gray-700 
+                          text-xs flex items-center gap-1 border border-gray-700 flex-1"
+                onClick={() => handleMoveNote(null, 0)}
               >
-                <XCircle className="h-4 w-4" />
+                <ArrowUp className="h-3.5 w-3.5" />
+                <span>At Top</span>
               </button>
-            )}
+              <button
+                className="text-gray-300 hover:text-primary p-1.5 rounded-md hover:bg-gray-700 
+                          text-xs flex items-center gap-1 border border-gray-700 flex-1"
+                onClick={() => handleMoveNote(null, notes.length)}
+              >
+                <ArrowDown className="h-3.5 w-3.5" />
+                <span>At Bottom</span>
+              </button>
+            </div>
           </div>
           
-          {/* Root level option */}
-          <div 
-            className={cn(
-              "flex items-center rounded-md py-2 px-3 mb-4",
-              "bg-gray-800/50 hover:bg-gray-800 cursor-pointer",
-              "border border-dashed border-gray-700",
-              activeNoteId === null && "bg-gray-800 border-primary"
-            )}
-            onClick={() => {
-              setActiveNoteId(null);
-              setShowPlacementOptions(true);
-            }}
-          >
-            <FolderOpen className="h-4 w-4 text-primary-400 mr-2" />
-            <span className="text-primary-400 font-medium">Root Level (Top Level)</span>
-          </div>
-          
-          {/* Tree view for notes or placement options */}
-          <div className="flex-1 overflow-y-auto pr-2 min-h-0">
-            {showPlacementOptions ? (
-              renderPlacementOptions()
-            ) : (
-              <div className="space-y-0.5">
-                {filteredNotes.length > 0 ? (
-                  renderNoteTree(filteredNotes)
-                ) : (
-                  <div className="text-center py-8 text-gray-400">
-                    {searchText ? "No matching notes found" : "No notes available"}
-                  </div>
-                )}
-              </div>
-            )}
+          {/* Tree view section - fills remaining space */}
+          <div className="flex-1 overflow-y-auto pr-2 pb-4">
+            <div className="text-sm text-gray-300 mb-2 font-medium px-2">
+              Or select a location:
+            </div>
+            <div className="space-y-0.5 mb-6">
+              {filteredNotes.length > 0 ? (
+                renderNoteTree(filteredNotes)
+              ) : (
+                <div className="text-gray-400 text-sm py-10 text-center">
+                  {searchText ? "No notes match your search" : "No notes to display"}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </DialogContent>
