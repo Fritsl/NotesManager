@@ -35,6 +35,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
           <CardHeader>
             <CardTitle>Welcome to Notes</CardTitle>
             <CardDescription>Please sign in to use the application</CardDescription>
+            <div className="text-xs text-gray-500 mt-1">Version 1.0</div>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <p className="text-sm text-gray-400">
