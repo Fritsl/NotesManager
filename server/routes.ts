@@ -143,7 +143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint to store project data including notes
   app.post("/api/store-project-data", async (req: Request, res: Response) => {
     try {
-      const { id, name, userId, data, description } = req.body;
+      const { id, name, userId, data, description, color } = req.body;
       
       if (!id || !userId) {
         return res.status(400).json({ 
@@ -155,6 +155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Saving project data for project ${id} by user ${userId}`);
       console.log(`Project name: ${name}`);
       console.log(`Project description: "${description}"`);
+      console.log(`Project color: "${color}"`);
       
       // First update project settings/metadata
       const { data: settingsData, error: settingsError } = await supabaseAdmin
@@ -162,6 +163,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .update({
           title: name,
           description: description || '',
+          color: color || '',
           updated_at: new Date().toISOString(),
           last_modified_at: new Date().toISOString()
         })
@@ -319,6 +321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: settingsData.id,
         title: settingsData.title,
         description: settingsData.description,
+        color: settingsData.color,
         updated_at: settingsData.updated_at
       });
       

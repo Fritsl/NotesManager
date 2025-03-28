@@ -14,6 +14,7 @@ export interface Project {
   description?: string; // Optional field for project description
   deleted_at?: string; // Timestamp when the project was moved to trash
   note_count?: number; // The count of notes in the project
+  color?: string; // Optional field for project color
 }
 
 // Re-export image functions for backward compatibility
@@ -345,6 +346,7 @@ export async function getProjects(): Promise<Project[]> {
       updated_at: item.updated_at,
       user_id: item.user_id,
       description: item.description || '',
+      color: item.color || '', // Include the project color
       note_count: item.note_count || 0, // Include the note count from the database
       data: { notes: [] } // Will be populated below
     })) || [];
@@ -717,7 +719,7 @@ export async function generateUniqueProjectName(baseName: string = 'New Project'
   }
 }
 
-export async function updateProject(id: string, name: string, notesData: NotesData, description: string = ''): Promise<Project | null> {
+export async function updateProject(id: string, name: string, notesData: NotesData, description: string = '', color: string = ''): Promise<Project | null> {
   try {
     console.log('updateProject called - saving notes to database');
     console.log('Project ID:', id);
@@ -753,7 +755,8 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
         userId: userData.user.id,
         // Send the actual notes data
         data: validNotesData,
-        description
+        description,
+        color
       })
     });
     
@@ -780,6 +783,7 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
       updated_at: responseData.project.updated_at,
       user_id: responseData.project.user_id,
       description: responseData.project.description || '',
+      color: responseData.project.color || '',
       data: validNotesData,
       note_count: responseData.project.note_count || validNotesData.notes.length
     };
