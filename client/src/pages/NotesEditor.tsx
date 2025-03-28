@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Header from "@/components/HeaderWithSearch";
 import NoteTree from "@/components/NoteTree";
 import { Button } from "@/components/ui/button";
-import { FilePlus, FilterX, MonitorSmartphone } from "lucide-react";
+import { FilePlus, FilterX } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 import { FilterType } from "@/components/FilterMenu";
@@ -16,8 +16,7 @@ export default function NotesEditor() {
   const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
   const { hasActiveProject, currentProjectName, addNote } = useNotes();
-  const { isSupported, isActive, request, release } = useWakeLock();
-  const [wakeLockEnabled, setWakeLockEnabled] = useState(false);
+  const { isSupported, isActive, request } = useWakeLock();
   const { toast } = useToast();
   
   // Handle filter change
@@ -48,43 +47,24 @@ export default function NotesEditor() {
     };
   }, []);
   
-  // Toggle wake lock function
-  const toggleWakeLock = async () => {
-    if (!isSupported) {
-      toast({
-        title: "Wake Lock Not Supported",
-        description: "Your browser doesn't support keeping the screen awake.",
-        variant: "destructive"
-      });
-      return;
+  // Auto-enable wake lock when the component mounts
+  useEffect(() => {
+    // Try to request wake lock if supported
+    if (isSupported) {
+      const enableWakeLock = async () => {
+        try {
+          await request();
+          // No toast notification since this is automatic behavior
+          console.log("Screen wake lock enabled automatically");
+        } catch (error) {
+          console.error("Could not enable wake lock:", error);
+          // Silent fail - don't bother users with errors for features they didn't explicitly request
+        }
+      };
+      
+      enableWakeLock();
     }
-    
-    if (wakeLockEnabled) {
-      await release();
-      setWakeLockEnabled(false);
-      toast({
-        title: "Screen Can Sleep",
-        description: "Your screen can now turn off normally.",
-        variant: "default"
-      });
-    } else {
-      try {
-        await request();
-        setWakeLockEnabled(true);
-        toast({
-          title: "Screen Will Stay Awake",
-          description: "Your screen will stay on while using the app.",
-          variant: "default"
-        });
-      } catch (error) {
-        toast({
-          title: "Could Not Keep Screen Awake",
-          description: "There was a problem enabling this feature.",
-          variant: "destructive"
-        });
-      }
-    }
-  };
+  }, [isSupported, request]);
 
   return (
     <div className="flex flex-col h-screen bg-gray-950 text-gray-100">
@@ -100,7 +80,7 @@ export default function NotesEditor() {
               <NoteTree />
             )}
             
-            {/* Bottom left buttons - Show clear filter when filter active, always show wake lock for desktop */}
+            {/* Bottom left buttons - Only show clear filter when filter is active */}
             <div className="fixed bottom-4 left-4 z-10 flex gap-2">
               {activeFilter && filteredNotes.length > 0 && (
                 <Button
@@ -113,52 +93,21 @@ export default function NotesEditor() {
                   Clear Filter
                 </Button>
               )}
-              
-              {/* Desktop version of wake lock button - always visible */}
-              {isSupported && !isMobile && (
-                <Button
-                  variant={wakeLockEnabled ? "default" : "secondary"}
-                  size="sm"
-                  className="flex items-center gap-1"
-                  onClick={toggleWakeLock}
-                >
-                  <MonitorSmartphone className="h-4 w-4" />
-                  {wakeLockEnabled ? "Screen Awake" : "Keep Screen On"}
-                </Button>
-              )}
             </div>
           </div>
           
-          {/* Mobile floating action buttons */}
-          {isMobile && (
+          {/* Mobile floating action buttons - Only show filter clear button */}
+          {isMobile && activeFilter && filteredNotes.length > 0 && (
             <div className="fixed right-4 bottom-4 flex flex-col space-y-2 z-10">
-              {/* Keep screen awake button (only show when supported) */}
-              {isSupported && (
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={toggleWakeLock}
-                  className={`rounded-full h-12 w-12 shadow-lg ${
-                    wakeLockEnabled 
-                      ? "bg-primary text-primary-foreground" 
-                      : "bg-secondary/90 border-secondary-foreground text-secondary-foreground hover:bg-secondary"
-                  }`}
-                >
-                  <MonitorSmartphone className="h-5 w-5" />
-                </Button>
-              )}
-              
               {/* Clear filter button - only show if filter is active */}
-              {activeFilter && filteredNotes.length > 0 && (
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => handleFilterChange([], null)}
-                  className="rounded-full h-12 w-12 shadow-lg bg-secondary/90 border-secondary-foreground text-secondary-foreground hover:bg-secondary"
-                >
-                  <FilterX className="h-5 w-5" />
-                </Button>
-              )}
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={() => handleFilterChange([], null)}
+                className="rounded-full h-12 w-12 shadow-lg bg-secondary/90 border-secondary-foreground text-secondary-foreground hover:bg-secondary"
+              >
+                <FilterX className="h-5 w-5" />
+              </Button>
             </div>
           )}
         </div>
