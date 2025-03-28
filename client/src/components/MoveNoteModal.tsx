@@ -358,6 +358,7 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
         </div>
         
         <div className="space-y-2 mb-4">
+          {/* Place at Top - Always visible regardless of children */}
           <Button 
             variant="outline"
             className="w-full justify-between bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-200 px-4 py-2.5"
@@ -367,41 +368,49 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
             <ArrowUp className="h-5 w-5 ml-2 text-primary-400" />
           </Button>
           
-          {siblingNotes.map((note, index) => (
-            <div key={note.id} className="space-y-1.5">
-              <div className="flex items-center rounded px-3 py-2 bg-gray-900/70 border border-gray-800">
-                <span className="text-gray-400 text-xs mr-2">{index + 1}.</span>
-                <span className="text-gray-300 text-sm truncate">{note.content}</span>
-              </div>
-              
-              <Button 
-                variant="outline"
-                size="sm"
-                className="w-full justify-between ml-5 bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-200 text-sm px-4 py-2"
-                onClick={() => handleMoveNote(index + 1)}
-              >
-                <span>Place below this note</span>
-                <ArrowDown className="h-5 w-5 ml-2 text-primary-400" />
-              </Button>
-            </div>
-          ))}
-          
-          {siblingNotes.length === 0 && (
-            <div className="text-gray-500 text-center py-3 italic text-sm">
-              No existing notes at this level
-            </div>
-          )}
-          
+          {/* List of existing notes */}
           {siblingNotes.length > 0 && (
-            <Button 
-              variant="outline"
-              className="w-full justify-between bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-200 mt-2 px-4 py-2.5"
-              onClick={() => handleMoveNote(siblingNotes.length)}
-            >
-              <span className="text-base">Place at Bottom</span>
-              <ArrowDown className="h-5 w-5 ml-2 text-primary-400" />
-            </Button>
+            <div className="mt-3 border-l-2 border-gray-700 pl-2 py-2">
+              <h4 className="text-gray-400 text-xs mb-2 font-medium ml-2">EXISTING NOTES:</h4>
+              {siblingNotes.map((note, index) => (
+                <div key={note.id} className="space-y-1.5 mb-3">
+                  <div className="flex items-center rounded px-3 py-2 bg-gray-900/70 border border-gray-700">
+                    <span className="text-gray-400 text-xs mr-2">{index + 1}.</span>
+                    <span className="text-gray-300 text-sm truncate">{note.content}</span>
+                  </div>
+                  
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-between ml-3 bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-200 text-sm px-4 py-2"
+                    onClick={() => handleMoveNote(index + 1)}
+                  >
+                    <span>Place below this note</span>
+                    <ArrowDown className="h-5 w-5 ml-2 text-primary-400" />
+                  </Button>
+                </div>
+              ))}
+            </div>
           )}
+          
+          {/* Message when no siblings exist */}
+          {siblingNotes.length === 0 && (
+            <div className="mt-3 mb-3 py-3 border border-dashed border-gray-700 rounded-md">
+              <div className="text-gray-400 text-center py-1 text-sm">
+                No existing notes at this level
+              </div>
+            </div>
+          )}
+          
+          {/* Place at Bottom - Always visible regardless of children */}
+          <Button 
+            variant="outline"
+            className="w-full justify-between bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-200 mt-2 px-4 py-2.5"
+            onClick={() => handleMoveNote(siblingNotes.length)}
+          >
+            <span className="text-base">Place at Bottom</span>
+            <ArrowDown className="h-5 w-5 ml-2 text-primary-400" />
+          </Button>
         </div>
       </div>
     );
