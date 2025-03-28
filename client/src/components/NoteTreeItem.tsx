@@ -2,12 +2,13 @@ import { useRef, useState, useEffect } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { Note } from "@/types/notes";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, Link, Youtube, ArrowDownRightFromCircle, MessageCircle, Clock, MoveHorizontal, Save, Check, Edit, X, Upload, ImagePlus } from "lucide-react";
+import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, Link, Youtube, ArrowDownRightFromCircle, MessageCircle, Clock, MoveHorizontal, Save, Check, Edit, X, Upload, ImagePlus, ExternalLink } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { cn } from "@/lib/utils";
 import DropZone from "./DropZone";
 import { levelColors } from "@/lib/level-colors";
 import MoveNoteModal from "./MoveNoteModal";
+import EditNoteModal from "./EditNoteModal";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
@@ -74,6 +75,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   // Dialog states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteChildren, setDeleteChildren] = useState(false);
 
   // Inline editing state
@@ -1084,11 +1086,26 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-gray-400 hover:text-green-500 p-1 touch-target"
-              title="Edit Note"
+              title="Quick Edit"
               onClick={startEditing}
               disabled={isEditing}
             >
               <Edit size={16} />
+            </Button>
+
+            {/* Edit in Modal Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-gray-400 hover:text-blue-500 p-1 touch-target"
+              title="Edit in Modal"
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditDialogOpen(true);
+              }}
+              disabled={isEditing}
+            >
+              <ExternalLink size={16} />
             </Button>
 
             {/* Add Note Below Button */}
@@ -1261,6 +1278,13 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         isOpen={moveDialogOpen}
         onClose={() => setMoveDialogOpen(false)}
         noteToMove={note}
+      />
+
+      {/* Edit Note Modal */}
+      <EditNoteModal
+        isOpen={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        note={note}
       />
     </div>
   );
