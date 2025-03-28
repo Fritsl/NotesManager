@@ -816,7 +816,10 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             type="time" 
             className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
             value={editTimeSet || ''}
-            onChange={(e) => setEditTimeSet(e.target.value ? e.target.value : null)}
+            onChange={(e) => {
+              // If the value is empty or user clears the field, set to null
+              setEditTimeSet(e.target.value.trim() === '' ? null : e.target.value);
+            }}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
           />
@@ -969,7 +972,10 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                       type="time" 
                       className="flex-1 h-7 p-1 rounded text-xs bg-gray-850 border border-gray-700 focus:border-primary"
                       value={editTimeSet || ''}
-                      onChange={(e) => setEditTimeSet(e.target.value ? e.target.value : null)}
+                      onChange={(e) => {
+                        // If the value is empty or user clears the field, set to null
+                        setEditTimeSet(e.target.value.trim() === '' ? null : e.target.value);
+                      }}
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => e.stopPropagation()}
                     />
