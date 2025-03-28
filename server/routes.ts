@@ -14,6 +14,7 @@ import express from 'express';
 import pkg from 'pg';
 const { Pool } = pkg;
 import { checkRlsPolicies } from "./check-rls-policies";
+import { refreshSchemaCache } from "./refresh-schema";
 
 // Helper function to flatten note hierarchy for database storage
 function flattenNoteHierarchy(notes: any[], projectId: string, userId: string) {
@@ -40,9 +41,9 @@ function flattenNoteHierarchy(notes: any[], projectId: string, userId: string) {
     if (note.url !== undefined) flatNote.url = note.url;
     if (note.url_display_text !== undefined) flatNote.url_display_text = note.url_display_text;
     
-    // Temporarily comment out color saving until schema cache refreshes
-    // We'll keep color in client-side state for now
-    // if (note.color !== undefined) flatNote.color = note.color;
+    // Add color property to notes if it exists
+    // The color column has been added to the database schema
+    if (note.color !== undefined) flatNote.color = note.color;
     
     // Add the note to our flat array
     flatNotes.push(flatNote);
@@ -1699,6 +1700,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Endpoint to synchronize note counts in settings table with actual count in notes table
+  // Add a route to refresh the schema cache for PostgREST
+  app.get("/api/refresh-schema", async (_req: Request, res: Response) => {
+    try {
+      const success = await refreshSchemaCache();
+      
+      if (success) {
+        return res.status(200).json({
+          success: true,
+          message: "Schema cache refreshed successfully"
+        });
+      } else {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to refresh schema cache"
+        });
+      }
+    } catch (error: any) {
+      console.error('Error refreshing schema cache:', error);
+      return res.status(500).json({
+        success: false,
+        message: "Error refreshing schema cache",
+        error: error.message
+      });
+    }
+  });
+  
   app.get("/api/sync-note-counts", async (req: Request, res: Response) => {
     try {
       const userId = req.query.userId as string;
