@@ -159,14 +159,19 @@ interface TimeAllocationResult {
 const calculateTimeAllocation = (currentNote: Note, allNotes: Note[]): TimeAllocationResult | null => {
   if (!currentNote.time_set) return null;
   
+  console.log("🕒 Calculating time for note:", currentNote.id, currentNote.content.substring(0, 20));
+  
   // Find the next note with time_set
   const nextTimedNote = findNextNoteWithTime(allNotes, currentNote.id);
+  console.log("🕒 Next timed note:", nextTimedNote ? 
+    `${nextTimedNote.id} - ${nextTimedNote.content.substring(0, 20)}` : "none");
   
   let noteCount = 0;
   let totalMinutes = 0;
   let formattedTime = "";
   
   if (!nextTimedNote || !nextTimedNote.time_set) {
+    console.log("🕒 No next timed note found, returning null");
     // If this is the last timed note, don't show any calculation
     // since we can't calculate time to "next" timed note
     return null;
@@ -175,6 +180,7 @@ const calculateTimeAllocation = (currentNote: Note, allNotes: Note[]): TimeAlloc
   // Parse time values
   const currentTime = parseTimeSet(currentNote.time_set);
   const nextTime = parseTimeSet(nextTimedNote.time_set);
+  console.log("🕒 Time values:", currentNote.time_set, nextTimedNote.time_set);
   
   if (currentTime === null || nextTime === null) return null;
   
@@ -185,27 +191,41 @@ const calculateTimeAllocation = (currentNote: Note, allNotes: Note[]): TimeAlloc
     // Add 24 hours (1440 minutes) to get proper difference
     timeDiff = timeDiff + (24 * 60);
   }
+  console.log("🕒 Time difference (minutes):", timeDiff);
   
-  // Determine if the next timed note is a descendant of the current note
-  const isNextNoteDescendant = (parentNote: Note, targetId: string): boolean => {
-    for (const child of parentNote.children) {
-      if (child.id === targetId) return true;
-      if (isNextNoteDescendant(child, targetId)) return true;
-    }
-    return false;
-  };
+  // IMPORTANT FIX: First find the direct route between the two timed notes
+  // We're going to directly count the exact number of slides between them
+  // This will fix issues with counting notes in different branches
 
-  // If the next timed note is a descendant of current note, use total descendants
-  const currentNoteObj = allNotes.find(n => n.id === currentNote.id);
-  if (currentNoteObj && isNextNoteDescendant(currentNoteObj, nextTimedNote.id)) {
-    // Use the total children count plus 1 (for the current note itself)
-    noteCount = getTotalChildrenCount(currentNoteObj) + 1;
+  // Flatten the tree to get all nodes in display order
+  const flattenedNotes: Note[] = [];
+  const flattenTree = (notesArray: Note[]) => {
+    notesArray.forEach(note => {
+      flattenedNotes.push(note);
+      if (note.children && note.children.length > 0) {
+        flattenTree(note.children);
+      }
+    });
+  };
+  flattenTree(allNotes);
+  
+  // Find positions of both timed notes in the flattened tree
+  const currentIndex = flattenedNotes.findIndex(note => note.id === currentNote.id);
+  const nextIndex = flattenedNotes.findIndex(note => note.id === nextTimedNote.id);
+  
+  if (currentIndex >= 0 && nextIndex >= 0) {
+    // Count notes between (including both start and end)
+    noteCount = (nextIndex - currentIndex) + 1;
+    console.log("🕒 Slide positions in tree:", currentIndex, nextIndex);
+    console.log("🕒 Total slide count (including both):", noteCount);
   } else {
-    // Otherwise, use the original count method for separate branches
-    noteCount = countNotesBetween(allNotes, currentNote.id, nextTimedNote.id);
+    // Fallback to old method if indexes aren't found
+    console.log("🕒 Using fallback counting method");
+    noteCount = 2; // Default to just the two timed notes
   }
   
   if (noteCount <= 0) {
+    console.log("🕒 Note count is invalid, using default");
     formattedTime = "05:00"; // Default 5 minutes if there are no notes between
     totalMinutes = 5;
     return { formattedTime, noteCount: 1, totalMinutes };
@@ -214,10 +234,12 @@ const calculateTimeAllocation = (currentNote: Note, allNotes: Note[]): TimeAlloc
   // Calculate time per note in minutes
   const timePerNote = timeDiff / noteCount;
   totalMinutes = timeDiff;
+  console.log("🕒 Minutes per slide:", timePerNote);
   
   // Format as MM:SS
   formattedTime = formatTimeAllocation(timePerNote);
   
+  console.log("🕒 Final calculation:", { formattedTime, noteCount, totalMinutes });
   return { formattedTime, noteCount, totalMinutes };
 };
 
