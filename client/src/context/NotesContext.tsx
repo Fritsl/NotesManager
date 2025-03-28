@@ -283,10 +283,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
     // Always set hasActiveProject to true when importing notes
     setHasActiveProject(true);
 
-    toast({
-      title: "Import Successful",
-      description: `Imported ${data.notes.length} notes${projectName ? ` from "${projectName}"` : ''} (images excluded)`,
-    });
+    // No success toast for imports
   }, [toast, cleanNotePositions]);
 
   // Export notes to JSON

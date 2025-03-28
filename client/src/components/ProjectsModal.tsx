@@ -5,6 +5,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { PlusCircle, LoaderCircle, Trash2, Save, FileDown, Edit, Archive, Copy } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
+import { showToast } from '../lib/toastUtils';
 import { 
   getProjects, 
   getProject,
@@ -125,7 +126,7 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
 
         console.log('Set current project ID for new project:', newProject.id);
 
-        toast({
+        showToast({
           title: 'Success',
           description: 'Project created successfully',
         });
@@ -176,7 +177,7 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
       const updated = await updateProject(project.id, projectName, notesData, projectDescription);
 
       if (updated) {
-        toast({
+        showToast({
           title: 'Success',
           description: 'Project updated successfully',
         });
@@ -209,7 +210,7 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
       const success = await moveProjectToTrash(projectToDelete.id);
 
       if (success) {
-        toast({
+        showToast({
           title: 'Moved to Trash',
           description: 'Project moved to trash successfully',
         });
@@ -289,7 +290,7 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
 
       console.log('Set current project ID:', fullProject.id);
 
-      toast({
+      showToast({
         title: 'Success',
         description: `Project "${fullProject.name}" loaded successfully`,
       });
@@ -325,7 +326,7 @@ export default function ProjectsModal({ isOpen, onClose }: ProjectsModalProps) {
       setLoading(false);
       
       if (duplicated) {
-        toast({
+        showToast({
           title: 'Success',
           description: `Project "${project.name}" duplicated successfully`,
         });
