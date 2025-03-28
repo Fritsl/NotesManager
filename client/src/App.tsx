@@ -12,6 +12,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import AuthModal from "@/components/AuthModal";
 import { Toaster } from "@/components/ui/toaster";
 import VersionDisplay from "@/components/VersionDisplay";
+import { ZenModeProvider } from "@/hooks/useZenMode";
 
 // Authentication guard component
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -122,8 +123,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router urlParams={urlParams} />
-        <Toaster />
+        <ZenModeProvider>
+          <Router urlParams={urlParams} />
+          <Toaster />
+        </ZenModeProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
