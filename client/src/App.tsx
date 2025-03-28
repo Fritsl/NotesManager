@@ -43,13 +43,16 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
               and enable sharing features.
             </p>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex flex-col gap-4">
             <Button 
               className="w-full" 
               onClick={() => setShowAuthModal(true)}
             >
               Sign In / Create Account
             </Button>
+            <div className="w-full flex justify-center text-xs text-muted-foreground mt-2">
+              <VersionDisplay />
+            </div>
           </CardFooter>
         </Card>
         <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />

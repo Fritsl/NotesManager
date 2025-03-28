@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import Header from "@/components/HeaderWithSearch";
 import NoteTree from "@/components/NoteTree";
 import { Button } from "@/components/ui/button";
-import { FilePlus, FilterX } from "lucide-react";
+import { FilePlus, FilterX, MonitorSmartphone } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 import { FilterType } from "@/components/FilterMenu";
 import FilteredNotesView from "@/components/FilteredNotesView";
 import { Note } from "@/types/notes";
+import { useWakeLock } from "@/hooks/useWakeLock";
+import { useToast } from "@/hooks/use-toast";
 
 export default function NotesEditor() {
   const isMobile = useIsMobile();
