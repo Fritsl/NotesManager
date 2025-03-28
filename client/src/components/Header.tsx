@@ -155,6 +155,21 @@ export default function Header() {
     }
   };
 
+  // Function to handle creating a new project
+  const handleCreateNewProject = async () => {
+    try {
+      console.log('Header: Creating new project via button');
+      await createNewProject('New Project');
+    } catch (error) {
+      console.error('Error creating new project:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create new project",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <header className="bg-gray-950 border-b border-gray-800 py-2 px-2 sm:px-4">
       {hasActiveProject ? (
@@ -304,13 +319,10 @@ export default function Header() {
                       );
                     })}
                   </div>
-                  </div>
+                </div>
 
                 {/* File Operations */}
-                <DropdownMenuItem onClick={() => {
-                  // Create a new project
-                  createNewProject('New Project');
-                }}>
+                <DropdownMenuItem onClick={handleCreateNewProject}>
                   <FileText className="h-4 w-4 mr-2" />
                   <span>New</span>
                 </DropdownMenuItem>
@@ -428,7 +440,7 @@ export default function Header() {
             <Button 
               variant="default" 
               size="sm"
-              onClick={() => createNewProject('New Project')}
+              onClick={handleCreateNewProject}
               className="h-8 px-2 sm:px-3 text-xs sm:text-sm touch-target"
             >
               <FileText className="h-3.5 w-3.5 mr-1.5" />
@@ -453,7 +465,6 @@ export default function Header() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-
                 {/* User Options - Incorporating UserMenu items here */}
                 <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="h-4 w-4 mr-2" />
