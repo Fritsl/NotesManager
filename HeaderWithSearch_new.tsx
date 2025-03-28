@@ -35,7 +35,8 @@ import {
   Image as ImageIcon,
   ImagePlus,
   Youtube,
-  Link
+  Link,
+  Eye
 } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { useAuth } from "@/context/AuthContext";
@@ -337,6 +338,7 @@ export default function HeaderWithSearch() {
   };
 
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isZenMode, setIsZenMode] = useState(false);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -359,6 +361,17 @@ export default function HeaderWithSearch() {
     if (screenfull.isEnabled) {
       screenfull.toggle();
     }
+  };
+  
+  const toggleZenMode = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsZenMode(!isZenMode);
+    
+    // Dispatch a custom event that components can listen for
+    const zenEvent = new CustomEvent('zen-mode-change', { 
+      detail: { isZenMode: !isZenMode } 
+    });
+    window.dispatchEvent(zenEvent);
   };
 
   // Return JSX 
@@ -499,8 +512,20 @@ export default function HeaderWithSearch() {
             size="icon" 
             onClick={toggleFullscreen}
             title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+            className={isFullscreen ? "bg-primary/20 text-primary" : ""}
           >
             {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+          </Button>
+          
+          {/* Zen Mode Toggle */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleZenMode}
+            title={isZenMode ? "Exit Zen Mode" : "Enter Zen Mode"}
+            className={isZenMode ? "bg-primary/20 text-primary" : ""}
+          >
+            <Eye size={20} />
           </Button>
 
           {/* Help button */}

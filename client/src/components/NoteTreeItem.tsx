@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 import ImageWithFallback from "@/components/ui/image-with-fallback";
 import { handleToast } from "@/lib/errorToast";
+import { useZenMode } from "@/hooks/useZenMode";
 import {
   Dialog,
   DialogContent,
@@ -241,8 +242,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   } = useNotes();
   const { toast } = useToast();
   const isMobile = useIsMobile(); // Check if we're on a mobile device
-  
-
+  const isZenMode = useZenMode(); // Check if Zen Mode is active
 
   // References
   const ref = useRef<HTMLDivElement>(null);
