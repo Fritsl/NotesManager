@@ -685,43 +685,10 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
     </>
   );
 
-  // Mobile Dialog for fullscreen editing
-  const MobileEditDialog = () => (
-    <Dialog open={isEditing && isMobile} onOpenChange={(open) => {
-      if (!open) setIsEditing(false);
-    }}>
-      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto top-[5%] translate-y-0">
-        <DialogHeader>
-          <DialogTitle>Edit Note</DialogTitle>
-        </DialogHeader>
-        <div onClick={(e) => e.stopPropagation()}>
-          {renderEditForm()}
-        </div>
-        <DialogFooter className="flex justify-end gap-2">
-          <Button
-            size="sm"
-            className="h-9 px-4"
-            onClick={handleSaveNote}
-            disabled={isSaving}
-          >
-            {isSaving ? (
-              <>Loading...</>
-            ) : (
-              <>
-                <Check size={16} className="mr-1" />
-                Save
-              </>
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+  // No separate mobile dialog anymore - using same UI for all devices
 
   return (
     <div className="note-tree-item">
-      {/* Mobile fullscreen edit dialog */}
-      {isMobile && <MobileEditDialog />}
 
       <div className="relative">
         {/* Main note card */}
@@ -761,8 +728,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           )}></div>
 
           <div className="flex-1 overflow-hidden">
-            {isEditing && !isMobile ? (
-              /* Inline Edit Mode - Only shown on desktop; mobile uses fullscreen dialog */
+            {isEditing ? (
+              /* Inline Edit Mode - Used for all devices */
               <div className="w-full" onClick={(e) => e.stopPropagation()}>
                 {/* Content editor with more height */}
                 <Textarea 
