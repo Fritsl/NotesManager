@@ -9,11 +9,16 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuLabel,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Clock, MessageCircle, Image, Link, Youtube, Filter, X, ImagePlus } from "lucide-react";
+import { Clock, MessageCircle, Image, Link, Youtube, Filter, X, ImagePlus, Palette } from "lucide-react";
+import { colorMap, getColorFromValue } from "@/lib/color-utils";
 
-export type FilterType = "time" | "video" | "image" | "discussion" | "link" | null;
+export type FilterType = "time" | "video" | "image" | "discussion" | "link" | "color" | null;
 
 interface FilterMenuProps {
   onFilterChange: (filteredNotes: Note[], filterType: FilterType) => void;
@@ -57,6 +62,9 @@ export default function FilterMenu({ onFilterChange }: FilterMenuProps) {
     onFilterChange(filtered, filterType);
   };
   
+  // Store the active color for filtering
+  const [activeColorValue, setActiveColorValue] = useState<number | null>(null);
+
   const handleFilterSelect = (filterType: FilterType) => {
     switch (filterType) {
       case "time":
@@ -74,12 +82,33 @@ export default function FilterMenu({ onFilterChange }: FilterMenuProps) {
       case "link":
         applyFilter("link", (note) => !!note.url);
         break;
+      case "color":
+        // Don't do anything here, as we'll handle color filtering separately
+        break;
       default:
         applyFilter(null, () => false);
+        // Reset the active color when clearing filters
+        setActiveColorValue(null);
         break;
     }
     
     // Close menu when a filter is selected
+    setMenuOpen(false);
+  };
+  
+  // Handle color filter selection
+  const handleColorFilterSelect = (colorValue: number) => {
+    setActiveColorValue(colorValue);
+    applyFilter("color", (note) => {
+      // Handle legacy string colors and numeric colors
+      if (typeof note.color === 'string') {
+        // Convert legacy string color to its numeric value and compare
+        return note.color !== null && colorValue === parseInt(note.color);
+      } else {
+        // Compare numeric color values directly
+        return note.color === colorValue;
+      }
+    });
     setMenuOpen(false);
   };
   
@@ -90,6 +119,14 @@ export default function FilterMenu({ onFilterChange }: FilterMenuProps) {
       case "image": return <ImagePlus className="h-4 w-4" />;
       case "discussion": return <MessageCircle className="h-4 w-4" />;
       case "link": return <Link className="h-4 w-4" />;
+      case "color": 
+        if (activeColorValue && activeColorValue > 0) {
+          const hexColor = getColorFromValue(activeColorValue);
+          return (
+            <div className="h-4 w-4" style={{ backgroundColor: hexColor || undefined }}></div>
+          );
+        }
+        return <Palette className="h-4 w-4" />;
       default: return <Filter className="h-4 w-4" />;
     }
   };
@@ -106,6 +143,13 @@ export default function FilterMenu({ onFilterChange }: FilterMenuProps) {
         return "Discussion notes";
       case "link":
         return "Notes with links";
+      case "color":
+        if (activeColorValue === 1) return "Red notes";
+        if (activeColorValue === 2) return "Yellow notes";
+        if (activeColorValue === 3) return "Green notes";
+        if (activeColorValue === 4) return "Blue notes";
+        if (activeColorValue === 5) return "Purple notes";
+        return "Colored notes";
       default:
         return "Filter notes";
     }
@@ -193,6 +237,33 @@ export default function FilterMenu({ onFilterChange }: FilterMenuProps) {
             <Link className="h-4 w-4" />
             <span>Notes with links</span>
           </DropdownMenuRadioItem>
+          
+          {/* Color filter submenu */}
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="flex items-center gap-2 focus:bg-gray-800 focus:text-white">
+              <Palette className="h-4 w-4" />
+              <span>Filter by color</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="bg-gray-900 border-gray-800 text-gray-100 grid grid-cols-5 gap-1 min-w-[180px] p-2">
+              {/* Color option buttons */}
+              {[1, 2, 3, 4, 5].map((colorValue) => {
+                const hexColor = getColorFromValue(colorValue);
+                return (
+                  <button
+                    key={colorValue}
+                    className="p-1 rounded-sm h-6 w-6 flex items-center justify-center hover:bg-gray-700/50"
+                    onClick={() => handleColorFilterSelect(colorValue)}
+                    title={getFilterLabel({ ...activeFilter, color: "color" }) as string}
+                  >
+                    <div
+                      className="h-4 w-4"
+                      style={{ backgroundColor: hexColor || undefined }}
+                    />
+                  </button>
+                );
+              })}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
