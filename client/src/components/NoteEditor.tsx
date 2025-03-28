@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { 
-  Textarea, Button, Input, Label, Checkbox, 
+  Textarea, Button, Input, Label, Checkbox, Switch,
   Popover, PopoverContent, PopoverTrigger 
 } from '@/components/ui';
 import { useToast } from '@/hooks/use-toast';
@@ -590,17 +590,17 @@ export default function NoteEditor() {
 
                 {/* Bottom Row with Checkboxes and Time */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between mt-2 pt-1 border-t border-gray-800">
-                  {/* Discussion Checkbox */}
+                  {/* Discussion Switch */}
                   <div className="flex items-center space-x-2 mb-2 sm:mb-0">
-                    <Checkbox
+                    <Label htmlFor="isDiscussion" className="text-xs text-gray-400">
+                      Discussion:
+                    </Label>
+                    <Switch
                       id="isDiscussion"
-                      className="h-5 w-5 border-gray-600"
+                      className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-600"
                       checked={isDiscussion}
                       onCheckedChange={handleDiscussionChange}
                     />
-                    <Label htmlFor="isDiscussion" className="text-xs text-gray-400">
-                      Discussion note
-                    </Label>
                   </div>
 
                   {/* Time Picker */}

@@ -829,7 +829,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           <Switch 
             checked={editIsDiscussion} 
             onCheckedChange={setEditIsDiscussion}
-            className="ml-1 data-[state=checked]:bg-blue-600"
+            className="ml-1 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-600"
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
           />
@@ -985,7 +985,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                     <Switch 
                       checked={editIsDiscussion} 
                       onCheckedChange={setEditIsDiscussion}
-                      className="data-[state=checked]:bg-blue-600 h-5 w-10"
+                      className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-600 h-5 w-10"
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => e.stopPropagation()}
                     />
@@ -1222,9 +1222,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                   >
                     {displayContent}
                   </div>
-                  {/* All tools aligned right */}
+                  {/* Content type indicators with icons */}
                   <div className="flex items-center gap-2 justify-end">
-                    {/* Content type indicators with icons */}
                     <div className="flex items-center gap-2">
                       {note.is_discussion && (
                         <span className="text-blue-400 shrink-0" title="Discussion">
@@ -1246,19 +1245,22 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                           <ImagePlus size={16} />
                         </span>
                       )}
-                      {/* Time display moved to the far right */}
                       {note.time_set && (
                         <span className="text-amber-400 shrink-0 ml-1" title={`Time Set: ${note.time_set}`}>
                           <Clock size={16} />
-                          {calculateTimeAllocation(note, notes) && (
-                            <span className="ml-1 text-xs">
-                              {formatTimeAllocationText(note)}
-                            </span>
-                          )}
                         </span>
                       )}
                     </div>
                   </div>
+                  
+                  {/* Time allocation display as separate line below icons */}
+                  {note.time_set && calculateTimeAllocation(note, notes) && (
+                    <div className="flex justify-end mt-1">
+                      <div className="text-amber-400 text-xs">
+                        {formatTimeAllocationText(note)}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Multiple preview lines */}
