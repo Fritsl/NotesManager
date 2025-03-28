@@ -1264,26 +1264,39 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
 
       console.log('Project saved successfully:', updatedProject);
 
+      // Track last auto-save time to prevent excessive notifications
+      const now = Date.now();
+      const lastAutoSave = window.lastAutoSaveNotification || 0;
+      
       // Show a different toast based on whether this was a manual save or auto-save after note movement
       if (!pendingNoteMoves) {
         // Check if the name was corrected
         const wasNameCorrected = updatedProject.name !== currentProjectName;
         
-        // Manual save via button - show success toast
+        // Manual save via button - show success toast with special success styling
         toast({
           title: "Project Saved",
           description: wasNameCorrected 
             ? `Project "${updatedProject.name}" saved successfully (${notes.length} notes)`
             : `Project "${updatedProject.name}" saved successfully`,
-          duration: 3000,
+          duration: 2000,
+          variant: "success" as any, // Custom variant defined in toast.tsx
         });
       } else {
-        // Auto-save after note movement
-        toast({
-          title: "Auto-Saved",
-          description: `Changes saved to project "${updatedProject.name}"`,
-          duration: 3000,
-        });
+        // For auto-save after note movement, only show notification if it's been more than 5 seconds since last one
+        // This prevents spamming the user with notifications during batch operations or rapid changes
+        if (now - lastAutoSave > 5000) {
+          // Auto-save after note movement with minimal styling
+          toast({
+            title: "Auto-Saved",
+            description: "Changes saved automatically",
+            duration: 1500,
+            variant: "autosave" as any, // Custom variant defined in toast.tsx
+          });
+          
+          // Update the last auto-save time
+          window.lastAutoSaveNotification = now;
+        }
         
         // Clear the pending flag 
         setPendingNoteMoves(false);
