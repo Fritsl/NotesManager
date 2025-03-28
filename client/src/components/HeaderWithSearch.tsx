@@ -127,10 +127,8 @@ export default function HeaderWithSearch() {
   const handleSignOut = async () => {
     try {
       await signOut();
-      toast({
-        title: "Success",
-        description: "You have been logged out",
-      });
+      // No toast for successful logout
+      console.log("User logged out successfully");
     } catch (error) {
       toast({
         title: "Error",
@@ -188,10 +186,8 @@ export default function HeaderWithSearch() {
       if (!isEditingText && e.key.toLowerCase() === 'z' && (e.ctrlKey || e.metaKey) && canUndo) {
         e.preventDefault(); // Prevent default browser undo
         undoLastAction();
-        toast({
-          title: "Undo Complete",
-          description: "Last action has been undone",
-        });
+        // No toast for successful undo
+        console.log("Undo action completed");
       }
     };
 
@@ -288,10 +284,8 @@ export default function HeaderWithSearch() {
       // Use the Clipboard API to copy text to clipboard
       navigator.clipboard.writeText(text)
         .then(() => {
-          toast({
-            title: "Copied to Clipboard",
-            description: `All visible notes exported as text (${text.length} characters)`
-          });
+          // No toast for successful clipboard operations
+          console.log(`Copied to clipboard: ${text.length} characters`);
         })
         .catch(err => {
           console.error('Failed to copy text: ', err);
@@ -388,7 +382,7 @@ export default function HeaderWithSearch() {
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-6 w-6 p-0 text-green-500 hover:text-green-400 hover:bg-gray-800 touch-target"
+                          className="h-6 w-6 p-0 hover:bg-gray-800 touch-target"
                           onClick={saveProjectName}
                         >
                           <Check className="h-4 w-4" />
@@ -396,7 +390,7 @@ export default function HeaderWithSearch() {
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-6 w-6 p-0 text-red-500 hover:text-red-400 hover:bg-gray-800 touch-target"
+                          className="h-6 w-6 p-0 hover:bg-gray-800 touch-target"
                           onClick={cancelEditing}
                         >
                           <X className="h-4 w-4" />
@@ -523,28 +517,19 @@ export default function HeaderWithSearch() {
                       });
                     }
                   }}>
-                    <Save className="h-4 w-4 mr-2 text-green-500" />
-                    <span className="text-green-500 font-semibold">Save Project</span>
-                    <span className="ml-auto text-xs text-green-500/80">{currentProjectId ? "(All Notes)" : "(No Project)"}</span>
+                    <Save className="h-4 w-4 mr-2" />
+                    <span className="font-semibold">Save Project</span>
+                    <span className="ml-auto text-xs text-gray-400">{currentProjectId ? "(All Notes)" : "(No Project)"}</span>
                   </DropdownMenuItem>
 
                   {/* Note Actions */}
-                  {/* Always show Add Note option when there's an active project */}
-                  {hasActiveProject && (
-                    <DropdownMenuItem onClick={() => addNote(null)}>
-                      <PlusCircle className="h-4 w-4 mr-2" />
-                      <span>Add Note (Root level)</span>
-                    </DropdownMenuItem>
-                  )}
                   
                   {/* Show Undo option only when there's something to undo */}
                   {canUndo && (
                     <DropdownMenuItem onClick={() => {
                       undoLastAction();
-                      toast({
-                        title: "Undo Complete",
-                        description: "Last action has been undone",
-                      });
+                      // No toast for successful undo
+                      console.log("Undo completed successfully");
                     }}>
                       <RotateCcw className="h-4 w-4 mr-2" />
                       <span>Undo: {getUndoDescription()}</span>
@@ -588,7 +573,7 @@ export default function HeaderWithSearch() {
                       }
                     }}
                     disabled={!currentProjectId}
-                    className="text-red-500 hover:text-red-400 focus:text-red-400"
+                    className="hover:bg-gray-700 focus:bg-gray-700"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     <span>Delete Project</span>
@@ -662,23 +647,6 @@ export default function HeaderWithSearch() {
                   <DropdownMenuSeparator />
 
                   {/* Note Actions */}
-                  <DropdownMenuItem 
-                    onClick={() => {
-                      if (hasActiveProject) {
-                        addNote(null);
-                      } else {
-                        toast({
-                          title: "No Active Project",
-                          description: "Please create or open a project first",
-                          variant: "destructive"
-                        });
-                      }
-                    }}
-                    disabled={!hasActiveProject}
-                  >
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    <span>Add Note (Root level)</span>
-                  </DropdownMenuItem>
 
                   {/* Undo Action - only shown when actions are available to undo */}
                   {canUndo && (
@@ -686,10 +654,8 @@ export default function HeaderWithSearch() {
                       onClick={() => {
                         const undoDesc = getUndoDescription();
                         undoLastAction();
-                        toast({
-                          title: "Undo Complete",
-                          description: `Undid: ${undoDesc}`
-                        });
+                        // No toast for successful undo
+                        console.log(`Undo completed successfully: ${undoDesc}`);
                       }}
                     >
                       <RotateCcw className="h-4 w-4 mr-2" />
@@ -782,7 +748,7 @@ export default function HeaderWithSearch() {
         <AlertDialogContent className="bg-gray-900 border border-gray-800">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-gray-200 flex items-center">
-              <Trash2 className="mr-2 h-5 w-5 text-red-500" />
+              <Trash2 className="mr-2 h-5 w-5 text-gray-400" />
               Move to Trash
             </AlertDialogTitle>
             <AlertDialogDescription className="text-gray-400">
@@ -799,10 +765,8 @@ export default function HeaderWithSearch() {
                     const success = await moveProjectToTrash(currentProjectId);
 
                     if (success) {
-                      toast({
-                        title: 'Moved to Trash',
-                        description: 'Project moved to trash successfully',
-                      });
+                      // No toast for successful trash operation
+                      console.log("Project successfully moved to trash");
                       setHasActiveProject(false);
                       localStorage.removeItem('lastProjectId');
                     } else {
