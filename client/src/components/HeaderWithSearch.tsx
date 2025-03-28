@@ -435,9 +435,8 @@ export default function HeaderWithSearch() {
             
             {/* For projects with more than 3 levels, show level buttons in a separate row below project name */}
             {maxDepth > 2 && (
-              <div className="flex items-center mt-2 mb-1">
-                <div className="flex items-center gap-1 ml-2">
-                  <span className="text-gray-400 text-xs mr-1">Levels:</span>
+              <div className="flex justify-center w-full mt-1 mb-1">
+                <div className="flex flex-wrap items-center gap-1 px-1">
                   {Array.from({ length: Math.min(maxDepth + 1, 9) }, (_, i) => i).map(level => {
                     const colorTheme = levelColors[Math.min(level, levelColors.length - 1)];
                     return (
@@ -448,7 +447,6 @@ export default function HeaderWithSearch() {
                         onClick={() => expandToLevel(level)}
                         className={cn(
                           "h-6 w-6 p-0 font-bold text-white",
-                          level > 0 ? "ml-0.5" : "",
                           `${colorTheme.bg} border ${colorTheme.border}`,
                           currentLevel === level ? 'ring-2 ring-white' : ''
                         )}
