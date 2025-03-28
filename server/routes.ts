@@ -1342,7 +1342,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check environment variables
       const diagnostics = {
         supabaseUrl: !!supabaseUrl,
-        supabaseKeyExists: !!supabaseKey,
+        supabaseAnonKeyExists: !!supabaseAnonKey,
+        supabaseServiceKeyExists: !!supabaseServiceKey,
         storageTests: {},
       };
       
