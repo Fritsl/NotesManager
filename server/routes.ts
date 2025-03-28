@@ -185,32 +185,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { notes: flatNotes, images } = flattenNoteHierarchy(data.notes, id, userId);
         
         if (flatNotes.length > 0) {
-          // First delete existing notes for this project to avoid duplicates
-          const { error: deleteError } = await supabaseAdmin
-            .from('notes')
-            .delete()
-            .eq('project_id', id);
+          try {
+            // Instead of delete+insert, use UPSERT to handle existing notes properly
             
-          if (deleteError) {
-            console.error('Error deleting existing notes:', deleteError);
+            // Execute in batches to prevent timeout and large payload issues
+            const BATCH_SIZE = 25; // Smaller batch size for reliability
+            for (let i = 0; i < flatNotes.length; i += BATCH_SIZE) {
+              const batch = flatNotes.slice(i, i + BATCH_SIZE);
+              
+              const { error: upsertError } = await supabaseAdmin
+                .from('notes')
+                .upsert(batch, {
+                  onConflict: 'id',
+                  ignoreDuplicates: false
+                });
+                
+              if (upsertError) {
+                console.error(`Error upserting notes batch ${Math.floor(i/BATCH_SIZE) + 1}:`, upsertError);
+                return res.status(500).json({
+                  success: false,
+                  message: "Failed to update notes",
+                  error: upsertError.message
+                });
+              }
+            }
+            
+            console.log(`Successfully saved ${flatNotes.length} notes for project ${id}`);
+          } catch (error: any) {
+            console.error('Error saving notes:', error);
             return res.status(500).json({
               success: false,
-              message: "Failed to delete existing notes",
-              error: deleteError.message
-            });
-          }
-          
-          // Then insert all notes as a batch
-          const { error: insertError } = await supabaseAdmin
-            .from('notes')
-            .insert(flatNotes);
-            
-          if (insertError) {
-            console.error('Error inserting notes:', insertError);
-            return res.status(500).json({
-              success: false,
-              message: "Failed to insert notes",
-              error: insertError.message
+              message: "Failed to save notes",
+              error: error.message
             });
           }
           
@@ -261,7 +267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           for (const image of images as any[]) {
             // Extract only the fields that exist in the note_images table
             // Based on actual schema: id, position, created_at, note_id, storage_path, url
-            const cleanImage = {
+            const cleanImage: any = {
               id: image.id,
               position: image.position || 0,
               note_id: image.note_id,
