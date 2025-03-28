@@ -17,8 +17,9 @@ import {
   XCircle, 
   Search,
   FolderOpen,
-  PlusCircle,
-  Folder
+  Folder,
+  FileText,
+  PlusCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { levelColors } from "@/lib/level-colors";
@@ -208,6 +209,7 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
       const isExpanded = expandedNodes.includes(note.id);
       const isActive = activeNoteId === note.id;
       const hasChildren = note.children.length > 0;
+      const isDeepestChild = !hasChildren; // Flag to identify deepest child nodes
       const color = levelColors[Math.min(level, levelColors.length - 1)];
       
       return (
@@ -217,6 +219,7 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
               "flex items-center rounded-md py-1.5 my-1 px-2 group",
               isActive ? "bg-gray-800 border-l-2 border-primary" : 
                 "hover:bg-gray-800/50 border-l-2 border-transparent",
+              isDeepestChild && "bg-gray-900/50", // Slightly darker background for deepest children
               "transition-colors"
             )}
           >
@@ -224,37 +227,40 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
               className="flex items-center gap-1" 
               style={{ marginLeft: `${level * 12}px` }}
             >
-              {/* Expand/collapse button */}
-              <button 
-                className={cn(
-                  "text-gray-400 hover:text-gray-200 p-1",
-                  hasChildren ? "visible" : "invisible"
-                )}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleNode(note.id);
-                }}
-              >
-                {isExpanded ? (
-                  <ChevronDown className="h-3.5 w-3.5" />
+              {/* Folder/file icon based on whether it has children */}
+              <div className="text-gray-400 p-1">
+                {hasChildren ? (
+                  isExpanded ? (
+                    <FolderOpen className="h-3.5 w-3.5 text-primary-400" />
+                  ) : (
+                    <Folder className="h-3.5 w-3.5 text-primary-400" />
+                  )
                 ) : (
-                  <ChevronRight className="h-3.5 w-3.5" />
+                  <FileText className="h-3.5 w-3.5 text-gray-400" />
                 )}
-              </button>
+              </div>
               
               {/* Note content */}
               <div 
                 className={cn(
                   "truncate text-sm font-medium flex-1",
                   color.text,
-                  "cursor-pointer"
+                  hasChildren ? "cursor-pointer" : "text-gray-400", // Visually distinguish deepest children
+                  isDeepestChild && "italic" // Make deepest children italic
                 )}
                 onClick={() => {
-                  setActiveNoteId(note.id);
-                  setShowPlacementOptions(true);
+                  // Only allow setting active note if it has children
+                  // Deep child notes cannot be clicked to "go inside" since there's nothing inside
+                  if (hasChildren) {
+                    setActiveNoteId(note.id);
+                    setShowPlacementOptions(true);
+                  }
                 }}
               >
                 {note.content}
+                {isDeepestChild && (
+                  <span className="ml-1.5 text-xs text-gray-500">(End node)</span>
+                )}
               </div>
             </div>
             
