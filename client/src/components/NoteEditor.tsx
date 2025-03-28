@@ -530,7 +530,8 @@ export default function NoteEditor() {
                 value={content} 
                 onChange={handleContentChange}
                 onBlur={handleBlur}
-                style={{ height: '50px', minHeight: '50px', maxHeight: '50px', resize: 'none' }}
+                rows={2}
+                style={{ height: '3rem', minHeight: '3rem', maxHeight: '3rem', resize: 'none' }}
               />
             </div>
 

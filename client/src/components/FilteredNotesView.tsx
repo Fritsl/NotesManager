@@ -344,12 +344,13 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
                   {/* Content editor with more height */}
                   <Textarea 
                     ref={contentEditRef}
-                    rows={Math.min(6, note.content.split('\n').length + 1)}
+                    rows={2}
                     className="w-full p-2 text-sm bg-gray-850 border border-gray-700 focus:border-primary focus:ring-1 focus:ring-primary resize-none mb-3"
                     placeholder="Enter note content..."
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
                     autoFocus
+                    style={{ height: '3rem', minHeight: '3rem', maxHeight: '3rem', resize: 'none' }}
                   />
 
                   {/* Properties section (compact, single-line items) */}

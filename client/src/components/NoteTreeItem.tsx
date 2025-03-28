@@ -471,16 +471,14 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
       {/* Content editor with more height - Using completely uncontrolled component */}
       <Textarea 
         ref={contentEditRef}
-        rows={Math.min(isMobile ? 3 : 6, note.content.split('\n').length + 1)}
-        className={cn(
-          "w-full p-2 text-sm bg-gray-850 border border-gray-700 focus:border-primary focus:ring-1 focus:ring-primary resize-none mb-3",
-          isMobile && "min-h-[4.5rem]" // Shorter textarea on mobile (3 lines)
-        )}
+        rows={2}
+        className="w-full p-2 text-sm bg-gray-850 border border-gray-700 focus:border-primary focus:ring-1 focus:ring-primary resize-none mb-3"
         placeholder="Enter note content..."
         defaultValue={note.content} // Initialize with note content, but don't update during typing
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
         autoFocus
+        style={{ height: '3rem', minHeight: '3rem', maxHeight: '3rem', resize: 'none' }}
       />
 
       {/* Images Section */}
@@ -734,15 +732,14 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                 {/* Content editor with more height */}
                 <Textarea 
                   ref={contentEditRef}
-                  rows={Math.min(isMobile ? 10 : 6, note.content.split('\n').length + 1)}
-                  className={`w-full p-2 text-sm bg-gray-850 border border-gray-700 focus:border-primary focus:ring-1 focus:ring-primary resize-none mb-3 ${
-                    isMobile && "h-48 min-h-[8rem]" // Taller textarea on mobile
-                  }`}
+                  rows={2}
+                  className="w-full p-2 text-sm bg-gray-850 border border-gray-700 focus:border-primary focus:ring-1 focus:ring-primary resize-none mb-3"
                   placeholder="Enter note content..."
                   defaultValue={note.content} // Initialize with note content, but don't track changes
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
                   autoFocus
+                  style={{ height: '3rem', minHeight: '3rem', maxHeight: '3rem', resize: 'none' }}
                 />
 
                 {/* Properties section (compact, single-line items) */}
