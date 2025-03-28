@@ -50,7 +50,7 @@ export const convertLegacyColorToValue = (color: string | number | null): number
 };
 
 // No longer applying background color style to notes
-export const getNoteBackgroundStyle = (colorValue: number | null) => {
+export const getNoteBackgroundStyle = (colorValue: number | null | undefined) => {
   // Return empty style object regardless of color
   return {};
 };
