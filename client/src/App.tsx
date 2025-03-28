@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import AuthModal from "@/components/AuthModal";
 import { Toaster } from "@/components/ui/toaster";
+import { fullVersion } from "./version";
 
 // Authentication guard component
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -35,7 +36,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
           <CardHeader>
             <CardTitle>Welcome to Notes</CardTitle>
             <CardDescription>Please sign in to use the application</CardDescription>
-            <div className="text-xs text-gray-500 mt-1">Version 1.0</div>
+            <div className="text-xs text-gray-500 mt-1">Version {fullVersion}</div>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <p className="text-sm text-gray-400">
