@@ -525,7 +525,7 @@ export default function NoteEditor() {
               <Textarea
                 id="noteContent"
                 ref={contentRef}
-                className="min-h-[200px] text-base p-3 bg-gray-850 border-gray-700"
+                className="min-h-[4em] h-[4em] text-base p-3 bg-gray-850 border-gray-700"
                 placeholder="Type your note here..."
                 value={content} 
                 onChange={handleContentChange}
