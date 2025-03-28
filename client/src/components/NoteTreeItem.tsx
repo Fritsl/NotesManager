@@ -32,6 +32,121 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+// Helper function to calculate time between notes
+const parseTimeSet = (timeStr: string | null): number | null => {
+  if (!timeStr) return null;
+  
+  // Parse time in format "HH:MM:SS" or "HH:MM"
+  const parts = timeStr.split(':');
+  if (parts.length < 2) return null;
+  
+  const hours = parseInt(parts[0], 10);
+  const minutes = parseInt(parts[1], 10);
+  const seconds = parts.length > 2 ? parseInt(parts[2], 10) : 0;
+  
+  // Convert to total minutes
+  return hours * 60 + minutes + seconds / 60;
+}
+
+// Format minutes to MM:SS string
+const formatTimeAllocation = (minutes: number): string => {
+  if (minutes < 0) return "--:--";
+  
+  const wholeMinutes = Math.floor(minutes);
+  const seconds = Math.round((minutes - wholeMinutes) * 60);
+  
+  return `${wholeMinutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
+
+// Find the next note with time_set in a flattened array
+const findNextNoteWithTime = (notes: Note[], currentNoteId: string): Note | null => {
+  const flattenedNotes: Note[] = [];
+  
+  // Function to flatten the tree into an array in the order notes appear
+  const flattenTree = (notesArray: Note[], parentId: string | null = null) => {
+    notesArray.forEach(note => {
+      flattenedNotes.push(note);
+      if (note.children && note.children.length > 0) {
+        flattenTree(note.children, note.id);
+      }
+    });
+  };
+  
+  // Flatten the tree
+  flattenTree(notes);
+  
+  // Find current note index
+  const currentIndex = flattenedNotes.findIndex(note => note.id === currentNoteId);
+  if (currentIndex === -1) return null;
+  
+  // Find next note with time_set
+  for (let i = currentIndex + 1; i < flattenedNotes.length; i++) {
+    if (flattenedNotes[i].time_set) {
+      return flattenedNotes[i];
+    }
+  }
+  
+  return null;
+}
+
+// Count notes between two notes in the flattened tree
+const countNotesBetween = (notes: Note[], startNoteId: string, endNoteId: string): number => {
+  const flattenedNotes: Note[] = [];
+  
+  // Function to flatten the tree into an array in the order notes appear
+  const flattenTree = (notesArray: Note[]) => {
+    notesArray.forEach(note => {
+      flattenedNotes.push(note);
+      if (note.children && note.children.length > 0) {
+        flattenTree(note.children);
+      }
+    });
+  };
+  
+  // Flatten the tree
+  flattenTree(notes);
+  
+  // Find start and end indices
+  const startIndex = flattenedNotes.findIndex(note => note.id === startNoteId);
+  const endIndex = flattenedNotes.findIndex(note => note.id === endNoteId);
+  
+  if (startIndex === -1 || endIndex === -1 || startIndex >= endIndex) {
+    return 0;
+  }
+  
+  // Return count (end - start, not including the end note)
+  return endIndex - startIndex;
+}
+
+// Calculate time allocation for each note
+const calculateTimeAllocation = (currentNote: Note, allNotes: Note[]): string | null => {
+  if (!currentNote.time_set) return null;
+  
+  // Find the next note with time_set
+  const nextTimedNote = findNextNoteWithTime(allNotes, currentNote.id);
+  if (!nextTimedNote || !nextTimedNote.time_set) return null;
+  
+  // Parse time values
+  const currentTime = parseTimeSet(currentNote.time_set);
+  const nextTime = parseTimeSet(nextTimedNote.time_set);
+  
+  if (currentTime === null || nextTime === null) return null;
+  
+  // Calculate time difference in minutes
+  const timeDiff = nextTime - currentTime;
+  if (timeDiff <= 0) return null; // Handle case where next time is before current time
+  
+  // Count notes between (including current, excluding next)
+  const noteCount = countNotesBetween(allNotes, currentNote.id, nextTimedNote.id);
+  if (noteCount <= 0) return null;
+  
+  // Calculate time per note in minutes
+  const timePerNote = timeDiff / noteCount;
+  
+  // Format as MM:SS
+  return formatTimeAllocation(timePerNote);
+};
+
 interface NoteTreeItemProps {
   note: Note;
   level: number;
@@ -1063,14 +1178,18 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                           <Link size={16} />
                         </span>
                       )}
-                      {note.time_set && (
-                        <span className="text-amber-400 shrink-0" title="Time Set">
-                          <Clock size={16} />
-                        </span>
-                      )}
                       {note.images && note.images.length > 0 && (
                         <span className="text-purple-400 shrink-0" title={`${note.images.length} Image${note.images.length > 1 ? 's' : ''}`}>
                           <ImagePlus size={16} />
+                        </span>
+                      )}
+                      {/* Time display moved to the far right */}
+                      {note.time_set && (
+                        <span className="text-amber-400 shrink-0 ml-1" title={`Time Set: ${note.time_set}`}>
+                          <Clock size={16} />
+                          <span className="ml-1 text-xs">
+                            {calculateTimeAllocation(note, notes)}
+                          </span>
                         </span>
                       )}
                     </div>
