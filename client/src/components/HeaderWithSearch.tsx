@@ -593,23 +593,39 @@ export default function HeaderWithSearch() {
 
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => {
-                    const searchBarElement = document.getElementById('main-search-input');
-                    if (searchBarElement) {
-                      searchBarElement.focus();
-                      // Close the dropdown menu
-                      document.body.click();
+                    setSearchBarOpen(!searchBarOpen);
+                    // If opening search bar, focus on input after DOM update
+                    if (!searchBarOpen) {
+                      setTimeout(() => {
+                        const searchBarElement = document.getElementById('main-search-input');
+                        if (searchBarElement) {
+                          searchBarElement.focus();
+                        }
+                      }, 0);
                     }
+                    // Close the dropdown menu
+                    document.body.click();
                   }}>
-                    <Search className="h-4 w-4 mr-2" />
-                    <span>Search</span>
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center">
+                        <Search className="h-4 w-4 mr-2" />
+                        <span>Search</span>
+                      </div>
+                      {searchBarOpen && <Check className="h-4 w-4 ml-2" />}
+                    </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
                     setFilterMenuOpen(!filterMenuOpen);
                     // Close the dropdown menu
                     document.body.click();
                   }}>
-                    <Filter className="h-4 w-4 mr-2" />
-                    <span>Filter</span>
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center">
+                        <Filter className="h-4 w-4 mr-2" />
+                        <span>Filter</span>
+                      </div>
+                      {filterMenuOpen && <Check className="h-4 w-4 ml-2" />}
+                    </div>
                   </DropdownMenuItem>
 
                   <DropdownMenuSeparator />
@@ -722,23 +738,39 @@ export default function HeaderWithSearch() {
 
 
                   <DropdownMenuItem onClick={() => {
-                    const searchBarElement = document.getElementById('main-search-input');
-                    if (searchBarElement) {
-                      searchBarElement.focus();
-                      // Close the dropdown menu
-                      document.body.click();
+                    setSearchBarOpen(!searchBarOpen);
+                    // If opening search bar, focus on input after DOM update
+                    if (!searchBarOpen) {
+                      setTimeout(() => {
+                        const searchBarElement = document.getElementById('main-search-input');
+                        if (searchBarElement) {
+                          searchBarElement.focus();
+                        }
+                      }, 0);
                     }
+                    // Close the dropdown menu
+                    document.body.click();
                   }}>
-                    <Search className="h-4 w-4 mr-2" />
-                    <span>Search</span>
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center">
+                        <Search className="h-4 w-4 mr-2" />
+                        <span>Search</span>
+                      </div>
+                      {searchBarOpen && <Check className="h-4 w-4 ml-2" />}
+                    </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
                     setFilterMenuOpen(!filterMenuOpen);
                     // Close the dropdown menu
                     document.body.click();
                   }}>
-                    <Filter className="h-4 w-4 mr-2" />
-                    <span>Filter</span>
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center">
+                        <Filter className="h-4 w-4 mr-2" />
+                        <span>Filter</span>
+                      </div>
+                      {filterMenuOpen && <Check className="h-4 w-4 ml-2" />}
+                    </div>
                   </DropdownMenuItem>
 
                   <DropdownMenuSeparator />
