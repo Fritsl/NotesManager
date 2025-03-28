@@ -851,7 +851,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                   : <ChevronRight size={14} className="mr-0.5" />
                 }
                 <span className="text-xs font-mono">
-                  {note.children.length} - {getTotalChildrenCount(note)}
+                  {note.children.length} / {getTotalChildrenCount(note)}
                 </span>
               </div>
             </div>

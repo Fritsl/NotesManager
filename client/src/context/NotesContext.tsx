@@ -124,10 +124,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
             // Mark as having an active project
             setHasActiveProject(true);
 
-            toast({
-              title: 'Project Loaded',
-              description: `Automatically loaded "${project.name}"`,
-            });
+            // Project loaded silently - toast removed
           } else {
             console.log('Auto-load failed: Project not found');
             // Clear the invalid project ID from localStorage

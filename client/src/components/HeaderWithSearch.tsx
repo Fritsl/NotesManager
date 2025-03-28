@@ -492,8 +492,8 @@ export default function HeaderWithSearch() {
               {/* Consolidated Hamburger Menu - Removed mobile level controls */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 touch-target">
-                    <Menu className="h-5 w-5" />
+                  <Button variant="ghost" size="icon" className="h-10 w-10 touch-target">
+                    <Menu className="h-7 w-7" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -668,8 +668,8 @@ export default function HeaderWithSearch() {
               {/* Consolidated Hamburger Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 touch-target">
-                    <Menu className="h-5 w-5" />
+                  <Button variant="ghost" size="icon" className="h-10 w-10 touch-target">
+                    <Menu className="h-7 w-7" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">

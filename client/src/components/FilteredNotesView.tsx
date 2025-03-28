@@ -101,7 +101,13 @@ const countNotesBetween = (notes: Note[], startNoteId: string, endNoteId: string
 }
 
 // Calculate time allocation for each note
-const calculateTimeAllocation = (currentNote: Note, allNotes: Note[]): string | null => {
+interface TimeAllocationResult {
+  formattedTime: string;
+  noteCount: number;
+  totalMinutes: number;
+}
+
+const calculateTimeAllocation = (currentNote: Note, allNotes: Note[]): TimeAllocationResult | null => {
   if (!currentNote.time_set) return null;
   
   console.log("Calculating time allocation for note:", currentNote.id, currentNote.content);
@@ -110,9 +116,17 @@ const calculateTimeAllocation = (currentNote: Note, allNotes: Note[]): string | 
   const nextTimedNote = findNextNoteWithTime(allNotes, currentNote.id);
   console.log("Next timed note:", nextTimedNote ? `${nextTimedNote.id} (${nextTimedNote.time_set})` : "none");
   
+  let noteCount = 0;
+  let totalMinutes = 0;
+  let formattedTime = "";
+  
   if (!nextTimedNote || !nextTimedNote.time_set) {
-    // If this is the last timed note, show a default time allocation
-    return "10:00"; // Default 10 minutes for the last timed note
+    // If this is the last timed note, use a default time allocation
+    formattedTime = "10:00"; 
+    totalMinutes = 10;
+    // Count all notes from this one to the end
+    noteCount = countNotesBetween(allNotes, currentNote.id, "end-of-notes");
+    return { formattedTime, noteCount, totalMinutes };
   }
   
   // Parse time values
@@ -132,20 +146,25 @@ const calculateTimeAllocation = (currentNote: Note, allNotes: Note[]): string | 
   console.log("Adjusted time difference in minutes:", timeDiff);
   
   // Count notes between (including current, excluding next)
-  const noteCount = countNotesBetween(allNotes, currentNote.id, nextTimedNote.id);
+  noteCount = countNotesBetween(allNotes, currentNote.id, nextTimedNote.id);
   console.log("Note count between:", noteCount);
   
-  if (noteCount <= 0) return "05:00"; // Default 5 minutes if there are no notes between
+  if (noteCount <= 0) {
+    formattedTime = "05:00"; // Default 5 minutes if there are no notes between
+    totalMinutes = 5;
+    return { formattedTime, noteCount: 1, totalMinutes };
+  }
   
   // Calculate time per note in minutes
   const timePerNote = timeDiff / noteCount;
+  totalMinutes = timeDiff;
   console.log("Time per note (minutes):", timePerNote);
   
   // Format as MM:SS
-  const formattedTime = formatTimeAllocation(timePerNote);
+  formattedTime = formatTimeAllocation(timePerNote);
   console.log("Formatted time:", formattedTime);
   
-  return formattedTime;
+  return { formattedTime, noteCount, totalMinutes };
 };
 import { levelColors } from "@/lib/level-colors";
 import { cn } from "@/lib/utils";
@@ -442,6 +461,26 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
     return { displayContent, previewLines, hasMoreLines };
   };
   
+  // Helper function to format time allocation text
+  const formatTimeAllocationText = (note: Note): string => {
+    const allocation = calculateTimeAllocation(note, notes);
+    if (!allocation) return "";
+    
+    const { noteCount, totalMinutes, formattedTime } = allocation;
+    
+    // Format time in hours and minutes
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = Math.round(totalMinutes % 60);
+    
+    let timeText = "";
+    if (hours > 0) {
+      timeText = `${hours} hour${hours !== 1 ? 's' : ''}, `;
+    }
+    timeText += `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    
+    return `${noteCount} slide${noteCount !== 1 ? 's' : ''}, ${timeText} (${formattedTime} per slide)`;
+  };
+
   // Debug logs
   console.log("FilteredNotesView - Available notes:", notes.length);
   console.log("FilteredNotesView - Filtered notes:", filteredNotes.length);
@@ -475,7 +514,7 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
               id={`note-${note.id}`}
               key={note.id}
               className={cn(
-                "note-item border rounded-md p-2 shadow-sm hover:shadow-md relative",
+                "note-item border rounded-md p-2 shadow-sm hover:shadow-md relative max-w-full overflow-hidden",
                 // Use the level color
                 level >= 0 ? levelColors[level].bg : levelColors[0].bg,
                 `border-l-[5px] ${level >= 0 ? levelColors[level].border : levelColors[0].border}`
@@ -658,7 +697,7 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
                     {/* Title line */}
                     <div className="flex items-center">
                       <div 
-                        className={`mobile-text-base font-medium ${level >= 0 ? levelColors[level].text : levelColors[0].text} truncate flex-1 max-w-full overflow-hidden`}
+                        className={`mobile-text-base font-medium ${level >= 0 ? levelColors[level].text : levelColors[0].text} truncate flex-1 max-w-[90%] overflow-hidden`}
                         onDoubleClick={() => startEditing(note)}
                       >
                         {displayContent}
@@ -671,7 +710,7 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
                         {previewLines.map((line, index) => (
                           <div 
                             key={index} 
-                            className="text-xs text-gray-400 truncate leading-snug max-w-full overflow-hidden"
+                            className="text-xs text-gray-400 truncate leading-snug max-w-[90%] overflow-hidden"
                             onDoubleClick={() => startEditing(note)}
                           >
                             {line}
@@ -710,7 +749,8 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
                           <Clock size={16} />
                           {calculateTimeAllocation(note, notes) && (
                             <span className="ml-1 text-xs opacity-90">
-                              {calculateTimeAllocation(note, notes)}
+                              {`${calculateTimeAllocation(note, notes)?.noteCount} slides, ${Math.round(calculateTimeAllocation(note, notes)?.totalMinutes || 0) / 60 > 1 ? 
+                                Math.floor(Math.round(calculateTimeAllocation(note, notes)?.totalMinutes || 0) / 60) + " hours, " : ""}${Math.round(calculateTimeAllocation(note, notes)?.totalMinutes || 0) % 60} minutes (${calculateTimeAllocation(note, notes)?.formattedTime} per note)`}
                             </span>
                           )}
                         </span>
