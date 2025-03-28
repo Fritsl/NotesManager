@@ -704,6 +704,32 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           )}
           onClick={() => selectNote(note)}
         >
+          {/* Unfold children button in top-right corner, far from delete button */}
+          {hasChildren && (
+            <div className="absolute top-1 right-1 z-20">
+              <Button
+                variant="ghost" 
+                size="sm" 
+                className="h-7 w-7 min-w-[1.75rem] p-0 flex items-center justify-center bg-gray-800/80 text-gray-300 hover:text-white rounded-full shadow-sm touch-target"
+                title={isExpanded ? "Collapse children" : `Expand ${note.children.length} children`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleExpand(note.id);
+                }}
+              >
+                {isExpanded 
+                  ? <ChevronDown size={16} /> 
+                  : <div className="flex items-center">
+                      <ChevronRight size={16} />
+                      {note.children.length > 0 && (
+                        <span className="ml-0.5 text-xs text-gray-300 font-mono">{note.children.length}</span>
+                      )}
+                    </div>
+                }
+              </Button>
+            </div>
+          )}
+          
           {/* Drop zone indicators */}
 
           {/* "Above" drop zone indicator - top border */}
@@ -1008,7 +1034,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                   </div>
                   {/* All tools aligned right */}
                   <div className="flex items-center gap-2 justify-end">
-                    {/* Discussion icon and unfold button */}
+                    {/* Discussion icon indicators - no unfold button here */}
                     <div className="flex items-center gap-2">
                       {note.is_discussion && (
                         <span className="text-blue-400 shrink-0" title="Discussion">
@@ -1022,27 +1048,6 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                         <span className="text-xs bg-green-900/50 text-green-300 px-2 py-0.5 rounded-full">Link</span>
                       )}
                     </div>
-                    {hasChildren && (
-                      <Button
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-6 w-6 min-w-[1.5rem] p-0 flex items-center justify-center text-gray-500 hover:text-gray-700 touch-target"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleExpand(note.id);
-                        }}
-                      >
-                        {isExpanded 
-                          ? <ChevronDown size={16} /> 
-                          : <div className="flex items-center">
-                              <ChevronRight size={16} />
-                              {note.children.length > 0 && (
-                                <span className="ml-1 text-xs text-gray-400 font-mono">{note.children.length}</span>
-                              )}
-                            </div>
-                        }
-                      </Button>
-                    )}
                   </div>
                 </div>
 
