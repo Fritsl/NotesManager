@@ -205,6 +205,7 @@ export default function SearchBar() {
       <div className="relative flex items-center">
         <Search className="absolute left-2.5 h-3.5 w-3.5 text-gray-400" />
         <Input
+          id="main-search-input"
           ref={inputRef}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}

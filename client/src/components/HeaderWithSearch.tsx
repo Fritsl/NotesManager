@@ -27,7 +27,9 @@ import {
   Minimize2,
   PlusCircle,
   FilePlus,
-  RotateCcw
+  RotateCcw,
+  Search,
+  Filter
 } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { useAuth } from "@/context/AuthContext";
@@ -151,6 +153,7 @@ export default function HeaderWithSearch() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const projectNameInputRef = useRef<HTMLInputElement>(null);
   const newProjectInputRef = useRef<HTMLInputElement>(null);
 
@@ -581,10 +584,23 @@ export default function HeaderWithSearch() {
                   
 
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={()=> {/*Add SearchBar here*/}}>
+                  <DropdownMenuItem onClick={() => {
+                    const searchBarElement = document.getElementById('main-search-input');
+                    if (searchBarElement) {
+                      searchBarElement.focus();
+                      // Close the dropdown menu
+                      document.body.click();
+                    }
+                  }}>
+                    <Search className="h-4 w-4 mr-2" />
                     <span>Search</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={()=> {/*Add FilterMenu here*/}}>
+                  <DropdownMenuItem onClick={() => {
+                    setFilterMenuOpen(!filterMenuOpen);
+                    // Close the dropdown menu
+                    document.body.click();
+                  }}>
+                    <Filter className="h-4 w-4 mr-2" />
                     <span>Filter</span>
                   </DropdownMenuItem>
 
@@ -697,10 +713,23 @@ export default function HeaderWithSearch() {
                   </DropdownMenuItem>
 
 
-                  <DropdownMenuItem onClick={()=> {/*Add SearchBar here*/}}>
+                  <DropdownMenuItem onClick={() => {
+                    const searchBarElement = document.getElementById('main-search-input');
+                    if (searchBarElement) {
+                      searchBarElement.focus();
+                      // Close the dropdown menu
+                      document.body.click();
+                    }
+                  }}>
+                    <Search className="h-4 w-4 mr-2" />
                     <span>Search</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={()=> {/*Add FilterMenu here*/}}>
+                  <DropdownMenuItem onClick={() => {
+                    setFilterMenuOpen(!filterMenuOpen);
+                    // Close the dropdown menu
+                    document.body.click();
+                  }}>
+                    <Filter className="h-4 w-4 mr-2" />
                     <span>Filter</span>
                   </DropdownMenuItem>
 
@@ -742,6 +771,9 @@ export default function HeaderWithSearch() {
       {showDescriptionModal && <ProjectDescriptionModal isOpen={showDescriptionModal} onClose={() => setShowDescriptionModal(false)} />}
       <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+      
+      {/* Filter Menu */}
+      {filterMenuOpen && <FilterMenu onFilterChange={handleFilterChange} />}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
