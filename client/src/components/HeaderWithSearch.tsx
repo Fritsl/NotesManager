@@ -657,6 +657,10 @@ export default function HeaderWithSearch() {
                   </DropdownMenuItem>
 
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => window.open("https://fastpresenterviwer.netlify.app", "_self")}>
+                    <Presentation className="h-4 w-4 mr-2" />
+                    <span>Slideshow</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setShowHelpModal(true)}>
                     <HelpCircle className="h-4 w-4 mr-2" />
                     <span>Help</span>
@@ -802,6 +806,10 @@ export default function HeaderWithSearch() {
                   </DropdownMenuItem>
 
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => window.open("https://fastpresenterviwer.netlify.app", "_self")}>
+                    <Presentation className="h-4 w-4 mr-2" />
+                    <span>Slideshow</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setShowHelpModal(true)}>
                     <HelpCircle className="h-4 w-4 mr-2" />
                     <span>Help</span>
