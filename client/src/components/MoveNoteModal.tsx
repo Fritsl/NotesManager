@@ -186,12 +186,7 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
     // Close the modal first
     onClose();
     
-    // Show success toast
-    toast({
-      title: "Note moved",
-      description: "Note has been moved to the selected location",
-    });
-    
+    // No success toast - only scroll to the moved note
     // Highlight and scroll to the note in its new position
     setTimeout(() => scrollToNote(noteToMove.id), 300);
   };
@@ -365,11 +360,11 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
         <div className="space-y-2 mb-4">
           <Button 
             variant="outline"
-            className="w-full justify-start bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-200"
+            className="w-full justify-between bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-200 px-4 py-2.5"
             onClick={() => handleMoveNote(0)}
           >
-            <ArrowUp className="h-4 w-4 mr-2 text-primary-400" />
-            <span>Place at Top</span>
+            <span className="text-base">Place at Top</span>
+            <ArrowUp className="h-5 w-5 ml-2 text-primary-400" />
           </Button>
           
           {siblingNotes.map((note, index) => (
@@ -382,11 +377,11 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
               <Button 
                 variant="outline"
                 size="sm"
-                className="w-full justify-start ml-5 bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-200 text-xs"
+                className="w-full justify-between ml-5 bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-200 text-sm px-4 py-2"
                 onClick={() => handleMoveNote(index + 1)}
               >
-                <ArrowDown className="h-3.5 w-3.5 mr-1.5 text-primary-400" />
                 <span>Place below this note</span>
+                <ArrowDown className="h-5 w-5 ml-2 text-primary-400" />
               </Button>
             </div>
           ))}
@@ -400,11 +395,11 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
           {siblingNotes.length > 0 && (
             <Button 
               variant="outline"
-              className="w-full justify-start bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-200 mt-2"
+              className="w-full justify-between bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-200 mt-2 px-4 py-2.5"
               onClick={() => handleMoveNote(siblingNotes.length)}
             >
-              <ArrowDown className="h-4 w-4 mr-2 text-primary-400" />
-              <span>Place at Bottom</span>
+              <span className="text-base">Place at Bottom</span>
+              <ArrowDown className="h-5 w-5 ml-2 text-primary-400" />
             </Button>
           )}
         </div>
