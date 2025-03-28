@@ -1242,12 +1242,20 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         return;
       }
 
-      // Ensure the UI always reflects the database name (source of truth)
+      // Ensure the UI always reflects the database values (source of truth)
       if (updatedProject.name !== currentProjectName) {
         console.log('Name mismatch detected - correcting from', 
           `"${currentProjectName}" to database value "${updatedProject.name}"`
         );
         setCurrentProjectName(updatedProject.name);
+      }
+      
+      // Also ensure the description is updated from the server response
+      if (updatedProject.description !== currentProjectDescription) {
+        console.log('Description mismatch detected - correcting from', 
+          `"${currentProjectDescription}" to database value "${updatedProject.description}"`
+        );
+        setCurrentProjectDescription(updatedProject.description);
       }
 
       // Dispatch a custom event to notify components that a project has been updated

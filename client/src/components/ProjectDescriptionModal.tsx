@@ -42,14 +42,21 @@ export default function ProjectDescriptionModal({ isOpen, onClose }: ProjectDesc
     setIsLoading(true);
     try {
       // Update the project description in context
+      console.log('Setting current project description to:', description);
+      console.log('Before update - current description:', currentProjectDescription);
       setCurrentProjectDescription(description);
       
       // Save the project directly to the online database
       console.log('Direct save of project description to online database');
-      await saveProject();
-      console.log('Project description saved to online database');
+      const result = await saveProject();
+      console.log('Project description save result:', result);
+      console.log('After save - current description:', currentProjectDescription);
       
-      // Minimal toast notification (removed)
+      // Minimal toast notification for better user feedback
+      toast({
+        title: 'Success',
+        description: 'Project description saved',
+      });
       onClose();
     } catch (error) {
       console.error('Error saving project description:', error);

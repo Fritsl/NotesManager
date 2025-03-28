@@ -153,6 +153,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log(`Saving project data for project ${id} by user ${userId}`);
+      console.log(`Project name: ${name}`);
+      console.log(`Project description: "${description}"`);
       
       // First update project settings/metadata
       const { data: settingsData, error: settingsError } = await supabaseAdmin
@@ -167,6 +169,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .eq('user_id', userId)
         .select()
         .single();
+        
+      console.log('Settings update result:', settingsError ? 'Error' : 'Success');
+      console.log('Updated settings data:', settingsData);
         
       if (settingsError) {
         console.error('Error updating project settings:', settingsError);
@@ -308,6 +313,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Successfully processed ${images.length} images for project ${id}`);
         }
       }
+      
+      // Log project data before returning
+      console.log('Project data to return:', {
+        id: settingsData.id,
+        title: settingsData.title,
+        description: settingsData.description,
+        updated_at: settingsData.updated_at
+      });
       
       return res.status(200).json({
         success: true,
@@ -870,6 +883,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         note_count: projectMetadata.note_count || 0,
         data: { notes: notes }
       };
+      
+      // Log the project data before returning
+      console.log('Get project data returning:', {
+        id: projectData.id,
+        name: projectData.name,
+        description: projectData.description,
+        note_count: projectData.note_count,
+        notes_length: projectData.data.notes.length
+      });
       
       // Return the project data
       return res.status(200).json(projectData);
