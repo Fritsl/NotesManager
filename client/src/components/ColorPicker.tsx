@@ -2,9 +2,8 @@ import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Palette } from "lucide-react";
 
-// Define the available colors (without labels)
+// Define the available colors
 const colorOptions = [
   { value: null },
   { value: "#f87171" },
@@ -34,15 +33,13 @@ export default function ColorPicker({ color, onChange, className }: ColorPickerP
             className
           )}
         >
-          <div className="relative w-full h-full flex items-center justify-center">
-            <Palette size={16} className="text-gray-400" />
-            {color && (
-              <div 
-                className="absolute bottom-0 right-0 rounded-full h-2 w-2" 
-                style={{ backgroundColor: color }}
-              />
-            )}
-          </div>
+          <div 
+            className={cn(
+              "w-5 h-5 rounded-sm",
+              !color && "border border-dashed border-gray-500"
+            )} 
+            style={color ? { backgroundColor: color } : {}}
+          />
         </Button>
       </PopoverTrigger>
 
