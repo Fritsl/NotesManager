@@ -98,7 +98,6 @@ export default function HeaderWithSearch() {
     maxDepth,
     currentProjectName,
     setCurrentProjectName,
-    currentProjectColor,
     hasActiveProject,
     setHasActiveProject,
     createNewProject,
@@ -383,13 +382,6 @@ export default function HeaderWithSearch() {
                     onClick={startEditing}
                   >
                     <h1 className="mobile-text-base font-semibold text-gray-100 flex items-center">
-                      {/* Project color indicator */}
-                      {currentProjectColor && (
-                        <div 
-                          className="w-3 h-3 rounded-sm mr-1 border border-gray-700" 
-                          style={{ backgroundColor: currentProjectColor }} 
-                        />
-                      )}
                       <span className="text-gray-400 hidden sm:inline">Project:</span>
                       <span className="ml-0 sm:ml-1 max-w-[120px] sm:max-w-[250px] truncate group-hover:text-primary transition-colors">
                         {currentProjectName}
@@ -399,13 +391,6 @@ export default function HeaderWithSearch() {
                   </div>
                 ) : (
                   <div className="flex items-center">
-                    {/* Project color indicator in edit mode */}
-                    {currentProjectColor && (
-                      <div 
-                        className="w-3 h-3 rounded-sm mr-1 border border-gray-700" 
-                        style={{ backgroundColor: currentProjectColor }} 
-                      />
-                    )}
                     <span className="text-gray-400 text-sm sm:text-base mr-1 hidden sm:inline">Project:</span>
                     <div className="flex items-center">
                       <Input

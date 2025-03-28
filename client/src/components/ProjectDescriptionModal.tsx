@@ -5,13 +5,6 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { useToast } from '../hooks/use-toast';
 import { useNotes } from '../context/NotesContext';
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from './ui/dropdown-menu';
-import { PaintBucket } from 'lucide-react';
 
 interface ProjectDescriptionModalProps {
   isOpen: boolean;
@@ -24,28 +17,15 @@ export default function ProjectDescriptionModal({ isOpen, onClose }: ProjectDesc
   const { toast } = useToast();
   const { 
     currentProjectDescription, 
-    setCurrentProjectDescription,
-    currentProjectColor,
-    setCurrentProjectColor,
+    setCurrentProjectDescription, 
     saveProject,
     currentProjectName,
     currentProjectId
   } = useNotes();
-  
-  // Available colors - 5 options plus transparent (empty string)
-  const colorOptions = [
-    { value: "", label: "Default" },
-    { value: "#4CAF50", label: "Green" },
-    { value: "#2196F3", label: "Blue" },
-    { value: "#FFC107", label: "Yellow" },
-    { value: "#E91E63", label: "Pink" },
-    { value: "#9C27B0", label: "Purple" }
-  ];
 
   useEffect(() => {
     if (isOpen) {
       setDescription(currentProjectDescription || '');
-      // No need to set current color as we're using the context value directly
     }
   }, [isOpen, currentProjectDescription]);
 
@@ -100,44 +80,7 @@ export default function ProjectDescriptionModal({ isOpen, onClose }: ProjectDesc
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          {/* Project color picker */}
-          <div className="grid grid-cols-1 items-start gap-2">
-            <Label htmlFor="color" className="text-left">
-              Project Color
-            </Label>
-            <div className="flex items-center gap-2">
-              <div 
-                className="w-5 h-5 border rounded-sm" 
-                style={{ backgroundColor: currentProjectColor || 'transparent' }}
-              />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex items-center gap-1">
-                    <PaintBucket className="h-4 w-4" />
-                    <span>Select</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {colorOptions.map((color) => (
-                    <DropdownMenuItem
-                      key={color.value}
-                      className="flex items-center gap-2 cursor-pointer"
-                      onClick={() => setCurrentProjectColor(color.value)}
-                    >
-                      <div 
-                        className="w-4 h-4 border rounded-sm" 
-                        style={{ backgroundColor: color.value || 'transparent' }}
-                      />
-                      <span>{color.label}</span>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-          
-          {/* Project description */}
-          <div className="grid grid-cols-1 items-start gap-2 mt-2">
+          <div className="grid grid-cols-1 items-start gap-4">
             <Label htmlFor="description" className="text-left">
               Description
             </Label>

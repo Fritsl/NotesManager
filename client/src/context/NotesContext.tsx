@@ -44,8 +44,6 @@ interface NotesContextType {
   setCurrentProjectName: (name: string) => void;
   currentProjectDescription: string;
   setCurrentProjectDescription: (description: string) => void;
-  currentProjectColor: string;
-  setCurrentProjectColor: (color: string) => void;
   hasActiveProject: boolean;
   setHasActiveProject: (hasProject: boolean) => void;
   createNewProject: (name: string) => void;
@@ -82,7 +80,6 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
   const [currentLevel, setCurrentLevel] = useState<number>(0);
   const [currentProjectName, setCurrentProjectName] = useState<string>('');
   const [currentProjectDescription, setCurrentProjectDescription] = useState<string>('');
-  const [currentProjectColor, setCurrentProjectColor] = useState<string>('');
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [hasActiveProject, setHasActiveProject] = useState<boolean>(false);
   const [isInitialLoad, setIsInitialLoad] = useState<boolean>(true);
@@ -122,10 +119,6 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
             // Set project description if available
             if (project.description) {
               setCurrentProjectDescription(project.description);
-            }
-            // Set project color if available
-            if (project.color) {
-              setCurrentProjectColor(project.color);
             }
 
             // Mark as having an active project
@@ -274,12 +267,6 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           if (project?.name && project.name !== currentProjectName) {
             console.log(`Name mismatch detected - correcting from "${currentProjectName}" to database value "${project.name}"`);
             setCurrentProjectName(project.name);
-          }
-          
-          // Also set the color if it exists in the project
-          if (project?.color && project.color !== currentProjectColor) {
-            console.log(`Color mismatch detected - correcting from "${currentProjectColor}" to database value "${project.color}"`);
-            setCurrentProjectColor(project.color);
           }
         } catch (error) {
           console.error("Error verifying project name with database:", error);
@@ -1242,8 +1229,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         currentProjectId, 
         currentProjectName, 
         notesData, 
-        currentProjectDescription,
-        currentProjectColor
+        currentProjectDescription
       );
 
       if (!updatedProject) {
@@ -1269,15 +1255,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         console.log('Description mismatch detected - correcting from', 
           `"${currentProjectDescription}" to database value "${updatedProject.description}"`
         );
-        setCurrentProjectDescription(updatedProject.description || '');
-      }
-      
-      // Ensure the color is updated from the server response
-      if (updatedProject.color !== currentProjectColor) {
-        console.log('Color mismatch detected - correcting from', 
-          `"${currentProjectColor}" to database value "${updatedProject.color}"`
-        );
-        setCurrentProjectColor(updatedProject.color || '');
+        setCurrentProjectDescription(updatedProject.description);
       }
 
       // Dispatch a custom event to notify components that a project has been updated
@@ -1319,7 +1297,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         variant: "destructive",
       });
     }
-  }, [currentProjectId, currentProjectName, currentProjectDescription, currentProjectColor, notes, cleanNotePositions, toast, pendingNoteMoves]);
+  }, [currentProjectId, currentProjectName, currentProjectDescription, notes, cleanNotePositions, toast, pendingNoteMoves]);
 
   // Effect to handle auto-saving when pendingNoteMoves is set
   useEffect(() => {
@@ -1610,8 +1588,6 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         setCurrentProjectName,
         currentProjectDescription,
         setCurrentProjectDescription,
-        currentProjectColor,
-        setCurrentProjectColor,
         hasActiveProject,
         setHasActiveProject,
         createNewProject,
