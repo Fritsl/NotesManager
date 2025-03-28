@@ -108,6 +108,9 @@ const getTotalChildrenCount = (currentNote: Note): number => {
 
 // Count notes between two notes in the flattened tree
 const countNotesBetween = (notes: Note[], startNoteId: string, endNoteId: string): number => {
+  // For adjacent timed notes without any notes in between, we count only the two timed notes
+  // This means we return 2 (the start note and the end note)
+  
   const flattenedNotes: Note[] = [];
   
   // Function to flatten the tree into an array in the order notes appear
@@ -131,10 +134,19 @@ const countNotesBetween = (notes: Note[], startNoteId: string, endNoteId: string
     return 0;
   }
   
-  // Return count (end - start - 1, excluding both the start and end notes)
-  // We subtract 1 to exclude the start note itself, as the count should be
-  // the number of notes between the two timed notes
-  return endIndex - startIndex - 1;
+  // Check if notes are adjacent in the flattened tree (or have only timed notes between them)
+  let intermediateNoteCount = 0;
+  for (let i = startIndex + 1; i < endIndex; i++) {
+    intermediateNoteCount++;
+  }
+  
+  // If there are no notes between, or just the end note, return 2 (start and end)
+  if (intermediateNoteCount === 0) {
+    return 2; // Count the start and end notes
+  } else {
+    // Otherwise return the total count including start and end
+    return intermediateNoteCount + 2; 
+  }
 }
 
 // Calculate time allocation for each note
