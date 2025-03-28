@@ -45,6 +45,9 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
     if (isOpen && noteToMove) {
       setSelectedParentId(null);
       setSearchText("");
+      setShowPlacementOptions(false);
+      setCurrentParentId(null);
+      setSiblingNotes([]);
     }
   }, [isOpen, noteToMove]);
   
@@ -174,19 +177,63 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
         return false;
       });
   
+  // Find all sibling notes under a parent to display placement options
+  const getSiblingNotes = (parentId: string | null): Note[] => {
+    if (parentId === null) {
+      // Root level notes
+      return notes.filter(note => note.id !== noteToMove?.id);
+    } else {
+      // Find the parent note
+      const findParent = (notesToSearch: Note[]): Note | null => {
+        for (const note of notesToSearch) {
+          if (note.id === parentId) return note;
+          
+          if (note.children.length > 0) {
+            const found = findParent(note.children);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      
+      const parentNote = findParent(notes);
+      if (parentNote) {
+        return parentNote.children.filter(note => note.id !== noteToMove?.id);
+      }
+    }
+    return [];
+  };
+
+  // State to track if showing placement options
+  const [showPlacementOptions, setShowPlacementOptions] = useState(false);
+  const [currentParentId, setCurrentParentId] = useState<string | null>(null);
+  const [siblingNotes, setSiblingNotes] = useState<Note[]>([]);
+
+  // Handle selecting a destination parent
+  const handleSelectDestination = (destinationId: string | null) => {
+    setCurrentParentId(destinationId);
+    const siblings = getSiblingNotes(destinationId);
+    setSiblingNotes(siblings);
+    setShowPlacementOptions(true);
+  };
+
   // Handle note movement
-  const handleMoveNote = (destinationId: string | null) => {
+  const handleMoveNote = (destinationId: string | null, position?: number) => {
     if (!noteToMove) return;
     
     // Save the noteId for later reference
     const movedNoteId = noteToMove.id;
     
     // Determine the position (by default, add to the end)
-    let position = 0;
+    let finalPosition = 0;
     
     if (destinationId === null) {
       // Moving to root level
-      position = notes.length;
+      if (position !== undefined) {
+        finalPosition = position;
+      } else {
+        finalPosition = notes.length;
+      }
     } else {
       // Find destination parent and its children count
       const findDestinationParent = (notesToSearch: Note[]): Note | null => {
@@ -203,12 +250,16 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
       
       const destinationParent = findDestinationParent(notes);
       if (destinationParent) {
-        position = destinationParent.children.length;
+        if (position !== undefined) {
+          finalPosition = position;
+        } else {
+          finalPosition = destinationParent.children.length;
+        }
       }
     }
     
     // Execute the move
-    moveNote(movedNoteId, destinationId, position);
+    moveNote(movedNoteId, destinationId, finalPosition);
     
     // Set the pending flag to trigger auto-save
     setPendingNoteMoves(true);
@@ -286,27 +337,19 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
         )}
         onClick={() => {
           if (isRoot) {
-            // Always move directly to root level when root is clicked
-            handleMoveNote(null);
-            
-            // Add animation effect when clicked
-            const element = document.getElementById(`dest-${dest.id || 'root'}`);
-            if (element) {
-              element.classList.add('note-highlight');
-            }
+            // For root level, show placement options with null parent
+            handleSelectDestination(null);
           }
           else if (dest.hasChildren) {
+            // If we're in placement mode, reset to regular browsing mode
+            if (showPlacementOptions) {
+              setShowPlacementOptions(false);
+            }
             // Navigate into this folder
             setSelectedParentId(dest.id);
           } else {
-            // Move note directly to this location
-            handleMoveNote(dest.id);
-            
-            // Add animation effect when clicked
-            const element = document.getElementById(`dest-${dest.id || 'root'}`);
-            if (element) {
-              element.classList.add('note-highlight');
-            }
+            // For leaf nodes without children, show placement options
+            handleSelectDestination(dest.id);
           }
         }}
         id={`dest-${dest.id || 'root'}`}
@@ -350,6 +393,84 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
     );
   };
   
+  // Render the placement options UI
+  const renderPlacementOptions = () => {
+    // Get the parent name for display
+    let parentName = "Root Level";
+    if (currentParentId) {
+      const parentItem = destinations.find(d => d.id === currentParentId);
+      if (parentItem) {
+        parentName = parentItem.content;
+      }
+    }
+
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-primary font-medium flex items-center gap-2">
+            <ArrowRight className="h-4 w-4" />
+            <span>Select placement in "{parentName.substring(0, 30)}{parentName.length > 30 ? "..." : ""}"</span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-gray-700 text-gray-300 hover:bg-gray-800"
+            onClick={() => setShowPlacementOptions(false)}
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Back to Browse
+          </Button>
+        </div>
+
+        {/* Option to place at the top */}
+        <div
+          className="flex items-center justify-between p-3 mb-2 rounded-md cursor-pointer bg-gray-800 border border-gray-700 hover:bg-gray-700"
+          onClick={() => handleMoveNote(currentParentId, 0)}
+        >
+          <div className="flex items-center gap-2">
+            <ArrowRight className="h-5 w-5 text-primary" />
+            <span className="text-gray-200 font-medium">Place at Top</span>
+          </div>
+        </div>
+
+        {/* List of existing items with option to place after each one */}
+        {siblingNotes.map((note, index) => (
+          <div key={note.id} className="mb-2">
+            {/* The existing note (non-clickable) */}
+            <div className="flex items-center p-3 rounded-md border border-gray-800 bg-gray-900">
+              <div className="flex items-center gap-2 w-full">
+                <span className="text-gray-400 text-xs">{index + 1}.</span>
+                <span className="text-gray-300 truncate">{note.content}</span>
+              </div>
+            </div>
+            
+            {/* Option to place after this note */}
+            <div
+              className="flex items-center justify-between p-2 rounded-md cursor-pointer bg-gray-800 border border-gray-700 hover:bg-gray-700 mt-1 ml-4"
+              onClick={() => handleMoveNote(currentParentId, index + 1)}
+            >
+              <div className="flex items-center gap-2">
+                <ArrowRight className="h-4 w-4 text-primary" />
+                <span className="text-gray-200 text-sm">Place after "{note.content.substring(0, 20)}{note.content.length > 20 ? "..." : ""}"</span>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {/* Option to place at the bottom */}
+        <div
+          className="flex items-center justify-between p-3 rounded-md cursor-pointer bg-gray-800 border border-gray-700 hover:bg-gray-700 mt-2"
+          onClick={() => handleMoveNote(currentParentId, siblingNotes.length)}
+        >
+          <div className="flex items-center gap-2">
+            <ArrowRight className="h-5 w-5 text-primary" />
+            <span className="text-gray-200 font-medium">Place at Bottom</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <Dialog open={isOpen && !!noteToMove} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-5xl w-[95vw] bg-gray-900 text-gray-100 border-gray-800 h-[90vh] flex flex-col">
@@ -364,79 +485,90 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
           </DialogTitle>
         </DialogHeader>
         
-        {/* Navigation breadcrumb - simplified */}
-        <div className="flex items-center justify-between mb-4 text-sm">
-          <div className="text-sm font-medium text-gray-300">
-            {useSearchResults ? (
-              <span>
-                <span className="text-primary font-bold">Search Results</span>
-                <span className="ml-1 text-xs bg-gray-800 rounded-full px-2 py-0.5">
-                  {filteredDestinations.length} match{filteredDestinations.length !== 1 ? 'es' : ''} across all levels
-                </span>
-              </span>
-            ) : selectedParentId === null ? (
-              <span className="text-primary font-bold">Browse Locations</span>
-            ) : (
-              <span>
-                Current folder: <span className="text-primary font-medium">
-                  {getCurrentPath()[getCurrentPath().length - 1]?.label?.substring(0, 30) || "Location"}
-                  {getCurrentPath()[getCurrentPath().length - 1]?.label?.length > 30 ? "..." : ""}
-                </span>
-              </span>
-            )}
+        {/* Main Content - Either placement options or regular browsing */}
+        {showPlacementOptions ? (
+          // Placement options UI
+          <div className="flex-1 overflow-y-auto pr-2 min-h-0">
+            {renderPlacementOptions()}
           </div>
-          
-          {/* Back button for navigation - only show when not searching */}
-          {!useSearchResults && selectedParentId !== null && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-primary"
-              onClick={() => {
-                // Go to parent folder
-                const currentPath = getCurrentPath();
-                if (currentPath.length > 1) {
-                  setSelectedParentId(currentPath[currentPath.length - 2].id);
-                } else {
-                  setSelectedParentId(null);
-                }
-              }}
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Back to Previous Level
-            </Button>
-          )}
-        </div>
-        
-        {/* Search input */}
-        <div className="relative mb-4">
-          <input
-            type="text"
-            placeholder="Search for a location..."
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-200 focus:outline-none focus:ring-1 focus:ring-primary"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-          />
-          {searchText && (
-            <button
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200"
-              onClick={() => setSearchText("")}
-            >
-              <XCircle className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-        
-        {/* Destinations list - scrollable container */}
-        <div className="flex-1 overflow-y-auto pr-2 min-h-0 max-h-[calc(80vh-150px)]">
-          {currentLevelDestinations.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
-              {searchText ? "No matching destinations found" : "No available destinations at this level"}
+        ) : (
+          // Regular browsing UI
+          <>
+            {/* Navigation breadcrumb - simplified */}
+            <div className="flex items-center justify-between mb-4 text-sm">
+              <div className="text-sm font-medium text-gray-300">
+                {useSearchResults ? (
+                  <span>
+                    <span className="text-primary font-bold">Search Results</span>
+                    <span className="ml-1 text-xs bg-gray-800 rounded-full px-2 py-0.5">
+                      {filteredDestinations.length} match{filteredDestinations.length !== 1 ? 'es' : ''} across all levels
+                    </span>
+                  </span>
+                ) : selectedParentId === null ? (
+                  <span className="text-primary font-bold">Browse Locations</span>
+                ) : (
+                  <span>
+                    Current folder: <span className="text-primary font-medium">
+                      {getCurrentPath()[getCurrentPath().length - 1]?.label?.substring(0, 30) || "Location"}
+                      {getCurrentPath()[getCurrentPath().length - 1]?.label?.length > 30 ? "..." : ""}
+                    </span>
+                  </span>
+                )}
+              </div>
+              
+              {/* Back button for navigation - only show when not searching */}
+              {!useSearchResults && selectedParentId !== null && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-primary"
+                  onClick={() => {
+                    // Go to parent folder
+                    const currentPath = getCurrentPath();
+                    if (currentPath.length > 1) {
+                      setSelectedParentId(currentPath[currentPath.length - 2].id);
+                    } else {
+                      setSelectedParentId(null);
+                    }
+                  }}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Back to Previous Level
+                </Button>
+              )}
             </div>
-          ) : (
-            currentLevelDestinations.map(renderDestinationItem)
-          )}
-        </div>
+            
+            {/* Search input */}
+            <div className="relative mb-4">
+              <input
+                type="text"
+                placeholder="Search for a location..."
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-200 focus:outline-none focus:ring-1 focus:ring-primary"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+              />
+              {searchText && (
+                <button
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200"
+                  onClick={() => setSearchText("")}
+                >
+                  <XCircle className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            
+            {/* Destinations list - scrollable container */}
+            <div className="flex-1 overflow-y-auto pr-2 min-h-0 max-h-[calc(80vh-150px)]">
+              {currentLevelDestinations.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  {searchText ? "No matching destinations found" : "No available destinations at this level"}
+                </div>
+              ) : (
+                currentLevelDestinations.map(renderDestinationItem)
+              )}
+            </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
