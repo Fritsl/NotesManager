@@ -89,6 +89,22 @@ const findNextNoteWithTime = (notes: Note[], currentNoteId: string): Note | null
   return null;
 }
 
+// Function to count all descendants (direct and indirect children) of a note
+const getTotalChildrenCount = (currentNote: Note): number => {
+  if (!currentNote.children || currentNote.children.length === 0) {
+    return 0;
+  }
+  
+  let totalCount = currentNote.children.length; // Count direct children
+  
+  // Add their children too (recursively)
+  for (const child of currentNote.children) {
+    totalCount += getTotalChildrenCount(child);
+  }
+  
+  return totalCount;
+};
+
 // Count notes between two notes in the flattened tree
 const countNotesBetween = (notes: Note[], startNoteId: string, endNoteId: string): number => {
   const flattenedNotes: Note[] = [];
@@ -155,8 +171,24 @@ const calculateTimeAllocation = (currentNote: Note, allNotes: Note[]): TimeAlloc
     timeDiff = timeDiff + (24 * 60);
   }
   
-  // Count notes between (including current, excluding next)
-  noteCount = countNotesBetween(allNotes, currentNote.id, nextTimedNote.id);
+  // Determine if the next timed note is a descendant of the current note
+  const isNextNoteDescendant = (parentNote: Note, targetId: string): boolean => {
+    for (const child of parentNote.children) {
+      if (child.id === targetId) return true;
+      if (isNextNoteDescendant(child, targetId)) return true;
+    }
+    return false;
+  };
+
+  // If the next timed note is a descendant of current note, use total descendants
+  const currentNoteObj = allNotes.find(n => n.id === currentNote.id);
+  if (currentNoteObj && isNextNoteDescendant(currentNoteObj, nextTimedNote.id)) {
+    // Use the total children count plus 1 (for the current note itself)
+    noteCount = getTotalChildrenCount(currentNoteObj) + 1;
+  } else {
+    // Otherwise, use the original count method for separate branches
+    noteCount = countNotesBetween(allNotes, currentNote.id, nextTimedNote.id);
+  }
   
   if (noteCount <= 0) {
     formattedTime = "05:00"; // Default 5 minutes if there are no notes between
@@ -209,21 +241,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   const { toast } = useToast();
   const isMobile = useIsMobile(); // Check if we're on a mobile device
   
-  // Function to count all descendants (direct and indirect children) of a note
-  const getTotalChildrenCount = (currentNote: Note): number => {
-    if (!currentNote.children || currentNote.children.length === 0) {
-      return 0;
-    }
-    
-    let totalCount = currentNote.children.length; // Count direct children
-    
-    // Add their children too (recursively)
-    for (const child of currentNote.children) {
-      totalCount += getTotalChildrenCount(child);
-    }
-    
-    return totalCount;
-  };
+
 
   // References
   const ref = useRef<HTMLDivElement>(null);

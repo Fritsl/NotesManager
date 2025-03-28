@@ -142,8 +142,40 @@ const calculateTimeAllocation = (currentNote: Note, allNotes: Note[]): TimeAlloc
   }
   console.log("Adjusted time difference in minutes:", timeDiff);
   
-  // Count notes between (including current, excluding next)
-  noteCount = countNotesBetween(allNotes, currentNote.id, nextTimedNote.id);
+  // Determine if the next timed note is a descendant of the current note
+  const isNextNoteDescendant = (parentNote: Note, targetId: string): boolean => {
+    for (const child of parentNote.children) {
+      if (child.id === targetId) return true;
+      if (isNextNoteDescendant(child, targetId)) return true;
+    }
+    return false;
+  };
+
+  // Get a recursive function to count all descendants (direct and indirect children) of a note
+  const getTotalChildrenCount = (currentNote: Note): number => {
+    if (!currentNote.children || currentNote.children.length === 0) {
+      return 0;
+    }
+    
+    let totalCount = currentNote.children.length; // Count direct children
+    
+    // Add their children too (recursively)
+    for (const child of currentNote.children) {
+      totalCount += getTotalChildrenCount(child);
+    }
+    
+    return totalCount;
+  };
+
+  // If the next timed note is a descendant of current note, use total descendants
+  const currentNoteObj = allNotes.find(n => n.id === currentNote.id);
+  if (currentNoteObj && isNextNoteDescendant(currentNoteObj, nextTimedNote.id)) {
+    // Use the total children count plus 1 (for the current note itself)
+    noteCount = getTotalChildrenCount(currentNoteObj) + 1;
+  } else {
+    // Otherwise, use the original count method for separate branches
+    noteCount = countNotesBetween(allNotes, currentNote.id, nextTimedNote.id);
+  }
   console.log("Note count between:", noteCount);
   
   if (noteCount <= 0) {
