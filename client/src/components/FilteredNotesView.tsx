@@ -106,9 +106,7 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
     }
   };
 
-  const getFilterSubtitle = (count: number): string => {
-    return `Found ${count} note${count === 1 ? "" : "s"}`;
-  };
+  // Subtitle function removed
 
   const startEditing = (note: Note) => {
     setEditingNoteId(note.id);
@@ -315,7 +313,6 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
       <div className="mb-4 flex items-center gap-2">
         {getFilterIcon(filterType)}
         <h2 className="text-xl font-bold">{getFilterTitle(filterType)}</h2>
-        <Badge variant="outline">{getFilterSubtitle(filteredNotes.length)}</Badge>
       </div>
 
       <div className="space-y-3">
@@ -515,7 +512,7 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
                     {/* Title line */}
                     <div className="flex items-center">
                       <div 
-                        className={`mobile-text-base font-medium ${level >= 0 ? levelColors[level].text : levelColors[0].text} truncate flex-1`}
+                        className={`mobile-text-base font-medium ${level >= 0 ? levelColors[level].text : levelColors[0].text} truncate flex-1 max-w-full overflow-hidden`}
                         onDoubleClick={() => startEditing(note)}
                       >
                         {displayContent}
@@ -528,7 +525,7 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
                         {previewLines.map((line, index) => (
                           <div 
                             key={index} 
-                            className="text-xs text-gray-400 truncate leading-snug"
+                            className="text-xs text-gray-400 truncate leading-snug max-w-full overflow-hidden"
                             onDoubleClick={() => startEditing(note)}
                           >
                             {line}
