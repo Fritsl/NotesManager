@@ -15,6 +15,64 @@ import pkg from 'pg';
 const { Pool } = pkg;
 import { checkRlsPolicies } from "./check-rls-policies";
 
+// Helper function to flatten note hierarchy for database storage
+function flattenNoteHierarchy(notes: any[], projectId: string, userId: string) {
+  const flatNotes: any[] = [];
+  const images: any[] = [];
+  
+  const processNote = (note: any, parentId: string | null, level: number) => {
+    // Extract basic note data
+    const flatNote: any = {
+      id: note.id,
+      content: note.content,
+      user_id: userId,
+      project_id: projectId,
+      parent_id: parentId,
+      position: note.position || 0,
+      created_at: note.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
+    // Add legacy fields if they exist
+    if (note.is_discussion !== undefined) flatNote.is_discussion = note.is_discussion;
+    if (note.time_set !== undefined) flatNote.time_set = note.time_set;
+    if (note.youtube_url !== undefined) flatNote.youtube_url = note.youtube_url;
+    if (note.url !== undefined) flatNote.url = note.url;
+    if (note.url_display_text !== undefined) flatNote.url_display_text = note.url_display_text;
+    
+    // Add the note to our flat array
+    flatNotes.push(flatNote);
+    
+    // Process any images for this note
+    if (note.images && Array.isArray(note.images) && note.images.length > 0) {
+      for (const image of note.images) {
+        // Add user_id and note_id if not present
+        const processedImage = {
+          ...image,
+          user_id: userId,
+          note_id: note.id
+        };
+        
+        images.push(processedImage);
+      }
+    }
+    
+    // Process children recursively
+    if (note.children && Array.isArray(note.children)) {
+      for (let i = 0; i < note.children.length; i++) {
+        processNote(note.children[i], note.id, level + 1);
+      }
+    }
+  };
+  
+  // Process all root notes
+  for (let i = 0; i < notes.length; i++) {
+    processNote(notes[i], null, 0);
+  }
+  
+  return { notes: flatNotes, images };
+}
+
 // Get current file's directory path (ES modules replacement for __dirname)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -82,13 +140,143 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
   // prefix all routes with /api
   
-  // Placeholder endpoint for project metadata - doesn't actually save any notes or data
+  // Endpoint to store project data including notes
   app.post("/api/store-project-data", async (req: Request, res: Response) => {
-    console.log("[SAVE DISABLED] Save functionality has been removed");
-    return res.status(200).json({
-      success: true,
-      message: "Save functionality disabled - Project data was not stored",
-    });
+    try {
+      const { id, name, userId, data, description } = req.body;
+      
+      if (!id || !userId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Project ID and User ID are required" 
+        });
+      }
+      
+      console.log(`Saving project data for project ${id} by user ${userId}`);
+      
+      // First update project settings/metadata
+      const { data: settingsData, error: settingsError } = await supabaseAdmin
+        .from('settings')
+        .update({
+          title: name,
+          description: description || '',
+          updated_at: new Date().toISOString(),
+          last_modified_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .eq('user_id', userId)
+        .select()
+        .single();
+        
+      if (settingsError) {
+        console.error('Error updating project settings:', settingsError);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to update project settings",
+          error: settingsError.message
+        });
+      }
+      
+      // Then if we have notes data, process it
+      if (data && data.notes && Array.isArray(data.notes)) {
+        console.log(`Processing ${data.notes.length} top-level notes for project ${id}`);
+        
+        // Flatten the hierarchical notes to prepare for database insertion
+        const { notes: flatNotes, images } = flattenNoteHierarchy(data.notes, id, userId);
+        
+        if (flatNotes.length > 0) {
+          // First delete existing notes for this project to avoid duplicates
+          const { error: deleteError } = await supabaseAdmin
+            .from('notes')
+            .delete()
+            .eq('project_id', id);
+            
+          if (deleteError) {
+            console.error('Error deleting existing notes:', deleteError);
+            return res.status(500).json({
+              success: false,
+              message: "Failed to delete existing notes",
+              error: deleteError.message
+            });
+          }
+          
+          // Then insert all notes as a batch
+          const { error: insertError } = await supabaseAdmin
+            .from('notes')
+            .insert(flatNotes);
+            
+          if (insertError) {
+            console.error('Error inserting notes:', insertError);
+            return res.status(500).json({
+              success: false,
+              message: "Failed to insert notes",
+              error: insertError.message
+            });
+          }
+          
+          // Update the note count in the settings table
+          await supabaseAdmin
+            .from('settings')
+            .update({
+              note_count: flatNotes.length
+            })
+            .eq('id', id);
+            
+          console.log(`Successfully saved ${flatNotes.length} notes for project ${id}`);
+        }
+        
+        // Process images if we have any
+        if (images && images.length > 0) {
+          console.log(`Processing ${images.length} images for project ${id}`);
+          
+          // Keep track of all image IDs in this project
+          const imageIds = images.map((img: any) => img.id);
+          
+          // First delete images that aren't in our current set
+          const { error: deleteImagesError } = await supabaseAdmin
+            .from('note_images')
+            .delete()
+            .eq('project_id', id)
+            .not('id', 'in', `(${imageIds.join(',')})`);
+            
+          if (deleteImagesError && !deleteImagesError.message.includes('empty')) {
+            console.error('Error cleaning up old images:', deleteImagesError);
+          }
+          
+          // Then upsert all current images
+          for (const image of images as any[]) {
+            // Add project_id to each image record if not already present
+            const imageWithProject = {
+              ...image,
+              project_id: id
+            };
+            
+            const { error: upsertImageError } = await supabaseAdmin
+              .from('note_images')
+              .upsert(imageWithProject, { onConflict: 'id' });
+              
+            if (upsertImageError) {
+              console.error(`Error upserting image ${image.id}:`, upsertImageError);
+            }
+          }
+          
+          console.log(`Successfully processed ${images.length} images for project ${id}`);
+        }
+      }
+      
+      return res.status(200).json({
+        success: true,
+        message: "Project data saved successfully",
+        project: settingsData
+      });
+    } catch (error: any) {
+      console.error('Error saving project data:', error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to save project data",
+        error: error.message
+      });
+    }
   });
   
   // Get project data endpoint - Improved to handle RLS restrictions

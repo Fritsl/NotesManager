@@ -688,7 +688,7 @@ export async function generateUniqueProjectName(baseName: string = 'New Project'
 
 export async function updateProject(id: string, name: string, notesData: NotesData, description: string = ''): Promise<Project | null> {
   try {
-    console.log('[SAVE DISABLED] - updateProject called but actual saving is disabled');
+    console.log('updateProject called - saving notes to database');
     console.log('Project ID:', id);
     
     // Get current user
@@ -709,8 +709,8 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
     const sanitizedName = sanitizeProjectName(name);
     console.log('Sanitized project name:', sanitizedName);
     
-    // Send a call to the placeholder API endpoint that doesn't actually save data
-    console.log('[SAVE DISABLED] No data is being sent to the server');
+    // Send data to the server API endpoint that now saves data
+    console.log(`Saving project with ${validNotesData.notes.length} top-level notes to server`);
     const response = await fetch('/api/store-project-data', {
       method: 'POST',
       headers: {
@@ -720,49 +720,37 @@ export async function updateProject(id: string, name: string, notesData: NotesDa
         id,
         name: sanitizedName,
         userId: userData.user.id,
-        // Send empty data instead of the actual notes
-        data: { notes: [] },
+        // Send the actual notes data
+        data: validNotesData,
         description
       })
     });
     
     if (!response.ok) {
-      console.error('Error calling placeholder API:', await response.text());
+      const errorText = await response.text();
+      console.error('Error saving project data to API:', errorText);
       return null;
     }
     
-    // Just update the metadata, not the actual notes
-    const { data: projectData, error: projectError } = await supabase
-      .from('settings')
-      .update({
-        title: sanitizedName,
-        description: description,
-        updated_at: now,
-        last_modified_at: now
-      })
-      .eq('id', id)
-      .eq('user_id', userData.user.id)
-      .select('*')
-      .single();
+    const responseData = await response.json();
     
-    if (projectError) {
-      console.error('Error updating project metadata:', projectError);
+    if (!responseData.success) {
+      console.error('API reported failure:', responseData.message);
       return null;
     }
     
-    console.log('[SAVE DISABLED] Only project metadata was updated, notes were not saved');
-    console.log('Project metadata updated:', projectData);
+    console.log('Project data saved successfully to database');
     
-    // Return updated project with the hierarchical notes and correct note_count from database
+    // Return updated project with the hierarchical notes
     return {
-      id: projectData.id,
-      name: projectData.title,
-      created_at: projectData.created_at,
-      updated_at: projectData.updated_at,
-      user_id: projectData.user_id,
-      description: projectData.description || '',
+      id: responseData.project.id,
+      name: responseData.project.title,
+      created_at: responseData.project.created_at,
+      updated_at: responseData.project.updated_at,
+      user_id: responseData.project.user_id,
+      description: responseData.project.description || '',
       data: validNotesData,
-      note_count: projectData.note_count // Include note_count from the database
+      note_count: responseData.project.note_count || validNotesData.notes.length
     };
   } catch (error) {
     console.error('Error in updateProject:', error);
