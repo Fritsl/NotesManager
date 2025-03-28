@@ -29,7 +29,13 @@ import {
   FilePlus,
   RotateCcw,
   Search,
-  Filter
+  Filter,
+  Clock,
+  MessageCircle,
+  Image as ImageIcon,
+  ImagePlus,
+  Youtube,
+  Link
 } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { useAuth } from "@/context/AuthContext";
@@ -56,6 +62,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
@@ -104,6 +115,23 @@ export default function HeaderWithSearch() {
   const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
 
+  // Helper function to get all notes with their children flattened
+  const flattenNotes = (notes: Note[]): Note[] => {
+    let flatNotes: Note[] = [];
+    
+    const traverse = (notesArray: Note[]) => {
+      for (const note of notesArray) {
+        flatNotes.push(note);
+        if (note.children && note.children.length > 0) {
+          traverse(note.children);
+        }
+      }
+    };
+    
+    traverse(notes);
+    return flatNotes;
+  };
+  
   // Handle filter change
   const handleFilterChange = (filtered: Note[], type: FilterType) => {
     setFilteredNotes(filtered);

@@ -27,7 +27,15 @@ import {
   Minimize2,
   PlusCircle,
   FilePlus,
-  RotateCcw
+  RotateCcw,
+  Search,
+  Filter,
+  Clock,
+  MessageCircle,
+  Image as ImageIcon,
+  ImagePlus,
+  Youtube,
+  Link
 } from "lucide-react";
 import { useNotes } from "@/context/NotesContext";
 import { useAuth } from "@/context/AuthContext";
@@ -54,6 +62,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
@@ -102,6 +115,23 @@ export default function HeaderWithSearch() {
   const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
 
+  // Helper function to get all notes with their children flattened
+  const flattenNotes = (notes: Note[]): Note[] => {
+    let flatNotes: Note[] = [];
+    
+    const traverse = (notesArray: Note[]) => {
+      for (const note of notesArray) {
+        flatNotes.push(note);
+        if (note.children && note.children.length > 0) {
+          traverse(note.children);
+        }
+      }
+    };
+    
+    traverse(notes);
+    return flatNotes;
+  };
+
   // Handle filter change
   const handleFilterChange = (filtered: Note[], type: FilterType) => {
     setFilteredNotes(filtered);
@@ -127,10 +157,8 @@ export default function HeaderWithSearch() {
   const handleSignOut = async () => {
     try {
       await signOut();
-      toast({
-        title: "Success",
-        description: "You have been logged out",
-      });
+      console.log("User logged out successfully");
+      // No toast for successful logout
     } catch (error) {
       toast({
         title: "Error",
@@ -250,9 +278,19 @@ export default function HeaderWithSearch() {
             window.dispatchEvent(new Event('project-updated'));
           } else {
             console.error("Failed to update project name in database");
+            toast({
+              title: "Error",
+              description: "Failed to update project name",
+              variant: "destructive",
+            });
           }
         } catch (error) {
           console.error("Error updating project name in database:", error);
+          toast({
+            title: "Error",
+            description: "Failed to update project name",
+            variant: "destructive",
+          });
         }
       })();
     }
@@ -278,10 +316,8 @@ export default function HeaderWithSearch() {
       // Use the Clipboard API to copy text to clipboard
       navigator.clipboard.writeText(text)
         .then(() => {
-          toast({
-            title: "Copied to Clipboard",
-            description: `All visible notes exported as text (${text.length} characters)`
-          });
+          // No toast for successful clipboard operations
+          console.log(`Copied to clipboard: ${text.length} characters`);
         })
         .catch(err => {
           console.error('Failed to copy text: ', err);
@@ -477,10 +513,92 @@ export default function HeaderWithSearch() {
             <HelpCircle size={20} />
           </Button>
 
-          {/* Filter menu */}
-          <div className="hidden md:block">
-            <FilterMenu onFilterChange={handleFilterChange} />
-          </div>
+          {/* Filter Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                title="Filter Notes"
+                className={activeFilter ? "bg-primary/20 text-primary" : ""}
+              >
+                <Filter size={20} />
+                {activeFilter && (
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border border-background" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-gray-900 border-gray-800">
+              <DropdownMenuRadioGroup value={activeFilter || ""} 
+                onValueChange={(value) => {
+                  const filterType = value === "" ? null : value as FilterType;
+                  if (filterType) {
+                    const allNotes = flattenNotes(notes);
+                    let filtered: Note[] = [];
+                    
+                    switch (filterType) {
+                      case "time":
+                        filtered = allNotes.filter(note => !!note.time_set);
+                        break;
+                      case "video":
+                        filtered = allNotes.filter(note => !!note.youtube_url);
+                        break;
+                      case "image":
+                        filtered = allNotes.filter(note => !!(note.images && note.images.length > 0));
+                        break;
+                      case "discussion":
+                        filtered = allNotes.filter(note => !!note.is_discussion);
+                        break;
+                      case "link":
+                        filtered = allNotes.filter(note => !!note.url);
+                        break;
+                    }
+                    
+                    handleFilterChange(filtered, filterType);
+                  } else {
+                    handleFilterChange([], null);
+                  }
+                }}>
+                <DropdownMenuRadioItem value="" className="focus:bg-gray-800 focus:text-white">
+                  <div className="flex items-center gap-2">
+                    <X className="h-4 w-4" />
+                    <span>Clear filter</span>
+                  </div>
+                </DropdownMenuRadioItem>
+                <DropdownMenuSeparator className="bg-gray-800" />
+                <DropdownMenuRadioItem value="time" className="focus:bg-gray-800 focus:text-white">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    <span>Notes with time</span>
+                  </div>
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="video" className="focus:bg-gray-800 focus:text-white">
+                  <div className="flex items-center gap-2">
+                    <Youtube className="h-4 w-4" />
+                    <span>Notes with videos</span>
+                  </div>
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="image" className="focus:bg-gray-800 focus:text-white">
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4" />
+                    <span>Notes with images</span>
+                  </div>
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="discussion" className="focus:bg-gray-800 focus:text-white">
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="h-4 w-4" />
+                    <span>Discussion notes</span>
+                  </div>
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="link" className="focus:bg-gray-800 focus:text-white">
+                  <div className="flex items-center gap-2">
+                    <Link className="h-4 w-4" />
+                    <span>Notes with links</span>
+                  </div>
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* User menu (sign in/out) */}
           <UserMenu />
@@ -559,10 +677,8 @@ export default function HeaderWithSearch() {
                   try {
                     const result = await moveProjectToTrash(currentProjectId);
                     if (result) {
-                      toast({
-                        title: "Project Moved to Trash",
-                        description: "The project has been moved to the trash bin."
-                      });
+                      // No toast for successful operations
+                      console.log("Project successfully moved to trash");
                       setHasActiveProject(false);
                       setCurrentProjectName('');
                       setCurrentProjectId(null);
