@@ -49,8 +49,8 @@ export const convertLegacyColorToValue = (color: string | number | null): number
   return 0;
 };
 
-// Get background color style with transparency for notes
+// No longer applying background color style to notes
 export const getNoteBackgroundStyle = (colorValue: number | null) => {
-  const color = getColorFromValue(colorValue);
-  return color ? { backgroundColor: `${color}25` } : {}; // 25 is hex for 15% opacity
+  // Return empty style object regardless of color
+  return {};
 };

@@ -968,10 +968,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             selectedNote?.id === note.id ? "selected-note border-primary ring-2 ring-primary ring-opacity-70" : "border-gray-700 hover:bg-opacity-90",
             isDragging && "opacity-50"
           )}
-          style={getNoteBackgroundStyle(
-            typeof note.color === 'number' ? note.color : 
-            (note.color ? convertLegacyColorToValue(note.color) : 0)
-          )} // Apply a light background color based on the note's color
+          // No longer applying background color to notes
           onClick={() => selectNote(note)}
         >
           {/* Unfold children button in bottom-left corner, far from all delete buttons */}
@@ -1382,11 +1379,11 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
               {/* Color Picker */}
               <ColorPicker
                 colorValue={typeof note.color === 'number' ? note.color : (note.color ? convertLegacyColorToValue(note.color) : 0)}
-                onChange={(color) => {
+                onChange={(colorValue) => {
                   // Update the note in memory with the new color
                   const updatedNote = {
                     ...note,
-                    color: color
+                    color: colorValue
                   };
                   // Update in local state
                   updateNote(updatedNote);
