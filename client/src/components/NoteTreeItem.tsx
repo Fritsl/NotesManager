@@ -707,10 +707,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           {/* Unfold children button in bottom-left corner, far from all delete buttons */}
           {hasChildren && (
             <div className="absolute bottom-1 left-1 z-20">
-              <Button
-                variant="ghost" 
-                size="sm" 
-                className="h-7 w-auto min-w-[1.75rem] p-1 px-2 flex items-center justify-center bg-gray-800/70 text-gray-300 hover:text-white rounded-md shadow-sm touch-target border border-gray-700/30"
+              <div
+                className="flex items-center text-gray-400 hover:text-gray-200 cursor-pointer" 
                 title={isExpanded ? "Collapse children" : `Expand ${note.children.length} children`}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -718,13 +716,13 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                 }}
               >
                 {isExpanded 
-                  ? <ChevronDown size={16} className="mr-1" /> 
-                  : <ChevronRight size={16} className="mr-1" />
+                  ? <ChevronDown size={14} className="mr-0.5" /> 
+                  : <ChevronRight size={14} className="mr-0.5" />
                 }
-                <span className="text-xs text-gray-300 font-mono">
+                <span className="text-xs font-mono">
                   {note.children.length}
                 </span>
-              </Button>
+              </div>
             </div>
           )}
           

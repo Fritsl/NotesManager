@@ -154,6 +154,7 @@ export default function HeaderWithSearch() {
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
+  const [searchBarOpen, setSearchBarOpen] = useState(false);
   const projectNameInputRef = useRef<HTMLInputElement>(null);
   const newProjectInputRef = useRef<HTMLInputElement>(null);
 
@@ -334,10 +335,12 @@ export default function HeaderWithSearch() {
 
   return (
     <header className="bg-gray-950 border-b border-gray-800 py-2 px-2 sm:px-4">
-      {/* Search bar for the entire app */}
-      <div className="mb-2 w-full">
-        <SearchBar />
-      </div>
+      {/* Search bar for the entire app - toggle visibility */}
+      {searchBarOpen && (
+        <div className="mb-2 w-full">
+          <SearchBar />
+        </div>
+      )}
       
       {hasActiveProject ? (
         <div className="flex flex-col space-y-2">
