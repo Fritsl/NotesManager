@@ -40,8 +40,9 @@ function flattenNoteHierarchy(notes: any[], projectId: string, userId: string) {
     if (note.url !== undefined) flatNote.url = note.url;
     if (note.url_display_text !== undefined) flatNote.url_display_text = note.url_display_text;
     
-    // Add color property (important for color persistence)
-    if (note.color !== undefined) flatNote.color = note.color;
+    // We can add the color property in the client-side code
+    // but won't save it to the database until the column exists
+    // if (note.color !== undefined) flatNote.color = note.color;
     
     // Add the note to our flat array
     flatNotes.push(flatNote);
