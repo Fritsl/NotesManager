@@ -1,13 +1,10 @@
 import { useEffect } from "react";
 import { useNotes } from "@/context/NotesContext";
 import NoteTreeItem from "./NoteTreeItem";
-import AnimatedNoteTreeItem from "./AnimatedNoteTreeItem";
 import DropZone from "./DropZone";
 import { Button } from "@/components/ui/button";
 import { Plus, FilePlus, RotateCcw } from "lucide-react";
 import { getProject } from "@/lib/projectService";
-import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
 
 export default function NoteTree() {
   const { 
@@ -154,32 +151,19 @@ export default function NoteTree() {
           {notes.length > 0 && <DropZone index={0} />}
           
           {/* Map notes and add drop zones between each */}
-          <AnimatePresence>
-            {notes.map((note, index) => (
-              <motion.div
-                key={note.id}
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                transition={{ 
-                  type: "spring",
-                  stiffness: 300,
-                  damping: 30,
-                  delay: index * 0.05 // Staggered animation
-                }}
-              >
-                <AnimatedNoteTreeItem
-                  note={note}
-                  level={0}
-                  toggleExpand={toggleExpand}
-                  isExpanded={isExpanded(note.id)}
-                  index={index}
-                  isRoot={true}
-                />
-                <DropZone index={index + 1} />
-              </motion.div>
-            ))}
-          </AnimatePresence>
+          {notes.map((note, index) => (
+            <div key={note.id}>
+              <NoteTreeItem
+                note={note}
+                level={0}
+                toggleExpand={toggleExpand}
+                isExpanded={isExpanded(note.id)}
+                index={index}
+                isRoot={true}
+              />
+              <DropZone index={index + 1} />
+            </div>
+          ))}
           
           {notes.length === 0 && (
             <div className="flex items-center justify-center h-[calc(100vh-120px)]">
