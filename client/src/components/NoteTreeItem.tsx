@@ -131,8 +131,10 @@ const countNotesBetween = (notes: Note[], startNoteId: string, endNoteId: string
     return 0;
   }
   
-  // Return count (end - start, not including the end note)
-  return endIndex - startIndex;
+  // Return count (end - start - 1, excluding both the start and end notes)
+  // We subtract 1 to exclude the start note itself, as the count should be
+  // the number of notes between the two timed notes
+  return endIndex - startIndex - 1;
 }
 
 // Calculate time allocation for each note

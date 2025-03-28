@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
 
-// Define interface for the wake lock
+// Types for the Wake Lock API
+interface WakeLockSentinel extends EventTarget {
+  release(): Promise<void>;
+  addEventListener(type: 'release', listener: EventListenerOrEventListenerObject): void;
+  removeEventListener(type: 'release', listener: EventListenerOrEventListenerObject): void;
+}
+
+// Define interface for the wake lock hook return values
 interface UseWakeLockReturn {
   isSupported: boolean;
   isActive: boolean;
@@ -16,7 +23,7 @@ export function useWakeLock(): UseWakeLockReturn {
   const [error, setError] = useState<Error | null>(null);
   
   // Check if the Wake Lock API is supported
-  const isSupported = 'wakeLock' in navigator;
+  const isSupported = typeof navigator !== 'undefined' && 'wakeLock' in navigator;
 
   // Request a wake lock
   const request = async (): Promise<void> => {
@@ -26,7 +33,9 @@ export function useWakeLock(): UseWakeLockReturn {
     }
     
     try {
-      const sentinel = await navigator.wakeLock.request('screen');
+      // TypeScript trick to bypass type checking for the navigator.wakeLock API
+      const nav = navigator as any;
+      const sentinel = await nav.wakeLock.request('screen');
       setWakeLock(sentinel);
       setIsActive(true);
       setError(null);
@@ -92,22 +101,4 @@ export function useWakeLock(): UseWakeLockReturn {
     request,
     release
   };
-}
-
-// Add TypeScript declaration for the Wake Lock API
-declare global {
-  interface Navigator {
-    wakeLock?: WakeLock;
-  }
-  
-  interface WakeLock {
-    request(type: 'screen'): Promise<WakeLockSentinel>;
-  }
-  
-  interface WakeLockSentinel extends EventTarget {
-    released?: boolean;
-    release(): Promise<void>;
-    addEventListener(type: 'release', listener: EventListenerOrEventListenerObject): void;
-    removeEventListener(type: 'release', listener: EventListenerOrEventListenerObject): void;
-  }
 }

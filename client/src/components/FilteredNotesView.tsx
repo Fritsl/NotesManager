@@ -96,8 +96,10 @@ const countNotesBetween = (notes: Note[], startNoteId: string, endNoteId: string
     return 0;
   }
   
-  // Return count (end - start, not including the end note)
-  return endIndex - startIndex;
+  // Return count (end - start - 1, excluding both the start and end notes)
+  // We subtract 1 to exclude the start note itself, as the count should be
+  // the number of notes between the two timed notes
+  return endIndex - startIndex - 1;
 }
 
 // Calculate time allocation for each note
@@ -392,7 +394,17 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
     }
   };
   
-  const handleRemoveImage = async (noteId: string, imageId: string) => {
+  const handleRemoveImage = async (noteId: string, imageId: string | undefined) => {
+    if (!imageId) {
+      console.error("Cannot remove image: Image ID is undefined");
+      toast({
+        title: "Error",
+        description: "Cannot remove image: Invalid image ID",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       setIsSaving(true);
       const note = filteredNotes.find(n => n.id === noteId);
@@ -634,40 +646,45 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
                     <div className="mb-3">
                       <div className="text-xs text-gray-400 mb-1">Images:</div>
                       <div className="flex gap-2 overflow-x-auto pb-2">
-                        {note.images.map((image) => (
-                          <div key={image.id} className="relative group border border-gray-700 rounded overflow-hidden flex-shrink-0" style={{width: '80px', height: '60px'}}>
-                            {/* Image with error handling fallback */}
-                            <img 
-                              src={image.url} 
-                              alt="Note attachment" 
-                              className="w-full h-full object-cover" 
-                              onError={(e) => {
-                                // Replace with a fallback UI on error
-                                const target = e.target as HTMLImageElement;
-                                target.onerror = null; // Prevent infinite error loops
-                                target.src = ''; // Clear src
-                                target.alt = 'Image unavailable';
-                                target.style.backgroundColor = '#444';
-                                target.style.display = 'flex';
-                                target.style.alignItems = 'center';
-                                target.style.justifyContent = 'center';
-                                target.style.fontSize = '9px';
-                                target.style.padding = '2px';
-                                target.style.textAlign = 'center';
-                              }}
-                            />
-                            <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <Button 
-                                variant="destructive" 
-                                size="icon" 
-                                className="h-6 w-6"
-                                onClick={() => handleRemoveImage(note.id, image.id)}
-                              >
-                                <Trash2 size={12} />
-                              </Button>
+                        {note.images.map((image) => {
+                          // Skip images without an ID to prevent errors
+                          if (!image.id) return null;
+                          
+                          return (
+                            <div key={image.id} className="relative group border border-gray-700 rounded overflow-hidden flex-shrink-0" style={{width: '80px', height: '60px'}}>
+                              {/* Image with error handling fallback */}
+                              <img 
+                                src={image.url} 
+                                alt="Note attachment" 
+                                className="w-full h-full object-cover" 
+                                onError={(e) => {
+                                  // Replace with a fallback UI on error
+                                  const target = e.target as HTMLImageElement;
+                                  target.onerror = null; // Prevent infinite error loops
+                                  target.src = ''; // Clear src
+                                  target.alt = 'Image unavailable';
+                                  target.style.backgroundColor = '#444';
+                                  target.style.display = 'flex';
+                                  target.style.alignItems = 'center';
+                                  target.style.justifyContent = 'center';
+                                  target.style.fontSize = '9px';
+                                  target.style.padding = '2px';
+                                  target.style.textAlign = 'center';
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <Button 
+                                  variant="destructive" 
+                                  size="icon" 
+                                  className="h-6 w-6"
+                                  onClick={() => handleRemoveImage(note.id, image.id as string)}
+                                >
+                                  <Trash2 size={12} />
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -791,25 +808,30 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
                     {/* Image thumbnails - only show in image filter mode */}
                     {filterType === "image" && note.images && note.images.length > 0 && (
                       <div className="flex gap-2 overflow-x-auto mt-2 pb-1">
-                        {note.images.map(image => (
-                          <div 
-                            key={image.id} 
-                            className="h-12 w-16 relative rounded overflow-hidden border border-gray-700"
-                          >
-                            <img 
-                              src={image.url} 
-                              alt="Attachment" 
-                              className="h-full w-full object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.onerror = null;
-                                target.src = '';
-                                target.alt = 'Image unavailable';
-                                target.style.backgroundColor = '#444';
-                              }} 
-                            />
-                          </div>
-                        ))}
+                        {note.images.map(image => {
+                          // Skip images without an ID to prevent errors
+                          if (!image.id) return null;
+                          
+                          return (
+                            <div 
+                              key={image.id} 
+                              className="h-12 w-16 relative rounded overflow-hidden border border-gray-700"
+                            >
+                              <img 
+                                src={image.url} 
+                                alt="Attachment" 
+                                className="h-full w-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.onerror = null;
+                                  target.src = '';
+                                  target.alt = 'Image unavailable';
+                                  target.style.backgroundColor = '#444';
+                                }} 
+                              />
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
