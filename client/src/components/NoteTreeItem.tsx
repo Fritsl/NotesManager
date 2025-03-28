@@ -119,12 +119,30 @@ const countNotesBetween = (notes: Note[], startNoteId: string, endNoteId: string
 }
 
 // Calculate time allocation for each note
-const calculateTimeAllocation = (currentNote: Note, allNotes: Note[]): string | null => {
+interface TimeAllocationResult {
+  formattedTime: string;
+  noteCount: number;
+  totalMinutes: number;
+}
+
+const calculateTimeAllocation = (currentNote: Note, allNotes: Note[]): TimeAllocationResult | null => {
   if (!currentNote.time_set) return null;
   
   // Find the next note with time_set
   const nextTimedNote = findNextNoteWithTime(allNotes, currentNote.id);
-  if (!nextTimedNote || !nextTimedNote.time_set) return null;
+  
+  let noteCount = 0;
+  let totalMinutes = 0;
+  let formattedTime = "";
+  
+  if (!nextTimedNote || !nextTimedNote.time_set) {
+    // If this is the last timed note, use a default time allocation
+    formattedTime = "10:00"; 
+    totalMinutes = 10;
+    // Count all notes from this one to the end
+    noteCount = countNotesBetween(allNotes, currentNote.id, "end-of-notes");
+    return { formattedTime, noteCount, totalMinutes };
+  }
   
   // Parse time values
   const currentTime = parseTimeSet(currentNote.time_set);
@@ -132,19 +150,31 @@ const calculateTimeAllocation = (currentNote: Note, allNotes: Note[]): string | 
   
   if (currentTime === null || nextTime === null) return null;
   
-  // Calculate time difference in minutes
-  const timeDiff = nextTime - currentTime;
-  if (timeDiff <= 0) return null; // Handle case where next time is before current time
+  // Calculate time difference in minutes, handle wrapping across midnight
+  let timeDiff = nextTime - currentTime;
+  if (timeDiff <= 0) {
+    // If next time is earlier than current time, assume it's the next day
+    // Add 24 hours (1440 minutes) to get proper difference
+    timeDiff = timeDiff + (24 * 60);
+  }
   
   // Count notes between (including current, excluding next)
-  const noteCount = countNotesBetween(allNotes, currentNote.id, nextTimedNote.id);
-  if (noteCount <= 0) return null;
+  noteCount = countNotesBetween(allNotes, currentNote.id, nextTimedNote.id);
+  
+  if (noteCount <= 0) {
+    formattedTime = "05:00"; // Default 5 minutes if there are no notes between
+    totalMinutes = 5;
+    return { formattedTime, noteCount: 1, totalMinutes };
+  }
   
   // Calculate time per note in minutes
   const timePerNote = timeDiff / noteCount;
+  totalMinutes = timeDiff;
   
   // Format as MM:SS
-  return formatTimeAllocation(timePerNote);
+  formattedTime = formatTimeAllocation(timePerNote);
+  
+  return { formattedTime, noteCount, totalMinutes };
 };
 
 interface NoteTreeItemProps {
@@ -470,6 +500,26 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
       isOverChildArea: monitor.isOver(),
     }),
   });
+
+  // Helper function to format time allocation text
+  const formatTimeAllocationText = (note: Note): string => {
+    const allocation = calculateTimeAllocation(note, notes);
+    if (!allocation) return "";
+    
+    const { noteCount, totalMinutes, formattedTime } = allocation;
+    
+    // Format time in hours and minutes
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = Math.round(totalMinutes % 60);
+    
+    let timeText = "";
+    if (hours > 0) {
+      timeText = `${hours} hour${hours !== 1 ? 's' : ''}, `;
+    }
+    timeText += `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    
+    return `${noteCount} slide${noteCount !== 1 ? 's' : ''}, ${timeText} (${formattedTime} per slide)`;
+  };
 
   // Use useEffect to update drag-drop refs when isEditing changes
   useEffect(() => {
@@ -1187,9 +1237,11 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                       {note.time_set && (
                         <span className="text-amber-400 shrink-0 ml-1" title={`Time Set: ${note.time_set}`}>
                           <Clock size={16} />
-                          <span className="ml-1 text-xs">
-                            {calculateTimeAllocation(note, notes)}
-                          </span>
+                          {calculateTimeAllocation(note, notes) && (
+                            <span className="ml-1 text-xs">
+                              {formatTimeAllocationText(note)}
+                            </span>
+                          )}
                         </span>
                       )}
                     </div>

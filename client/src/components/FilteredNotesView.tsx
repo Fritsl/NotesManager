@@ -749,16 +749,15 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
                           <Clock size={16} />
                           {calculateTimeAllocation(note, notes) && (
                             <span className="ml-1 text-xs opacity-90">
-                              {`${calculateTimeAllocation(note, notes)?.noteCount} slides, ${Math.round(calculateTimeAllocation(note, notes)?.totalMinutes || 0) / 60 > 1 ? 
-                                Math.floor(Math.round(calculateTimeAllocation(note, notes)?.totalMinutes || 0) / 60) + " hours, " : ""}${Math.round(calculateTimeAllocation(note, notes)?.totalMinutes || 0) % 60} minutes (${calculateTimeAllocation(note, notes)?.formattedTime} per note)`}
+                              {formatTimeAllocationText(note)}
                             </span>
                           )}
                         </span>
                       )}
                     </div>
                     
-                    {/* Image thumbnails */}
-                    {note.images && note.images.length > 0 && (
+                    {/* Image thumbnails - only show in image filter mode */}
+                    {filterType === "image" && note.images && note.images.length > 0 && (
                       <div className="flex gap-2 overflow-x-auto mt-2 pb-1">
                         {note.images.map(image => (
                           <div 
