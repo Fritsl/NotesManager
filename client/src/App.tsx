@@ -124,7 +124,6 @@ function App() {
       <AuthProvider>
         <Router urlParams={urlParams} />
         <Toaster />
-        <VersionDisplay />
       </AuthProvider>
     </QueryClientProvider>
   );
