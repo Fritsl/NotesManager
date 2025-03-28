@@ -186,7 +186,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (flatNotes.length > 0) {
           try {
-            // Instead of delete+insert, use UPSERT to handle existing notes properly
+            // First, we need to create a list of all note IDs in the current save
+            // so we can clean up any notes that are no longer in the tree
+            const currentNoteIds = flatNotes.map(note => note.id);
+            
+            // Delete any notes for this project that are NOT in the current set
+            const { error: cleanupError } = await supabaseAdmin
+              .from('notes')
+              .delete()
+              .eq('project_id', id)
+              .not('id', 'in', `(${currentNoteIds.join(',')})`);
+              
+            if (cleanupError) {
+              console.error('Error cleaning up stale notes:', cleanupError);
+              // Continue anyway as this is not a critical error
+            } else {
+              console.log(`Cleaned up stale notes for project ${id}`);
+            }
             
             // Execute in batches to prevent timeout and large payload issues
             const BATCH_SIZE = 25; // Smaller batch size for reliability
