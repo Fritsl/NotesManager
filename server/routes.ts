@@ -233,27 +233,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const imageIds = images.map((img: any) => img.id);
           
           // First delete images that aren't in our current set
-          const { error: deleteImagesError } = await supabaseAdmin
-            .from('note_images')
-            .delete()
-            .eq('project_id', id)
-            .not('id', 'in', `(${imageIds.join(',')})`);
+          // We need to get the note IDs for this project first
+          const { data: projectNotes, error: notesError } = await supabaseAdmin
+            .from('notes')
+            .select('id')
+            .eq('project_id', id);
             
-          if (deleteImagesError && !deleteImagesError.message.includes('empty')) {
-            console.error('Error cleaning up old images:', deleteImagesError);
+          if (notesError) {
+            console.error('Error fetching note IDs for image cleanup:', notesError);
+          } else if (projectNotes && projectNotes.length > 0) {
+            // Get all note IDs from this project
+            const noteIds = projectNotes.map(note => note.id);
+            
+            // Delete images associated with these notes that aren't in our current set
+            const { error: deleteImagesError } = await supabaseAdmin
+              .from('note_images')
+              .delete()
+              .in('note_id', noteIds)
+              .not('id', 'in', `(${imageIds.join(',')})`);
+              
+            if (deleteImagesError && !deleteImagesError.message.includes('empty')) {
+              console.error('Error cleaning up old images:', deleteImagesError);
+            }
           }
           
           // Then upsert all current images
           for (const image of images as any[]) {
-            // Add project_id to each image record if not already present
-            const imageWithProject = {
-              ...image,
-              project_id: id
+            // Make sure image has the required note_id and remove any project_id reference
+            const { project_id, ...imageWithoutProjectId } = image; // Remove project_id if it exists
+            
+            // Ensure we have user_id and note_id
+            const cleanImage = {
+              ...imageWithoutProjectId,
+              user_id: userId,
+              note_id: image.note_id
             };
             
             const { error: upsertImageError } = await supabaseAdmin
               .from('note_images')
-              .upsert(imageWithProject, { onConflict: 'id' });
+              .upsert(cleanImage, { onConflict: 'id' });
               
             if (upsertImageError) {
               console.error(`Error upserting image ${image.id}:`, upsertImageError);
@@ -1208,19 +1226,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
-        // Find images that might be associated with this project
-        // We'll use a pattern match on the note_id which often contains the project ID
+        // Find images associated with this project through notes
         const imageQuery = `
-          SELECT id, storage_path
-          FROM note_images
-          WHERE note_id LIKE $1
-          OR id LIKE $1
+          SELECT ni.id, ni.storage_path
+          FROM note_images ni
+          JOIN notes n ON ni.note_id = n.id
+          WHERE n.project_id = $1
         `;
         
-        const pattern = `%${projectId}%`;
-        log(`Executing image query with pattern: ${pattern}`);
+        log(`Executing image query for project: ${projectId}`);
         
-        const imageResult = await client.query(imageQuery, [pattern]);
+        const imageResult = await client.query(imageQuery, [projectId]);
         const imageRecords = imageResult.rows;
         log(`Found ${imageRecords.length} potential image records for project ${projectId}`);
         
