@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect, useRef } from "react";
-import { useZenModeToggle } from "@/hooks/useZenMode";
 import { 
   Menu, 
   FileUp, 
@@ -29,8 +28,6 @@ import {
   PlusCircle,
   FilePlus,
   RotateCcw,
-  Eye,
-  EyeOff,
   Search,
   Filter,
   Clock,
@@ -340,7 +337,6 @@ export default function HeaderWithSearch() {
   };
 
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isZenMode, toggleZenMode] = useZenModeToggle();
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -496,33 +492,6 @@ export default function HeaderWithSearch() {
               </div>
             )}
             <div className="flex items-center">
-
-              {/* Zen Mode Toggle Button */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleZenMode();
-                      }}
-                      className={`ml-2 p-1 rounded-full hover:bg-black/20 transition-colors text-gray-400 ${
-                        isZenMode ? 'opacity-20 hover:opacity-60' : 'opacity-50 hover:opacity-100'
-                      } py-2`}
-                      aria-label={isZenMode ? 'Exit zen mode' : 'Enter zen mode'}
-                    >
-                      {isZenMode ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Toggle Zen Mode</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
 
               {/* Fullscreen Toggle Button */}
               <TooltipProvider>
@@ -723,57 +692,6 @@ export default function HeaderWithSearch() {
               Notes Editor
             </h1>
             <div className="flex items-center space-x-2">
-              
-              {/* Zen Mode Toggle Button */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleZenMode();
-                      }}
-                      className={`ml-2 p-1 rounded-full hover:bg-black/20 transition-colors text-gray-400 ${
-                        isZenMode ? 'opacity-20 hover:opacity-60' : 'opacity-50 hover:opacity-100'
-                      } py-2`}
-                      aria-label={isZenMode ? 'Exit zen mode' : 'Enter zen mode'}
-                    >
-                      {isZenMode ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Toggle Zen Mode</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              {/* Fullscreen Toggle Button */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={toggleFullscreen}
-                      className={`ml-2 p-1 rounded-full hover:bg-black/20 transition-colors text-gray-400 ${
-                        isFullscreen ? 'opacity-20 hover:opacity-60' : 'opacity-50 hover:opacity-100'
-                      } py-2`}
-                      aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-                    >
-                      {isFullscreen ? (
-                        <Minimize2 className="w-4 h-4" />
-                      ) : (
-                        <Maximize2 className="w-4 h-4" />
-                      )}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Toggle Fullscreen Mode</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
 
               {/* Consolidated Hamburger Menu */}
               <DropdownMenu>
