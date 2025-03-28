@@ -483,7 +483,7 @@ export default function HeaderWithSearch() {
                       } catch (err) {
                         toast({
                           title: "Error",
-                          description: "Failed to update project metadata",
+                          description: "Failed to save project data",
                           variant: "destructive",
                         });
                       }
@@ -495,9 +495,9 @@ export default function HeaderWithSearch() {
                       });
                     }
                   }}>
-                    <AlertTriangle className="h-4 w-4 mr-2 text-yellow-500" />
-                    <span className="text-yellow-500 font-semibold">Save Disabled</span>
-                    <span className="ml-auto text-xs text-yellow-500/80">{currentProjectId ? "(Metadata Only)" : "(No Project)"}</span>
+                    <Save className="h-4 w-4 mr-2 text-green-500" />
+                    <span className="text-green-500 font-semibold">Save Project</span>
+                    <span className="ml-auto text-xs text-green-500/80">{currentProjectId ? "(All Notes)" : "(No Project)"}</span>
                   </DropdownMenuItem>
 
                   {/* Note Actions */}
