@@ -1264,41 +1264,24 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
 
       console.log('Project saved successfully:', updatedProject);
 
-      // Track last auto-save time to prevent excessive notifications
-      const now = Date.now();
-      const lastAutoSave = window.lastAutoSaveNotification || 0;
-      
-      // Show a different toast based on whether this was a manual save or auto-save after note movement
-      if (!pendingNoteMoves) {
-        // Check if the name was corrected
-        const wasNameCorrected = updatedProject.name !== currentProjectName;
-        
-        // Manual save via button - show success toast with special success styling
-        toast({
-          title: "Project Saved",
-          description: wasNameCorrected 
-            ? `Project "${updatedProject.name}" saved successfully (${notes.length} notes)`
-            : `Project "${updatedProject.name}" saved successfully`,
-          duration: 2000,
-          variant: "success" as any, // Custom variant defined in toast.tsx
+      // Only update UI elements if there was a name correction
+      const wasNameCorrected = updatedProject.name !== currentProjectName;
+      if (wasNameCorrected) {
+        // This is important UI information - the name was corrected so we should show it
+        const nameChangedEvent = new CustomEvent('project-name-corrected', {
+          detail: { oldName: currentProjectName, newName: updatedProject.name }
         });
-      } else {
-        // For auto-save after note movement, only show notification if it's been more than 5 seconds since last one
-        // This prevents spamming the user with notifications during batch operations or rapid changes
-        if (now - lastAutoSave > 5000) {
-          // Auto-save after note movement with minimal styling
-          toast({
-            title: "Auto-Saved",
-            description: "Changes saved automatically",
-            duration: 1500,
-            variant: "autosave" as any, // Custom variant defined in toast.tsx
-          });
-          
-          // Update the last auto-save time
-          window.lastAutoSaveNotification = now;
-        }
-        
-        // Clear the pending flag 
+        window.dispatchEvent(nameChangedEvent);
+      }
+      
+      // Update the lastSaved indicator subtly instead of showing toast notifications
+      // This is managed via the HeaderWithSearch component which shows a small green dot
+      // when a save has completed successfully
+      
+      // No toasts for successful saves per user request - only show errors
+      
+      // Clear the pending note moves flag
+      if (pendingNoteMoves) {
         setPendingNoteMoves(false);
       }
 
@@ -1376,10 +1359,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           });
         });
 
-        toast({
-          title: "Image Uploaded",
-          description: "The image has been attached to the note",
-        });
+        // No toast for successful image upload - only show errors
 
         // Save the project to ensure the image is persisted
         saveProject().catch(err => {
@@ -1436,10 +1416,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           return removeImageFromNotes(prevNotes);
         });
 
-        toast({
-          title: "Image Removed",
-          description: "The image has been removed from the note",
-        });
+        // No toast for successful image removal - only show errors
 
         // Save the project to ensure the image removal is persisted
         saveProject().catch(err => {
@@ -1518,10 +1495,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           return updateNotesWithReorderedImage(prevNotes);
         });
 
-        toast({
-          title: "Image Reordered",
-          description: "The image position has been updated",
-        });
+        // No toast for successful image reordering - only show errors
 
         // Save the project to ensure the image reordering is persisted
         saveProject().catch(err => {
