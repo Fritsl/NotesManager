@@ -74,6 +74,8 @@ interface DbNote {
   youtube_url?: string | null;
   url?: string | null;
   url_display_text?: string | null;
+  // New color property added to the schema
+  color?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -159,6 +161,8 @@ export function buildNoteHierarchy(flatNotes: DbNote[], imagesData?: any[] | nul
       youtube_url: dbNote.youtube_url || metaData.youtube_url || null,
       url: dbNote.url || metaData.url || null,
       url_display_text: dbNote.url_display_text || metaData.url_display_text || null,
+      // Add color property, default to 0 (transparent) if not found
+      color: typeof dbNote.color === 'number' ? dbNote.color : (metaData.color || 0),
       children: [],
       images: noteImages
     });
@@ -191,7 +195,9 @@ export function buildNoteHierarchy(flatNotes: DbNote[], imagesData?: any[] | nul
       position: index,
       children: cleanPositions(note.children),
       // Preserve the images array
-      images: note.images || []
+      images: note.images || [],
+      // Preserve the color property
+      color: typeof note.color === 'number' ? note.color : (note.color === null ? 0 : 0)
     }));
   };
   
@@ -252,6 +258,8 @@ export function flattenNoteHierarchy(notes: Note[], projectId: string, userId: s
       youtube_url: validYoutubeUrl,
       url: validUrl,
       url_display_text: validUrl ? note.url_display_text : null, // Only include display text if URL is valid
+      // Include the color property
+      color: typeof note.color === 'number' ? note.color : (note.color === null ? 0 : 0),
       created_at: now,
       updated_at: now
     };
