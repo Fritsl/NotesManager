@@ -255,7 +255,14 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
                 )}
                 onClick={() => {
                   setActiveNoteId(note.id);
-                  setShowPlacementOptions(true);
+                  // Only show placement options UI for notes that have children
+                  // or for root level - prevents opening empty UI for deepest children notes
+                  if (hasChildren) {
+                    setShowPlacementOptions(true);
+                  } else {
+                    // For childless notes, immediately show placement buttons: place above/below
+                    findPlacementContext(note.id);
+                  }
                 }}
               >
                 {note.content}
@@ -264,14 +271,24 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
             
             {/* Quick placement buttons */}
             <div className="opacity-0 group-hover:opacity-100 flex gap-1.5 transition-opacity">
-              {/* Place inside - available for all notes, not just those with children */}
+              {/* Place inside button */}
               <button
                 className="text-gray-400 hover:text-primary p-1 rounded-full hover:bg-gray-700"
                 title="Move inside as a child"
                 onClick={(e) => {
                   e.stopPropagation();
                   setActiveNoteId(note.id);
-                  setShowPlacementOptions(true);
+                  // If note has children, show placement options UI
+                  // If not, just select it as the parent without showing additional UI
+                  if (hasChildren) {
+                    setShowPlacementOptions(true);
+                  } else {
+                    // For childless notes, make it the parent but don't show a nested UI
+                    // Just show "place at top" since there are no children yet
+                    setSiblingNotes([]);
+                    setSelectedParentId(note.id);
+                    handleMoveNote(0); // 0 = first position (top)
+                  }
                 }}
               >
                 <PlusCircle className="h-3.5 w-3.5" />
