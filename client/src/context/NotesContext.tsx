@@ -2,7 +2,7 @@ import { createContext, useContext, useState, ReactNode, useCallback, useMemo, u
 import { Note, NotesData, NoteImage } from "@/types/notes";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
-import { createProject, updateProject, addImageToNote, removeImageFromNote, updateImagePosition, getProject } from "@/lib/projectService";
+import { createProject, updateProject, addImageToNote, removeImageFromNote, updateImagePosition, getProject, generateUniqueProjectName } from "@/lib/projectService";
 
 // State to track pending note movements that need to be saved
 let pendingNoteMoves = false;
@@ -1162,12 +1162,17 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         return;
       }
 
+      // Generate a unique project name to avoid duplicate name errors
+      console.log('Generating unique project name based on:', name);
+      const uniqueName = await generateUniqueProjectName(name);
+      console.log('Using unique project name:', uniqueName);
+
       // Create an empty notes array for the new project
       const emptyNotesData: NotesData = { notes: [] };
 
       // Create the project in the database
-      console.log('Creating new project:', name);
-      const createdProject = await createProject(name, emptyNotesData);
+      console.log('Creating new project:', uniqueName);
+      const createdProject = await createProject(uniqueName, emptyNotesData);
 
       if (!createdProject) {
         console.error('Failed to create project');
@@ -1193,15 +1198,25 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
 
       toast({
         title: "Project Created",
-        description: `New project "${name}" has been created`,
+        description: `New project "${createdProject.name}" has been created`,
       });
     } catch (error) {
       console.error('Error creating project:', error);
-      toast({
-        title: "Error Creating Project",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive",
-      });
+      
+      // Check for database constraint error (duplicate project name)
+      if (typeof error === 'object' && error && 'code' in error && error.code === '23505') {
+        toast({
+          title: "Error Creating Project",
+          description: "You already have a project with this name. Please use a different name.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error Creating Project",
+          description: error instanceof Error ? error.message : "An unknown error occurred",
+          variant: "destructive",
+        });
+      }
     }
   }, [toast, setCurrentProjectId, setCurrentProjectName]);
 
