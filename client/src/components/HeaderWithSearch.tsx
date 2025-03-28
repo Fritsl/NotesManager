@@ -334,6 +334,11 @@ export default function HeaderWithSearch() {
 
   return (
     <header className="bg-gray-950 border-b border-gray-800 py-2 px-2 sm:px-4">
+      {/* Search bar for the entire app */}
+      <div className="mb-2 w-full">
+        <SearchBar />
+      </div>
+      
       {hasActiveProject ? (
         <div className="flex flex-col space-y-2">
           {/* Top row with project name and controls */}
