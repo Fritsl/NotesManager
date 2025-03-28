@@ -114,29 +114,6 @@ export default function HeaderWithSearch() {
   // For filter functionality
   const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
-  
-  // Helper functions for filter display
-  const getFilterIcon = (filterType: FilterType) => {
-    switch (filterType) {
-      case "time": return <Clock className="h-4 w-4" />;
-      case "video": return <Youtube className="h-4 w-4" />;
-      case "image": return <ImageIcon className="h-4 w-4" />;
-      case "discussion": return <MessageCircle className="h-4 w-4" />;
-      case "link": return <Link className="h-4 w-4" />;
-      default: return <Filter className="h-4 w-4" />;
-    }
-  };
-  
-  const getFilterTitle = (filterType: FilterType): string => {
-    switch (filterType) {
-      case "time": return "Notes with time";
-      case "video": return "Notes with videos";
-      case "image": return "Notes with images";
-      case "discussion": return "Discussion notes";
-      case "link": return "Notes with links";
-      default: return "Filter notes";
-    }
-  };
 
   // Helper function to get all notes with their children flattened
   const flattenNotes = (notes: Note[]): Note[] => {
@@ -404,7 +381,7 @@ export default function HeaderWithSearch() {
                 size="sm"
                 variant="ghost"
                 onClick={saveProjectName}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-green-500 hover:text-green-700"
               >
                 <Check size={18} />
               </Button>
@@ -412,7 +389,7 @@ export default function HeaderWithSearch() {
                 size="sm"
                 variant="ghost"
                 onClick={cancelEditing}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-red-500 hover:text-red-700"
               >
                 <X size={18} />
               </Button>
@@ -536,189 +513,93 @@ export default function HeaderWithSearch() {
             <HelpCircle size={20} />
           </Button>
 
-          {/* Consolidated Hamburger Menu */}
+          {/* Filter Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className={`h-10 w-10 touch-target ${activeFilter ? "relative" : ""}`}
-                title={activeFilter ? `Filter: ${getFilterTitle(activeFilter)}` : "Menu"}
+                title="Filter Notes"
+                className={activeFilter ? "bg-primary/20 text-primary" : ""}
               >
-                <Menu className="h-7 w-7" />
+                <Filter size={20} />
                 {activeFilter && (
                   <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border border-background" />
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-gray-900 border-gray-800 text-white">
-              {/* File Operations */}
-              <DropdownMenuItem onClick={async () => {
-                if (currentProjectId) {
-                  try {
-                    await saveProject();
-                    // No toast for successful save
-                    console.log("Project saved successfully");
-                  } catch (err) {
-                    toast({
-                      title: "Error",
-                      description: "Failed to save project data",
-                      variant: "destructive",
-                    });
+            <DropdownMenuContent align="end" className="bg-gray-900 border-gray-800">
+              <DropdownMenuRadioGroup value={activeFilter || ""} 
+                onValueChange={(value) => {
+                  const filterType = value === "" ? null : value as FilterType;
+                  if (filterType) {
+                    const allNotes = flattenNotes(notes);
+                    let filtered: Note[] = [];
+                    
+                    switch (filterType) {
+                      case "time":
+                        filtered = allNotes.filter(note => !!note.time_set);
+                        break;
+                      case "video":
+                        filtered = allNotes.filter(note => !!note.youtube_url);
+                        break;
+                      case "image":
+                        filtered = allNotes.filter(note => !!(note.images && note.images.length > 0));
+                        break;
+                      case "discussion":
+                        filtered = allNotes.filter(note => !!note.is_discussion);
+                        break;
+                      case "link":
+                        filtered = allNotes.filter(note => !!note.url);
+                        break;
+                    }
+                    
+                    handleFilterChange(filtered, filterType);
+                  } else {
+                    handleFilterChange([], null);
                   }
-                } else {
-                  toast({
-                    title: "No Project",
-                    description: "Cannot save - no active project",
-                    variant: "destructive",
-                  });
-                }
-              }}>
-                <Save className="h-4 w-4 mr-2" />
-                <span className="font-semibold">Save Project</span>
-              </DropdownMenuItem>
-              
-              {/* Filter Submenu */}
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="cursor-pointer">
-                  <div className="flex items-center">
-                    <Filter className="h-4 w-4 mr-2" />
-                    <span>Filter Notes</span>
-                    {activeFilter && (
-                      <div className="ml-2 flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-primary/20 text-primary text-xs">
-                        {getFilterIcon(activeFilter)}
-                        <span>{getFilterTitle(activeFilter)}</span>
-                      </div>
-                    )}
-                  </div>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="bg-gray-900 border-gray-800 text-white">
-                  <DropdownMenuRadioGroup 
-                    value={activeFilter || ""} 
-                    onValueChange={(value) => {
-                      const filterType = value === "" ? null : value as FilterType;
-                      if (filterType) {
-                        const allNotes = flattenNotes(notes);
-                        let filtered: Note[] = [];
-                        
-                        switch (filterType) {
-                          case "time":
-                            filtered = allNotes.filter(note => !!note.time_set);
-                            break;
-                          case "video":
-                            filtered = allNotes.filter(note => !!note.youtube_url);
-                            break;
-                          case "image":
-                            filtered = allNotes.filter(note => !!(note.images && note.images.length > 0));
-                            break;
-                          case "discussion":
-                            filtered = allNotes.filter(note => !!note.is_discussion);
-                            break;
-                          case "link":
-                            filtered = allNotes.filter(note => !!note.url);
-                            break;
-                        }
-                        
-                        handleFilterChange(filtered, filterType);
-                      } else {
-                        handleFilterChange([], null);
-                      }
-                    }}
-                  >
-                    <DropdownMenuRadioItem value="" className="focus:bg-gray-800 focus:text-white">
-                      <div className="flex items-center gap-2">
-                        <X className="h-4 w-4" />
-                        <span>Clear filter</span>
-                      </div>
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuSeparator className="bg-gray-800" />
-                    <DropdownMenuRadioItem value="time" className="focus:bg-gray-800 focus:text-white">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        <span>Notes with time</span>
-                      </div>
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="video" className="focus:bg-gray-800 focus:text-white">
-                      <div className="flex items-center gap-2">
-                        <Youtube className="h-4 w-4" />
-                        <span>Notes with videos</span>
-                      </div>
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="image" className="focus:bg-gray-800 focus:text-white">
-                      <div className="flex items-center gap-2">
-                        <ImageIcon className="h-4 w-4" />
-                        <span>Notes with images</span>
-                      </div>
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="discussion" className="focus:bg-gray-800 focus:text-white">
-                      <div className="flex items-center gap-2">
-                        <MessageCircle className="h-4 w-4" />
-                        <span>Discussion notes</span>
-                      </div>
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="link" className="focus:bg-gray-800 focus:text-white">
-                      <div className="flex items-center gap-2">
-                        <Link className="h-4 w-4" />
-                        <span>Notes with links</span>
-                      </div>
-                    </DropdownMenuRadioItem>
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-
-              <DropdownMenuSeparator className="bg-gray-800" />
-              
-              {/* Note Actions */}
-              {hasActiveProject && (
-                <DropdownMenuItem onClick={() => {
-                  addNote("New Note", null, 0);
                 }}>
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  <span>Add Note</span>
-                </DropdownMenuItem>
-              )}
-              
-              <DropdownMenuSeparator className="bg-gray-800" />
-              
-              {/* View Controls */}
-              <DropdownMenuItem onClick={expandAll}>
-                <ChevronDown className="h-4 w-4 mr-2" />
-                <span>Expand All Notes</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={collapseAll}>
-                <ChevronUp className="h-4 w-4 mr-2" />
-                <span>Collapse All Notes</span>
-              </DropdownMenuItem>
-              
-              <DropdownMenuSeparator className="bg-gray-800" />
-              
-              {/* Present Mode Button */}
-              <DropdownMenuItem onClick={() => window.open("https://fastpresenterviwer.netlify.app", "_self")}>
-                <Presentation className="h-4 w-4 mr-2" />
-                <span>Present Mode</span>
-                <span className="ml-auto text-xs text-gray-400">Press 'i'</span>
-              </DropdownMenuItem>
-              
-              <DropdownMenuSeparator className="bg-gray-800" />
-              
-              {/* Sign out option when logged in */}
-              {user && (
-                <DropdownMenuItem onClick={handleSignOut}>
-                  <LogOut className="h-4 w-4 mr-2" />
-                  <span>Sign Out</span>
-                </DropdownMenuItem>
-              )}
-              
-              {/* Sign in option when not logged in */}
-              {!user && (
-                <DropdownMenuItem onClick={() => setShowAuthModal(true)}>
-                  <LogIn className="h-4 w-4 mr-2" />
-                  <span>Sign In</span>
-                </DropdownMenuItem>
-              )}
+                <DropdownMenuRadioItem value="" className="focus:bg-gray-800 focus:text-white">
+                  <div className="flex items-center gap-2">
+                    <X className="h-4 w-4" />
+                    <span>Clear filter</span>
+                  </div>
+                </DropdownMenuRadioItem>
+                <DropdownMenuSeparator className="bg-gray-800" />
+                <DropdownMenuRadioItem value="time" className="focus:bg-gray-800 focus:text-white">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    <span>Notes with time</span>
+                  </div>
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="video" className="focus:bg-gray-800 focus:text-white">
+                  <div className="flex items-center gap-2">
+                    <Youtube className="h-4 w-4" />
+                    <span>Notes with videos</span>
+                  </div>
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="image" className="focus:bg-gray-800 focus:text-white">
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4" />
+                    <span>Notes with images</span>
+                  </div>
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="discussion" className="focus:bg-gray-800 focus:text-white">
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="h-4 w-4" />
+                    <span>Discussion notes</span>
+                  </div>
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="link" className="focus:bg-gray-800 focus:text-white">
+                  <div className="flex items-center gap-2">
+                    <Link className="h-4 w-4" />
+                    <span>Notes with links</span>
+                  </div>
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
-          
+
           {/* User menu (sign in/out) */}
           <UserMenu />
         </div>
