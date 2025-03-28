@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Header from "@/components/HeaderWithSearch";
+import Header from "@/components/HeaderWithSearch_new";
 import NoteTree from "@/components/NoteTree";
 import { Button } from "@/components/ui/button";
 import { FilePlus, FilterX } from "lucide-react";
