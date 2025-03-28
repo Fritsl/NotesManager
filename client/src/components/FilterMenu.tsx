@@ -253,7 +253,11 @@ export default function FilterMenu({ onFilterChange }: FilterMenuProps) {
                     key={colorValue}
                     className="p-1 rounded-sm h-6 w-6 flex items-center justify-center hover:bg-gray-700/50"
                     onClick={() => handleColorFilterSelect(colorValue)}
-                    title={getFilterLabel({ ...activeFilter, color: "color" }) as string}
+                    title={colorValue === 1 ? "Red notes" : 
+                           colorValue === 2 ? "Yellow notes" :
+                           colorValue === 3 ? "Green notes" :
+                           colorValue === 4 ? "Blue notes" :
+                           colorValue === 5 ? "Purple notes" : "Colored notes"}
                   >
                     <div
                       className="h-4 w-4"

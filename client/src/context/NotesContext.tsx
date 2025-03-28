@@ -312,6 +312,8 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           youtube_url: note.youtube_url,
           url: note.url,
           url_display_text: note.url_display_text,
+          // Include the color value
+          color: note.color,
           // First include images (before children)
           images: simplifiedImages,
           // Then include children (after images)
@@ -429,6 +431,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       url: null,
       url_display_text: null,
       children: [],
+      color: 0, // Default color (transparent)
     };
 
     if (!parent) {
