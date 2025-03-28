@@ -4,13 +4,22 @@ import { useNotes } from "@/context/NotesContext";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, FolderUp, FolderDown, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { 
+  ArrowDown, 
+  ArrowUp, 
+  ChevronDown, 
+  ChevronRight,
+  ChevronLeft,
+  XCircle, 
+  Search,
+  FolderOpen,
+  PlusCircle,
+  Folder
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { levelColors } from "@/lib/level-colors";
 import { useToast } from "@/hooks/use-toast";
@@ -21,245 +30,155 @@ interface MoveNoteModalProps {
   noteToMove: Note | null;
 }
 
-interface Destination {
-  id: string | null;
-  label: string;
-  content: string;
-  level: number;
-  path: string[];
-  hasChildren: boolean;
-  uniqueId?: string; // Optional unique identifier to prevent key conflicts
-}
-
 export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteModalProps) {
   const { notes, moveNote, scrollToNote, setPendingNoteMoves } = useNotes();
   const { toast } = useToast();
-  const [destinations, setDestinations] = useState<Destination[]>([]);
   
-  // When in full-screen mode, we'll track the currently focused destination
-  const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
+  // State for tree view
+  const [expandedNodes, setExpandedNodes] = useState<string[]>([]);
+  const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
   const [searchText, setSearchText] = useState("");
+  const [showPlacementOptions, setShowPlacementOptions] = useState(false);
+  const [siblingNotes, setSiblingNotes] = useState<Note[]>([]);
+  const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
   
   // Reset selection when modal opens or note changes
   useEffect(() => {
     if (isOpen && noteToMove) {
-      setSelectedParentId(null);
+      setExpandedNodes([]);
+      setActiveNoteId(null);
       setSearchText("");
       setShowPlacementOptions(false);
-      setCurrentParentId(null);
+      setSelectedParentId(null);
       setSiblingNotes([]);
     }
   }, [isOpen, noteToMove]);
   
-  // Build the destinations list when modal opens
+  // Toggle a node's expanded state
+  const toggleNode = (id: string) => {
+    setExpandedNodes(prev => 
+      prev.includes(id) 
+        ? prev.filter(nodeId => nodeId !== id) 
+        : [...prev, id]
+    );
+  };
+  
+  // Find a note by ID
+  const findNoteById = (notesToSearch: Note[], id: string): Note | null => {
+    for (const note of notesToSearch) {
+      if (note.id === id) return note;
+      
+      if (note.children.length > 0) {
+        const found = findNoteById(note.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+  
+  // Filtered notes based on search
+  const filteredNotes = searchText.trim() === "" 
+    ? notes 
+    : filterNotesBySearchText(notes, searchText);
+  
+  // Recursively filter notes based on search text
+  function filterNotesBySearchText(notesToFilter: Note[], query: string): Note[] {
+    const filtered: Note[] = [];
+    
+    for (const note of notesToFilter) {
+      // Skip the note being moved
+      if (note.id === noteToMove?.id) continue;
+      
+      // Check if this note matches the search
+      const noteMatches = note.content.toLowerCase().includes(query.toLowerCase());
+      
+      // Filter children recursively
+      const filteredChildren = filterNotesBySearchText(note.children, query);
+      
+      // Include this note if it matches or has matching children
+      if (noteMatches || filteredChildren.length > 0) {
+        // Clone the note with only matching children
+        filtered.push({
+          ...note,
+          children: filteredChildren
+        });
+        
+        // Auto-expand parent nodes when searching
+        if (filteredChildren.length > 0 && !expandedNodes.includes(note.id)) {
+          setExpandedNodes(prev => [...prev, note.id]);
+        }
+      }
+    }
+    
+    return filtered;
+  }
+  
+  // When a note is selected, determine its siblings for placement context
   useEffect(() => {
-    if (!isOpen || !noteToMove) return;
+    if (activeNoteId === null) {
+      // Root level siblings
+      const rootSiblings = notes.filter(note => note.id !== noteToMove?.id);
+      setSiblingNotes(rootSiblings);
+      setSelectedParentId(null);
+    } else {
+      // Find the parent and siblings of the active note
+      findPlacementContext(activeNoteId);
+    }
+  }, [activeNoteId, notes, noteToMove]);
+
+  // Find the placement context (parent and siblings) for the selected note
+  const findPlacementContext = (noteId: string) => {
+    // If selecting the note itself, get its children
+    if (noteId === noteToMove?.id) {
+      setSelectedParentId(null);
+      setSiblingNotes([]);
+      return;
+    }
     
-    const destinationsList: Destination[] = [
-      { 
-        id: null, 
-        label: "Root Level", 
-        content: "Root Level",
-        level: 0, 
-        path: ["Root"],
-        hasChildren: notes.length > 0,
-        uniqueId: `root-${Date.now()}`
-      }
-    ];
-    
-    // Helper function to recursively add notes to the destination list
-    // Excludes the note being moved and its children
-    const addNotesToDestinations = (notesToProcess: Note[], level: number, path: string[] = []) => {
-      for (const note of notesToProcess) {
-        // Skip the note being moved and all its descendants to prevent cycles
-        if (note.id === noteToMove.id) continue;
-        
-        // Check if this note is a descendant of the noteToMove
-        let isDescendant = false;
-        const checkIfDescendant = (parent: Note, potentialChild: Note): boolean => {
-          for (const child of parent.children) {
-            if (child.id === potentialChild.id) return true;
-            if (checkIfDescendant(child, potentialChild)) return true;
-          }
-          return false;
-        };
-        
-        if (noteToMove.children.length > 0) {
-          isDescendant = checkIfDescendant(noteToMove, note);
+    // Find the parent of the selected note to get siblings
+    const findParentAndSiblings = (notesToSearch: Note[], target: string): { parent: Note | null, siblings: Note[] } | null => {
+      for (const note of notesToSearch) {
+        // Check if this note is the target, use it as a parent for children
+        if (note.id === target) {
+          return { 
+            parent: note, 
+            siblings: note.children.filter(child => child.id !== noteToMove?.id)
+          };
         }
         
-        if (!isDescendant) {
-          const notePath = [...path, note.content];
-          const truncatedContent = note.content.length > 50 
-            ? `${note.content.substring(0, 47)}...` 
-            : note.content;
-          
-          destinationsList.push({
-            id: note.id,
-            label: truncatedContent,
-            content: note.content,
-            level: level,
-            path: notePath,
-            hasChildren: note.children.length > 0,
-            uniqueId: `dest-${note.id}-${Date.now()}-${Math.floor(Math.random() * 1000)}`
-          });
-          
-          // Add children recursively
-          if (note.children.length > 0) {
-            addNotesToDestinations(
-              note.children, 
-              level + 1, 
-              notePath
-            );
-          }
+        // Check if target is a direct child of this note
+        const childIndex = note.children.findIndex(child => child.id === target);
+        if (childIndex >= 0) {
+          return { 
+            parent: note, 
+            siblings: note.children.filter(child => child.id !== noteToMove?.id)
+          };
         }
+        
+        // Recursively check children
+        const result = findParentAndSiblings(note.children, target);
+        if (result) return result;
       }
+      
+      return null;
     };
     
-    addNotesToDestinations(notes, 1, ["Root"]);
-    setDestinations(destinationsList);
-  }, [isOpen, noteToMove, notes]);
-  
-  // When searching, show ALL matching destinations regardless of hierarchy
-  // Otherwise, only show destinations at the current level
-  const useSearchResults = searchText.length > 0;
-  
-  // Filtered destinations based on search text - now includes all matches across all levels
-  const filteredDestinations = useSearchResults
-    ? destinations.filter(dest => 
-        dest.content.toLowerCase().includes(searchText.toLowerCase()) ||
-        dest.path.some(p => p.toLowerCase().includes(searchText.toLowerCase()))
-      )
-    : destinations;
-  
-  // Root item with unique key for search results vs. normal navigation
-  const rootItem = {
-    id: null,
-    label: "Root Level",
-    content: "Root Level",
-    level: 0,
-    path: ["Root"],
-    hasChildren: notes.length > 0
-  };
-  
-  // Create a unique ID for each root item to prevent key conflicts
-  const searchRootItem = {
-    ...rootItem,
-    // Add unique identifier for search root
-    uniqueId: `search-root-${Date.now()}`
-  };
-  
-  // Only apply parent filter when NOT searching
-  const currentLevelDestinations = useSearchResults
-    ? filteredDestinations.concat([searchRootItem])
-    : selectedParentId === undefined
-      ? filteredDestinations
-      : filteredDestinations.filter(dest => {
-          // Root level items
-          if (selectedParentId === null) {
-            return dest.level === 1 || dest.id === null;
-          }
-        
-        // Find the parent item's level
-        const parentItem = filteredDestinations.find(d => d.id === selectedParentId);
-        if (parentItem) {
-          // Show items that are direct children (one level deeper)
-          const findParentInPath = dest.path.findIndex(p => 
-            parentItem.path.length > 0 && 
-            p === parentItem.path[parentItem.path.length - 1]
-          );
-          
-          return findParentInPath !== -1 && 
-                dest.level === parentItem.level + 1 && 
-                dest.path.length === parentItem.path.length + 1;
-        }
-        
-        return false;
-      });
-  
-  // Find all sibling notes under a parent to display placement options
-  const getSiblingNotes = (parentId: string | null): Note[] => {
-    if (parentId === null) {
-      // Root level notes
-      return notes.filter(note => note.id !== noteToMove?.id);
-    } else {
-      // Find the parent note
-      const findParent = (notesToSearch: Note[]): Note | null => {
-        for (const note of notesToSearch) {
-          if (note.id === parentId) return note;
-          
-          if (note.children.length > 0) {
-            const found = findParent(note.children);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-      
-      const parentNote = findParent(notes);
-      if (parentNote) {
-        return parentNote.children.filter(note => note.id !== noteToMove?.id);
+    const result = findParentAndSiblings(notes, noteId);
+    
+    if (result) {
+      if (result.parent) {
+        setSelectedParentId(result.parent.id);
+        setSiblingNotes(result.siblings);
       }
     }
-    return [];
   };
-
-  // State to track if showing placement options
-  const [showPlacementOptions, setShowPlacementOptions] = useState(false);
-  const [currentParentId, setCurrentParentId] = useState<string | null>(null);
-  const [siblingNotes, setSiblingNotes] = useState<Note[]>([]);
-
-  // Handle selecting a destination parent
-  const handleSelectDestination = (destinationId: string | null) => {
-    setCurrentParentId(destinationId);
-    const siblings = getSiblingNotes(destinationId);
-    setSiblingNotes(siblings);
-    setShowPlacementOptions(true);
-  };
-
+  
   // Handle note movement
-  const handleMoveNote = (destinationId: string | null, position?: number) => {
+  const handleMoveNote = (position: number) => {
     if (!noteToMove) return;
     
-    // Save the noteId for later reference
-    const movedNoteId = noteToMove.id;
-    
-    // Determine the position (by default, add to the end)
-    let finalPosition = 0;
-    
-    if (destinationId === null) {
-      // Moving to root level
-      if (position !== undefined) {
-        finalPosition = position;
-      } else {
-        finalPosition = notes.length;
-      }
-    } else {
-      // Find destination parent and its children count
-      const findDestinationParent = (notesToSearch: Note[]): Note | null => {
-        for (const note of notesToSearch) {
-          if (note.id === destinationId) return note;
-          
-          if (note.children.length > 0) {
-            const found = findDestinationParent(note.children);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-      
-      const destinationParent = findDestinationParent(notes);
-      if (destinationParent) {
-        if (position !== undefined) {
-          finalPosition = position;
-        } else {
-          finalPosition = destinationParent.children.length;
-        }
-      }
-    }
-    
     // Execute the move
-    moveNote(movedNoteId, destinationId, finalPosition);
+    moveNote(noteToMove.id, selectedParentId, position);
     
     // Set the pending flag to trigger auto-save
     setPendingNoteMoves(true);
@@ -273,302 +192,297 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
       description: "Note has been moved to the selected location",
     });
     
-    // Add a small delay to allow DOM to update
-    setTimeout(() => {
-      // Highlight and scroll to the note in its new position
-      scrollToNote(movedNoteId);
-    }, 300);
+    // Highlight and scroll to the note in its new position
+    setTimeout(() => scrollToNote(noteToMove.id), 300);
   };
   
-  // Format breadcrumb navigation path
-  const getCurrentPath = () => {
-    if (!selectedParentId) {
-      return [{ id: null as null, label: "Root" }];
-    }
+  // Get the name of the currently selected parent
+  const getSelectedParentName = () => {
+    if (selectedParentId === null) return "Root Level";
     
-    const currentItem = destinations.find(dest => dest.id === selectedParentId);
-    if (!currentItem) return [{ id: null as null, label: "Root" }];
-    
-    const pathItems: Array<{ id: string | null; label: string }> = [{ id: null as null, label: "Root" }];
-    
-    // Build path from ancestors
-    const findAncestors = (itemLevel: number, itemPath: string[]) => {
-      for (let i = 1; i < itemLevel; i++) {
-        // Find the ancestor at this level
-        const ancestorIndex = destinations.findIndex(d => 
-          d.level === i && 
-          itemPath.length > i && 
-          d.content === itemPath[i]
-        );
-        
-        if (ancestorIndex !== -1) {
-          pathItems.push({
-            id: destinations[ancestorIndex].id,
-            label: destinations[ancestorIndex].content
-          });
-        }
-      }
-    };
-    
-    findAncestors(currentItem.level, currentItem.path);
-    
-    // Add the current item
-    pathItems.push({
-      id: currentItem.id,
-      label: currentItem.content
-    });
-    
-    return pathItems;
+    const parent = findNoteById(notes, selectedParentId);
+    return parent ? parent.content : "Selected Location";
   };
   
-  // Format the destination item display
-  const renderDestinationItem = (dest: Destination) => {
-    const isRoot = dest.id === null;
-    const itemColor = levelColors[Math.min(dest.level, levelColors.length - 1)];
-    
-    return (
-      <div 
-        key={dest.uniqueId || dest.id || 'root-' + Date.now()}
-        className={cn(
-          "flex items-center justify-between p-3 mb-2 rounded-md cursor-pointer fade-in-note",
-          "hover:bg-gray-800 border border-gray-800 hover:border-gray-700",
-          "transition-all duration-150 hover:shadow-md",
-          isRoot ? "bg-gray-900 border-gray-700 border-dashed" : `border-l-[4px] ${itemColor.border}`
-        )}
-        onClick={() => {
-          if (isRoot) {
-            // For root level, show placement options with null parent
-            handleSelectDestination(null);
-          }
-          else if (dest.hasChildren) {
-            // If we're in placement mode, reset to regular browsing mode
-            if (showPlacementOptions) {
-              setShowPlacementOptions(false);
-            }
-            // Navigate into this folder
-            setSelectedParentId(dest.id);
-          } else {
-            // For leaf nodes without children, show placement options
-            handleSelectDestination(dest.id);
-          }
-        }}
-        id={`dest-${dest.id || 'root'}`}
-      >
-        <div className="flex items-center gap-2 max-w-[85%]">
-          {isRoot ? (
-            <FolderUp className="h-5 w-5 text-primary flex-shrink-0" />
-          ) : (
-            <FolderDown className={cn(
-              "h-5 w-5 flex-shrink-0",
-              itemColor.text
-            )} />
-          )}
-          
-          <div className="flex flex-col">
-            <span className={cn(
-              "text-sm font-medium truncate max-w-[600px]",
-              isRoot ? "text-primary font-bold" : itemColor.text
-            )}>
-              {isRoot ? "Move to Root Level (Top Level)" : dest.label}
-            </span>
-            
-            {!isRoot && (
-              <span className="text-xs text-gray-500 truncate max-w-[600px]">
-                {useSearchResults ? (
-                  // In search results, always show full path for context
-                  <>Path: <span className="text-primary-400">{dest.path.slice(1).join(" › ")}</span></>
-                ) : dest.path.length > 2 ? (
-                  // In normal navigation, only show path when it's a deeper note
-                  <>Path: {dest.path.slice(1, -1).join(" › ")}</>
-                ) : null}
-              </span>
+  // Render a tree node with its children
+  const renderNoteTree = (notesToRender: Note[], level = 0) => {
+    return notesToRender.map(note => {
+      // Skip the note being moved in the tree
+      if (note.id === noteToMove?.id) return null;
+      
+      const isExpanded = expandedNodes.includes(note.id);
+      const isActive = activeNoteId === note.id;
+      const hasChildren = note.children.length > 0;
+      const color = levelColors[Math.min(level, levelColors.length - 1)];
+      
+      return (
+        <div key={note.id} className="fade-in-note">
+          <div 
+            className={cn(
+              "flex items-center rounded-md py-1.5 my-1 px-2 group",
+              isActive ? "bg-gray-800 border-l-2 border-primary" : 
+                "hover:bg-gray-800/50 border-l-2 border-transparent",
+              "transition-colors"
             )}
+          >
+            <div 
+              className="flex items-center gap-1" 
+              style={{ marginLeft: `${level * 12}px` }}
+            >
+              {/* Expand/collapse button */}
+              <button 
+                className={cn(
+                  "text-gray-400 hover:text-gray-200 p-1",
+                  hasChildren ? "visible" : "invisible"
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleNode(note.id);
+                }}
+              >
+                {isExpanded ? (
+                  <ChevronDown className="h-3.5 w-3.5" />
+                ) : (
+                  <ChevronRight className="h-3.5 w-3.5" />
+                )}
+              </button>
+              
+              {/* Note content */}
+              <div 
+                className={cn(
+                  "truncate text-sm font-medium flex-1",
+                  color.text,
+                  "cursor-pointer"
+                )}
+                onClick={() => {
+                  setActiveNoteId(note.id);
+                  setShowPlacementOptions(true);
+                }}
+              >
+                {note.content}
+              </div>
+            </div>
+            
+            {/* Quick placement buttons */}
+            <div className="opacity-0 group-hover:opacity-100 flex gap-1.5 transition-opacity">
+              {/* Make this a child or place inside */}
+              {hasChildren && (
+                <button
+                  className="text-gray-400 hover:text-primary p-1 rounded-full hover:bg-gray-700"
+                  title="Move inside as a child"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveNoteId(note.id);
+                    setShowPlacementOptions(true);
+                  }}
+                >
+                  <PlusCircle className="h-3.5 w-3.5" />
+                </button>
+              )}
+              
+              {/* Place above */}
+              <button
+                className="text-gray-400 hover:text-primary p-1 rounded-full hover:bg-gray-700"
+                title="Place above"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Find index of this note in its parent's children
+                  setActiveNoteId(note.id);
+                  findPlacementContext(note.id);
+                  // Find the index where this note appears in its siblings
+                  const parent = selectedParentId ? 
+                    findNoteById(notes, selectedParentId) : null;
+                  const siblings = parent ? 
+                    parent.children : notes;
+                  const index = siblings.findIndex(n => n.id === note.id);
+                  if (index >= 0) {
+                    handleMoveNote(index);
+                  }
+                }}
+              >
+                <ArrowUp className="h-3.5 w-3.5" />
+              </button>
+              
+              {/* Place below */}
+              <button
+                className="text-gray-400 hover:text-primary p-1 rounded-full hover:bg-gray-700"
+                title="Place below"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Find index of this note in its parent's children
+                  setActiveNoteId(note.id);
+                  findPlacementContext(note.id);
+                  // Find the index where this note appears in its siblings
+                  const parent = selectedParentId ? 
+                    findNoteById(notes, selectedParentId) : null;
+                  const siblings = parent ? 
+                    parent.children : notes;
+                  const index = siblings.findIndex(n => n.id === note.id);
+                  if (index >= 0) {
+                    handleMoveNote(index + 1);
+                  }
+                }}
+              >
+                <ArrowDown className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
+          
+          {/* Children */}
+          {isExpanded && note.children.length > 0 && (
+            <div className="pl-1">
+              {renderNoteTree(note.children, level + 1)}
+            </div>
+          )}
         </div>
-        
-        {!isRoot && dest.hasChildren && (
-          <ChevronRight className="h-4 w-4 text-gray-400" />
-        )}
-      </div>
-    );
+      );
+    });
   };
   
-  // Render the placement options UI
+  // Render placement options UI
   const renderPlacementOptions = () => {
-    // Get the parent name for display
-    let parentName = "Root Level";
-    if (currentParentId) {
-      const parentItem = destinations.find(d => d.id === currentParentId);
-      if (parentItem) {
-        parentName = parentItem.content;
-      }
-    }
-
     return (
-      <div className="flex flex-col h-full">
-        <div className="flex items-center justify-between mb-4">
-          <div className="text-primary font-medium flex items-center gap-2">
-            <ArrowRight className="h-4 w-4" />
-            <span>Select placement in "{parentName.substring(0, 30)}{parentName.length > 30 ? "..." : ""}"</span>
+      <div className="border-t border-gray-800 pt-4 mt-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-primary-400 font-medium flex items-center gap-1.5">
+            <Folder className="h-4 w-4" />
+            <span>
+              {selectedParentId === null ? "Root Level" : 
+                `"${getSelectedParentName().substring(0, 30)}${getSelectedParentName().length > 30 ? "..." : ""}"`}
+            </span>
           </div>
           <Button
             variant="outline"
             size="sm"
-            className="border-gray-700 text-gray-300 hover:bg-gray-800"
+            className="text-xs h-7 border-gray-700 text-gray-300 hover:bg-gray-800"
             onClick={() => setShowPlacementOptions(false)}
           >
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Back to Browse
+            <ChevronLeft className="h-3.5 w-3.5 mr-1" />
+            Back
           </Button>
         </div>
-
-        {/* Option to place at the top */}
-        <div
-          className="flex items-center justify-between p-3 mb-2 rounded-md cursor-pointer bg-gray-800 border border-gray-700 hover:bg-gray-700"
-          onClick={() => handleMoveNote(currentParentId, 0)}
-        >
-          <div className="flex items-center gap-2">
-            <ArrowRight className="h-5 w-5 text-primary" />
-            <span className="text-gray-200 font-medium">Place at Top</span>
-          </div>
-        </div>
-
-        {/* List of existing items with option to place after each one */}
-        {siblingNotes.map((note, index) => (
-          <div key={note.id} className="mb-2">
-            {/* The existing note (non-clickable) */}
-            <div className="flex items-center p-3 rounded-md border border-gray-800 bg-gray-900">
-              <div className="flex items-center gap-2 w-full">
-                <span className="text-gray-400 text-xs">{index + 1}.</span>
-                <span className="text-gray-300 truncate">{note.content}</span>
+        
+        <div className="space-y-2 mb-4">
+          <Button 
+            variant="outline"
+            className="w-full justify-start bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-200"
+            onClick={() => handleMoveNote(0)}
+          >
+            <ArrowUp className="h-4 w-4 mr-2 text-primary-400" />
+            <span>Place at Top</span>
+          </Button>
+          
+          {siblingNotes.map((note, index) => (
+            <div key={note.id} className="space-y-1.5">
+              <div className="flex items-center rounded px-3 py-2 bg-gray-900/70 border border-gray-800">
+                <span className="text-gray-400 text-xs mr-2">{index + 1}.</span>
+                <span className="text-gray-300 text-sm truncate">{note.content}</span>
               </div>
+              
+              <Button 
+                variant="outline"
+                size="sm"
+                className="w-full justify-start ml-5 bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-200 text-xs"
+                onClick={() => handleMoveNote(index + 1)}
+              >
+                <ArrowDown className="h-3.5 w-3.5 mr-1.5 text-primary-400" />
+                <span>Place below this note</span>
+              </Button>
             </div>
-            
-            {/* Option to place after this note */}
-            <div
-              className="flex items-center justify-between p-2 rounded-md cursor-pointer bg-gray-800 border border-gray-700 hover:bg-gray-700 mt-1 ml-4"
-              onClick={() => handleMoveNote(currentParentId, index + 1)}
+          ))}
+          
+          {siblingNotes.length === 0 && (
+            <div className="text-gray-500 text-center py-3 italic text-sm">
+              No existing notes at this level
+            </div>
+          )}
+          
+          {siblingNotes.length > 0 && (
+            <Button 
+              variant="outline"
+              className="w-full justify-start bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-200 mt-2"
+              onClick={() => handleMoveNote(siblingNotes.length)}
             >
-              <div className="flex items-center gap-2">
-                <ArrowRight className="h-4 w-4 text-primary" />
-                <span className="text-gray-200 text-sm">Place after "{note.content.substring(0, 20)}{note.content.length > 20 ? "..." : ""}"</span>
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {/* Option to place at the bottom */}
-        <div
-          className="flex items-center justify-between p-3 rounded-md cursor-pointer bg-gray-800 border border-gray-700 hover:bg-gray-700 mt-2"
-          onClick={() => handleMoveNote(currentParentId, siblingNotes.length)}
-        >
-          <div className="flex items-center gap-2">
-            <ArrowRight className="h-5 w-5 text-primary" />
-            <span className="text-gray-200 font-medium">Place at Bottom</span>
-          </div>
+              <ArrowDown className="h-4 w-4 mr-2 text-primary-400" />
+              <span>Place at Bottom</span>
+            </Button>
+          )}
         </div>
       </div>
     );
   };
-
+  
   return (
     <Dialog open={isOpen && !!noteToMove} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-5xl w-[95vw] bg-gray-900 text-gray-100 border-gray-800 h-[90vh] flex flex-col">
-        <DialogHeader className="pb-2">
-          <DialogTitle className="text-lg flex items-center gap-2">
+      <DialogContent className="max-w-3xl w-[90vw] bg-gray-900 text-gray-100 border-gray-800 h-[85vh] flex flex-col">
+        <DialogHeader className="pb-2 border-b border-gray-800">
+          <DialogTitle className="text-base flex items-center gap-2">
             <span>Move Note</span>
             {noteToMove && (
-              <span className="text-sm font-normal text-gray-400">
-                ({noteToMove.content.substring(0, 30)}{noteToMove.content.length > 30 && "..."})
+              <span className="text-sm font-normal text-gray-400 truncate max-w-[80%]">
+                ({noteToMove.content.substring(0, 30)}{noteToMove.content.length > 30 ? "..." : ""})
               </span>
             )}
           </DialogTitle>
         </DialogHeader>
         
-        {/* Main Content - Either placement options or regular browsing */}
-        {showPlacementOptions ? (
-          // Placement options UI
-          <div className="flex-1 overflow-y-auto pr-2 min-h-0">
-            {renderPlacementOptions()}
+        <div className="flex flex-col flex-1 py-4 overflow-hidden">
+          {/* Search input */}
+          <div className="relative mb-4">
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+              <Search className="h-4 w-4" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search notes..."
+              className="w-full pl-9 pr-9 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-200 focus:outline-none focus:ring-1 focus:ring-primary"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+            />
+            {searchText && (
+              <button
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200"
+                onClick={() => setSearchText("")}
+              >
+                <XCircle className="h-4 w-4" />
+              </button>
+            )}
           </div>
-        ) : (
-          // Regular browsing UI
-          <>
-            {/* Navigation breadcrumb - simplified */}
-            <div className="flex items-center justify-between mb-4 text-sm">
-              <div className="text-sm font-medium text-gray-300">
-                {useSearchResults ? (
-                  <span>
-                    <span className="text-primary font-bold">Search Results</span>
-                    <span className="ml-1 text-xs bg-gray-800 rounded-full px-2 py-0.5">
-                      {filteredDestinations.length} match{filteredDestinations.length !== 1 ? 'es' : ''} across all levels
-                    </span>
-                  </span>
-                ) : selectedParentId === null ? (
-                  <span className="text-primary font-bold">Browse Locations</span>
+          
+          {/* Root level option */}
+          <div 
+            className={cn(
+              "flex items-center rounded-md py-2 px-3 mb-4",
+              "bg-gray-800/50 hover:bg-gray-800 cursor-pointer",
+              "border border-dashed border-gray-700",
+              activeNoteId === null && "bg-gray-800 border-primary"
+            )}
+            onClick={() => {
+              setActiveNoteId(null);
+              setShowPlacementOptions(true);
+            }}
+          >
+            <FolderOpen className="h-4 w-4 text-primary-400 mr-2" />
+            <span className="text-primary-400 font-medium">Root Level (Top Level)</span>
+          </div>
+          
+          {/* Tree view for notes or placement options */}
+          <div className="flex-1 overflow-y-auto pr-2 min-h-0">
+            {showPlacementOptions ? (
+              renderPlacementOptions()
+            ) : (
+              <div className="space-y-0.5">
+                {filteredNotes.length > 0 ? (
+                  renderNoteTree(filteredNotes)
                 ) : (
-                  <span>
-                    Current folder: <span className="text-primary font-medium">
-                      {getCurrentPath()[getCurrentPath().length - 1]?.label?.substring(0, 30) || "Location"}
-                      {getCurrentPath()[getCurrentPath().length - 1]?.label?.length > 30 ? "..." : ""}
-                    </span>
-                  </span>
+                  <div className="text-center py-8 text-gray-400">
+                    {searchText ? "No matching notes found" : "No notes available"}
+                  </div>
                 )}
               </div>
-              
-              {/* Back button for navigation - only show when not searching */}
-              {!useSearchResults && selectedParentId !== null && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-primary"
-                  onClick={() => {
-                    // Go to parent folder
-                    const currentPath = getCurrentPath();
-                    if (currentPath.length > 1) {
-                      setSelectedParentId(currentPath[currentPath.length - 2].id);
-                    } else {
-                      setSelectedParentId(null);
-                    }
-                  }}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Back to Previous Level
-                </Button>
-              )}
-            </div>
-            
-            {/* Search input */}
-            <div className="relative mb-4">
-              <input
-                type="text"
-                placeholder="Search for a location..."
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-200 focus:outline-none focus:ring-1 focus:ring-primary"
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-              />
-              {searchText && (
-                <button
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200"
-                  onClick={() => setSearchText("")}
-                >
-                  <XCircle className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-            
-            {/* Destinations list - scrollable container */}
-            <div className="flex-1 overflow-y-auto pr-2 min-h-0 max-h-[calc(80vh-150px)]">
-              {currentLevelDestinations.length === 0 ? (
-                <div className="text-center py-8 text-gray-400">
-                  {searchText ? "No matching destinations found" : "No available destinations at this level"}
-                </div>
-              ) : (
-                currentLevelDestinations.map(renderDestinationItem)
-              )}
-            </div>
-          </>
-        )}
+            )}
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
