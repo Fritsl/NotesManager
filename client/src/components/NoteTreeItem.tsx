@@ -136,12 +136,9 @@ const calculateTimeAllocation = (currentNote: Note, allNotes: Note[]): TimeAlloc
   let formattedTime = "";
   
   if (!nextTimedNote || !nextTimedNote.time_set) {
-    // If this is the last timed note, use a default time allocation
-    formattedTime = "10:00"; 
-    totalMinutes = 10;
-    // Count all notes from this one to the end
-    noteCount = countNotesBetween(allNotes, currentNote.id, "end-of-notes");
-    return { formattedTime, noteCount, totalMinutes };
+    // If this is the last timed note, don't show any calculation
+    // since we can't calculate time to "next" timed note
+    return null;
   }
   
   // Parse time values
