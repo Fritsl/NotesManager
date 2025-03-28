@@ -259,15 +259,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Then upsert all current images
           for (const image of images as any[]) {
-            // Make sure image has the required note_id and remove any project_id reference
-            const { project_id, ...imageWithoutProjectId } = image; // Remove project_id if it exists
-            
-            // Ensure we have user_id and note_id
+            // Extract only the fields that exist in the note_images table
+            // Based on actual schema: id, position, created_at, note_id, storage_path, url
             const cleanImage = {
-              ...imageWithoutProjectId,
-              user_id: userId,
-              note_id: image.note_id
+              id: image.id,
+              position: image.position || 0,
+              note_id: image.note_id,
+              storage_path: image.storage_path || '',
+              url: image.url || ''
             };
+            
+            // Add created_at if it exists in the image object
+            if (image.created_at) {
+              cleanImage.created_at = image.created_at;
+            }
             
             const { error: upsertImageError } = await supabaseAdmin
               .from('note_images')
