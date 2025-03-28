@@ -66,6 +66,22 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   } = useNotes();
   const { toast } = useToast();
   const isMobile = useIsMobile(); // Check if we're on a mobile device
+  
+  // Function to count all descendants (direct and indirect children) of a note
+  const getTotalChildrenCount = (currentNote: Note): number => {
+    if (!currentNote.children || currentNote.children.length === 0) {
+      return 0;
+    }
+    
+    let totalCount = currentNote.children.length; // Count direct children
+    
+    // Add their children too (recursively)
+    for (const child of currentNote.children) {
+      totalCount += getTotalChildrenCount(child);
+    }
+    
+    return totalCount;
+  };
 
   // References
   const ref = useRef<HTMLDivElement>(null);
@@ -709,7 +725,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             <div className="absolute bottom-1 left-1 z-20">
               <div
                 className="flex items-center text-gray-400 hover:text-gray-200 cursor-pointer" 
-                title={isExpanded ? "Collapse children" : `Expand ${note.children.length} children`}
+                title={isExpanded ? "Collapse children" : `Expand ${note.children.length} direct children and ${getTotalChildrenCount(note)} total descendants`}
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleExpand(note.id);
@@ -720,7 +736,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                   : <ChevronRight size={14} className="mr-0.5" />
                 }
                 <span className="text-xs font-mono">
-                  {note.children.length}
+                  {note.children.length} - {getTotalChildrenCount(note)}
                 </span>
               </div>
             </div>
