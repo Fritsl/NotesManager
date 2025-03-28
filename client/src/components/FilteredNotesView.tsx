@@ -179,14 +179,15 @@ const calculateTimeAllocation = (currentNote: Note, allNotes: Note[]): TimeAlloc
   const nextIndex = flattenedNotes.findIndex(note => note.id === nextTimedNote.id);
   
   if (currentIndex >= 0 && nextIndex >= 0) {
-    // Count notes between (including both start and end)
-    noteCount = (nextIndex - currentIndex) + 1;
+    // Count notes between, but EXCLUDE the next timed note (we only want to count
+    // the current timed note and all slides UNTIL the next timed note)
+    noteCount = (nextIndex - currentIndex);
     console.log("🕒 Slide positions in tree:", currentIndex, nextIndex);
-    console.log("🕒 Total slide count (including both):", noteCount);
+    console.log("🕒 Total slide count (excluding next timed note):", noteCount);
   } else {
     // Fallback to old method if indexes aren't found
     console.log("🕒 Using fallback counting method");
-    noteCount = 2; // Default to just the two timed notes
+    noteCount = 1; // Default to just the current timed note
   }
   
   if (noteCount <= 0) {
