@@ -520,11 +520,6 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
                       >
                         {displayContent}
                       </div>
-                      {note.is_discussion && (
-                        <span className="ml-2 text-blue-400 shrink-0" title="Discussion">
-                          <MessageCircle size={16} />
-                        </span>
-                      )}
                     </div>
                     
                     {/* Preview lines */}
@@ -545,31 +540,34 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
                       </div>
                     )}
                     
-                    {/* Badges for special attributes */}
-                    {(note.youtube_url || note.url || note.time_set) && (
-                      <div className="flex flex-wrap gap-2 mt-1">
-                        {note.youtube_url && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-950 text-white border border-red-700 shadow-sm">
-                            <Youtube size={12} className="mr-1" />
-                            YouTube
-                          </span>
-                        )}
-                        
-                        {note.url && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-950 text-white border border-blue-700 shadow-sm">
-                            <Link size={12} className="mr-1" />
-                            {note.url_display_text || "Link"}
-                          </span>
-                        )}
-                        
-                        {note.time_set && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-950 text-white border border-purple-700 shadow-sm">
-                            <Clock size={12} className="mr-1" />
-                            {note.time_set.includes(':') ? note.time_set.split(':').slice(0, 2).join(':') : note.time_set}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                    {/* Content type indicators with icons */}
+                    <div className="flex items-center gap-2 mt-1">
+                      {note.is_discussion && (
+                        <span className="text-blue-400 shrink-0" title="Discussion">
+                          <MessageCircle size={16} />
+                        </span>
+                      )}
+                      {note.youtube_url && (
+                        <span className="text-red-400 shrink-0" title="YouTube Video">
+                          <Youtube size={16} />
+                        </span>
+                      )}
+                      {note.url && (
+                        <span className="text-green-400 shrink-0" title={note.url_display_text || "External Link"}>
+                          <Link size={16} />
+                        </span>
+                      )}
+                      {note.time_set && (
+                        <span className="text-amber-400 shrink-0" title={`Time: ${note.time_set}`}>
+                          <Clock size={16} />
+                        </span>
+                      )}
+                      {note.images && note.images.length > 0 && (
+                        <span className="text-purple-400 shrink-0" title={`${note.images.length} Image${note.images.length > 1 ? 's' : ''}`}>
+                          <Image size={16} />
+                        </span>
+                      )}
+                    </div>
                     
                     {/* Image thumbnails */}
                     {note.images && note.images.length > 0 && (

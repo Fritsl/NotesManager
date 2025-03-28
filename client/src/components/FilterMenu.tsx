@@ -11,7 +11,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Clock, MessageSquare, Image, Link2, Video, Filter, X } from "lucide-react";
+import { Clock, MessageCircle, Image, Link, Youtube, Filter, X, ImagePlus } from "lucide-react";
 
 export type FilterType = "time" | "video" | "image" | "discussion" | "link" | null;
 
@@ -86,10 +86,10 @@ export default function FilterMenu({ onFilterChange }: FilterMenuProps) {
   const getFilterIcon = (filterType: FilterType) => {
     switch (filterType) {
       case "time": return <Clock className="h-4 w-4" />;
-      case "video": return <Video className="h-4 w-4" />;
-      case "image": return <Image className="h-4 w-4" />;
-      case "discussion": return <MessageSquare className="h-4 w-4" />;
-      case "link": return <Link2 className="h-4 w-4" />;
+      case "video": return <Youtube className="h-4 w-4" />;
+      case "image": return <ImagePlus className="h-4 w-4" />;
+      case "discussion": return <MessageCircle className="h-4 w-4" />;
+      case "link": return <Link className="h-4 w-4" />;
       default: return <Filter className="h-4 w-4" />;
     }
   };
@@ -169,28 +169,28 @@ export default function FilterMenu({ onFilterChange }: FilterMenuProps) {
             value="video"
             className="flex items-center gap-2 focus:bg-gray-800 focus:text-white"
           >
-            <Video className="h-4 w-4" />
+            <Youtube className="h-4 w-4" />
             <span>Notes with videos</span>
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem 
             value="image"
             className="flex items-center gap-2 focus:bg-gray-800 focus:text-white"
           >
-            <Image className="h-4 w-4" />
+            <ImagePlus className="h-4 w-4" />
             <span>Notes with images</span>
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem 
             value="discussion"
             className="flex items-center gap-2 focus:bg-gray-800 focus:text-white"
           >
-            <MessageSquare className="h-4 w-4" />
+            <MessageCircle className="h-4 w-4" />
             <span>Discussion notes</span>
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem 
             value="link"
             className="flex items-center gap-2 focus:bg-gray-800 focus:text-white"
           >
-            <Link2 className="h-4 w-4" />
+            <Link className="h-4 w-4" />
             <span>Notes with links</span>
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>

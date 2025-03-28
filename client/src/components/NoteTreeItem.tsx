@@ -1032,7 +1032,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                   </div>
                   {/* All tools aligned right */}
                   <div className="flex items-center gap-2 justify-end">
-                    {/* Discussion icon indicators - no unfold button here */}
+                    {/* Content type indicators with icons */}
                     <div className="flex items-center gap-2">
                       {note.is_discussion && (
                         <span className="text-blue-400 shrink-0" title="Discussion">
@@ -1040,10 +1040,24 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                         </span>
                       )}
                       {note.youtube_url && (
-                        <span className="text-xs bg-red-900/50 text-red-300 px-2 py-0.5 rounded-full">YouTube</span>
+                        <span className="text-red-400 shrink-0" title="YouTube Video">
+                          <Youtube size={16} />
+                        </span>
                       )}
                       {note.url && (
-                        <span className="text-xs bg-green-900/50 text-green-300 px-2 py-0.5 rounded-full">Link</span>
+                        <span className="text-green-400 shrink-0" title="External Link">
+                          <Link size={16} />
+                        </span>
+                      )}
+                      {note.time_set && (
+                        <span className="text-amber-400 shrink-0" title="Time Set">
+                          <Clock size={16} />
+                        </span>
+                      )}
+                      {note.images && note.images.length > 0 && (
+                        <span className="text-purple-400 shrink-0" title={`${note.images.length} Image${note.images.length > 1 ? 's' : ''}`}>
+                          <ImagePlus size={16} />
+                        </span>
                       )}
                     </div>
                   </div>
