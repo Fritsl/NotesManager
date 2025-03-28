@@ -37,10 +37,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       const result = await signIn(email, password);
       
       if (result.success) {
-        toast({
-          title: 'Success',
-          description: 'You have successfully logged in',
-        });
+        // Don't show success toast on login - just close the modal
         onClose();
       } else {
         toast({
@@ -129,10 +126,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       const result = await signInWithGoogle();
       
       if (result.success) {
-        toast({
-          title: 'Success',
-          description: 'Redirecting to Google sign-in...',
-        });
+        // No toast needed for Google sign-in - it redirects automatically
       } else {
         toast({
           title: 'Error',
