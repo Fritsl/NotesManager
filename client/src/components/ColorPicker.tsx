@@ -56,7 +56,7 @@ export default function ColorPicker({ colorValue, onChange, className }: ColorPi
         >
           <div 
             className={cn(
-              "w-5 h-5 rounded-sm",
+              "w-3 h-3", // Smaller square with no rounded corners
               (!color || colorValue === 0) && "border border-dashed border-gray-500"
             )} 
             style={color ? { backgroundColor: color } : {}}
@@ -81,10 +81,10 @@ export default function ColorPicker({ colorValue, onChange, className }: ColorPi
                 }}
               >
                 {option.value === 0 ? (
-                  <div className="w-6 h-6 border border-dashed border-gray-500 rounded-sm"></div>
+                  <div className="w-6 h-6 border border-dashed border-gray-500"></div>
                 ) : (
                   <div 
-                    className="w-6 h-6 rounded-sm" 
+                    className="w-6 h-6" 
                     style={{ backgroundColor: hexColor || undefined }}
                   />
                 )}
