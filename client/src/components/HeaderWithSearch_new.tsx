@@ -671,7 +671,7 @@ export default function HeaderWithSearch() {
               {/* Note Actions */}
               {hasActiveProject && (
                 <DropdownMenuItem onClick={() => {
-                  addNote("New Note", null, 0);
+                  addNote("New Note", null);
                 }}>
                   <PlusCircle className="h-4 w-4 mr-2" />
                   <span>Add Note</span>
