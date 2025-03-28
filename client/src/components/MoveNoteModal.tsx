@@ -169,14 +169,14 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
         <div key={note.id} className="fade-in-note">
           <div 
             className={cn(
-              "flex items-center rounded-md py-1.5 my-1 px-2 group",
+              "flex flex-wrap sm:flex-nowrap items-start rounded-md py-1.5 my-1 px-2 group",
               "hover:bg-gray-800/50 border-l-2 border-transparent",
               "transition-colors"
             )}
           >
             {/* Indentation and expand/collapse button */}
             <div 
-              className="flex items-center gap-1 flex-grow" 
+              className="flex items-start gap-1 w-full" 
               style={{ marginLeft: `${level * 12}px` }}
             >
               {/* Expand/collapse button - only visible for notes with children */}
@@ -200,22 +200,28 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
                 )}
               </button>
               
-              {/* Note content */}
+              {/* Note content - now with word-wrap instead of truncate */}
               <div 
                 className={cn(
-                  "truncate text-sm font-medium",
+                  "text-sm font-medium break-words",
                   color.text
                 )}
+                style={{ 
+                  wordBreak: "break-word", 
+                  overflowWrap: "break-word",
+                  whiteSpace: "normal",
+                  maxWidth: "calc(100% - 1rem)"
+                }}
               >
                 {note.content}
               </div>
             </div>
             
             {/* Placement buttons - always visible but more opacity on hover */}
-            <div className="flex gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+            <div className="flex flex-wrap gap-2 mt-2 sm:mt-0 w-full sm:w-auto opacity-60 group-hover:opacity-100 transition-opacity">
               {/* Place inside button */}
               <button
-                className="text-gray-300 hover:text-primary p-1 rounded-md hover:bg-gray-700 text-xs flex items-center gap-1 border border-gray-700"
+                className="text-gray-300 hover:text-primary p-1.5 rounded-md hover:bg-gray-700 text-xs flex items-center gap-1.5 border border-gray-700 flex-1 sm:flex-none justify-center sm:justify-start"
                 title="Move inside as child"
                 onClick={() => handleMoveNote(note.id, 0)}
               >
@@ -225,7 +231,7 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
               
               {/* Place above button */}
               <button
-                className="text-gray-300 hover:text-primary p-1 rounded-md hover:bg-gray-700 text-xs flex items-center gap-1 border border-gray-700"
+                className="text-gray-300 hover:text-primary p-1.5 rounded-md hover:bg-gray-700 text-xs flex items-center gap-1.5 border border-gray-700 flex-1 sm:flex-none justify-center sm:justify-start"
                 title="Place above"
                 onClick={() => {
                   const { parent, position } = findParentNote(note.id);
@@ -238,7 +244,7 @@ export default function MoveNoteModal({ isOpen, onClose, noteToMove }: MoveNoteM
               
               {/* Place below button */}
               <button
-                className="text-gray-300 hover:text-primary p-1 rounded-md hover:bg-gray-700 text-xs flex items-center gap-1 border border-gray-700"
+                className="text-gray-300 hover:text-primary p-1.5 rounded-md hover:bg-gray-700 text-xs flex items-center gap-1.5 border border-gray-700 flex-1 sm:flex-none justify-center sm:justify-start"
                 title="Place below"
                 onClick={() => {
                   const { parent, position } = findParentNote(note.id);
