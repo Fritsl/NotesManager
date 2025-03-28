@@ -687,6 +687,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
 
   return (
     <div className="note-tree-item">
+
       <div className="relative">
         {/* Main note card */}
         <div 
@@ -1077,143 +1078,142 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           </div>
 
           {/* Action buttons - below text on mobile, hover on desktop */}
-          {!isEditing && (
-            <div className="flex space-x-1 sm:opacity-0 sm:group-hover:opacity-100 transition justify-end absolute right-2 top-2">
-              {/* Edit Button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-gray-400 hover:text-green-500 p-1 touch-target"
-                title="Edit Note"
-                onClick={startEditing}
-              >
-                <Edit size={16} />
-              </Button>
+          <div className="flex space-x-1 sm:opacity-0 sm:group-hover:opacity-100 transition justify-end">
+            {/* Edit Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-gray-400 hover:text-green-500 p-1 touch-target"
+              title="Edit Note"
+              onClick={startEditing}
+              disabled={isEditing}
+            >
+              <Edit size={16} />
+            </Button>
 
-              {/* Add Note Below Button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-gray-400 hover:text-green-500 p-1 touch-target"
-                title="Add Note Below"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // If it's a root note, create another root note
-                  if (isRoot) {
-                    // Create a root note at the current index + 1 (directly below this note)
-                    addNote(null, index + 1);
-                  } else {
-                    // Create a sibling right after the current note (at index + 1)
-                    addNote(parentId ? { 
-                      id: parentId, 
-                      content: "", 
-                      position: index + 1, // Place after current note
-                      is_discussion: false,
-                      time_set: null,
-                      youtube_url: null,
-                      url: null,
-                      url_display_text: null,
-                      children: [] 
-                    } as Note : null, index + 1);
-                  }
-                }}
-              >
-                <Plus size={16} />
-              </Button>
+            {/* Add Note Below Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-gray-400 hover:text-green-500 p-1 touch-target"
+              title="Add Note Below"
+              onClick={(e) => {
+                e.stopPropagation();
+                // If it's a root note, create another root note
+                if (isRoot) {
+                  // Create a root note at the current index + 1 (directly below this note)
+                  addNote(null, index + 1);
+                } else {
+                  // Create a sibling right after the current note (at index + 1)
+                  addNote(parentId ? { 
+                    id: parentId, 
+                    content: "", 
+                    position: index + 1, // Place after current note
+                    is_discussion: false,
+                    time_set: null,
+                    youtube_url: null,
+                    url: null,
+                    url_display_text: null,
+                    children: [] 
+                  } as Note : null, index + 1);
+                }
+              }}
+            >
+              <Plus size={16} />
+            </Button>
 
-              {/* Add Child Button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-gray-400 hover:text-indigo-500 p-1 touch-target"
-                title="Add Child"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Create a child note
-                  addNote(note);
-                }}
-              >
-                <ArrowDownRightFromCircle size={16} />
-              </Button>
+            {/* Add Child Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-gray-400 hover:text-indigo-500 p-1 touch-target"
+              title="Add Child"
+              onClick={(e) => {
+                e.stopPropagation();
+                // Create a child note
+                addNote(note);
+              }}
+            >
+              <ArrowDownRightFromCircle size={16} />
+            </Button>
 
-              {/* Move Button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-gray-400 hover:text-amber-500 p-1 touch-target"
-                title="Move Note"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMoveDialogOpen(true);
-                }}
-              >
-                <MoveHorizontal size={16} />
-              </Button>
-              
-              {/* Spacer div to create distance between Move button and Delete button */}
-              <div className="w-2"></div>
+            {/* Move Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-gray-400 hover:text-amber-500 p-1 touch-target"
+              title="Move Note"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMoveDialogOpen(true);
+              }}
+            >
+              <MoveHorizontal size={16} />
+            </Button>
+            
+            {/* Spacer div to create distance between Move button and Delete button */}
+            <div className="w-2"></div>
 
-              <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-gray-400 hover:text-red-500 p-1 touch-target"
-                    title="Delete"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteChildren(false); // Reset checkbox to unchecked by default
-                    }}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-gray-400 hover:text-red-500 p-1 touch-target"
+                  title="Delete"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeleteChildren(false); // Reset checkbox to unchecked by default
+                  }}
+                >
+                  <Trash2 size={16} />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Note</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this note?
+                    {hasChildren && (
+                      <>
+                        <div className="flex items-center mt-4 mb-2">
+                          <input 
+                            type="checkbox" 
+                            id="delete-children-checkbox"
+                            checked={deleteChildren} 
+                            onChange={(e) => setDeleteChildren(e.target.checked)} 
+                            className="form-checkbox h-4 w-4 mr-2 rounded border-gray-300 focus:ring-primary"
+                          />
+                          <label htmlFor="delete-children-checkbox" className="text-sm">
+                            Also delete children ({note.children.length} note{note.children.length !== 1 ? 's' : ''})
+                          </label>
+                        </div>
+                        {!deleteChildren && (
+                          <span className="text-sm text-gray-300 block mb-2">
+                            Children will be moved to the same level as this note
+                          </span>
+                        )}
+                        {deleteChildren && (
+                          <span className="font-medium text-red-500 block mb-2">
+                            Warning: This will permanently delete all child notes!
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={() => deleteNote(note.id, deleteChildren)}
+                    className="bg-red-500 hover:bg-red-600"
                   >
-                    <Trash2 size={16} />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Note</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete this note?
-                      {hasChildren && (
-                        <>
-                          <div className="flex items-center mt-4 mb-2">
-                            <input 
-                              type="checkbox" 
-                              id="delete-children-checkbox"
-                              checked={deleteChildren} 
-                              onChange={(e) => setDeleteChildren(e.target.checked)} 
-                              className="form-checkbox h-4 w-4 mr-2 rounded border-gray-300 focus:ring-primary"
-                            />
-                            <label htmlFor="delete-children-checkbox" className="text-sm">
-                              Also delete children ({note.children.length} note{note.children.length !== 1 ? 's' : ''})
-                            </label>
-                          </div>
-                          {!deleteChildren && (
-                            <span className="text-sm text-gray-300 block mb-2">
-                              Children will be moved to the same level as this note
-                            </span>
-                          )}
-                          {deleteChildren && (
-                            <span className="font-medium text-red-500 block mb-2">
-                              Warning: This will permanently delete all child notes!
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction 
-                      onClick={() => deleteNote(note.id, deleteChildren)}
-                      className="bg-red-500 hover:bg-red-600"
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          )}
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </div>
 
