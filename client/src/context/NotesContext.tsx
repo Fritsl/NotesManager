@@ -3,6 +3,7 @@ import { Note, NotesData, NoteImage } from "@/types/notes";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import { createProject, updateProject, addImageToNote, removeImageFromNote, updateImagePosition, getProject, generateUniqueProjectName } from "@/lib/projectService";
+import { createMoveDescription, showMoveIndicator } from "@/lib/movement-utils";
 
 // State to track pending note movements that need to be saved
 let pendingNoteMoves = false;
@@ -826,6 +827,18 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
 
       // Add to the start of the array, keep only the 20 most recent moves
       setUndoHistory(prev => [undoItem, ...prev.slice(0, 19)]);
+      
+      // Create and show a movement indicator with descriptive text
+      const moveDescription = createMoveDescription(
+        foundNote,
+        sourceParentId,
+        sourcePosition,
+        targetParentId,
+        position
+      );
+      
+      // Display the movement indicator
+      showMoveIndicator(noteId, moveDescription);
 
       // Check if trying to move a note to one of its own descendants (which would create a cycle)
       const isTargetADescendantOfSource = (sourceId: string, targetParentId: string | null): boolean => {
@@ -918,7 +931,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
 
       return resultNotes;
     });
-  }, [findNoteAndParent, findNoteAndPath, cleanNotePositions, truncateNoteContent]);
+  }, [findNoteAndParent, findNoteAndPath, cleanNotePositions, truncateNoteContent, createMoveDescription, showMoveIndicator]);
 
   // Toggle expansion for a single node
   const toggleExpand = useCallback((noteId: string) => {

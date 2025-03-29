@@ -8,20 +8,37 @@ import screenfull from "screenfull";
 // Initialize fullscreen on load
 const initFullScreen = () => {
   if (screenfull.isEnabled) {
-    // This can only be called as a result of user action (like a click)
-    // We'll set a flag to do this on first user interaction
-    const enterFullscreenOnFirstInteraction = () => {
-      // Try to enter fullscreen
+    // Try to enter fullscreen immediately on component mount
+    // This won't work in most browsers without user interaction
+    // So we'll also set up event listeners for first interaction as a fallback
+    
+    // Function to request fullscreen
+    const requestFullscreen = () => {
       screenfull.request().catch((err) => {
         console.log("Error attempting to enable full-screen mode:", err);
       });
+    };
+    
+    // Try immediately (may not work in all browsers)
+    try {
+      // Set a small timeout to let the page load first
+      setTimeout(() => {
+        requestFullscreen();
+      }, 500);
+    } catch (err) {
+      console.log("Could not auto-enter fullscreen, will try on first interaction");
+    }
+    
+    // Fallback: Enter fullscreen on first interaction
+    const enterFullscreenOnFirstInteraction = () => {
+      requestFullscreen();
       
       // Remove the event listeners after first interaction
       document.removeEventListener("click", enterFullscreenOnFirstInteraction);
       document.removeEventListener("keydown", enterFullscreenOnFirstInteraction);
     };
 
-    // Add event listeners for first interaction
+    // Add event listeners for first interaction fallback
     document.addEventListener("click", enterFullscreenOnFirstInteraction);
     document.addEventListener("keydown", enterFullscreenOnFirstInteraction);
     
