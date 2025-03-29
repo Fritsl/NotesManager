@@ -637,8 +637,8 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
     note.is_discussion,
     note.youtube_url, 
     note.url, 
-    note.url_display_text,
-    note.color
+    note.url_display_text
+    // note.color - removed as color functionality is no longer needed
   ]);
 
   // Focus the textarea when entering edit mode
