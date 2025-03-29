@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 import DropZone from "./DropZone";
 import { levelColors } from "@/lib/level-colors";
 import MoveNoteModal from "./MoveNoteModal";
-import ColorPicker from "./ColorPicker";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
@@ -851,18 +850,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         "grid gap-x-4 gap-y-2 mb-3",
         isMobile ? "grid-cols-1" : "grid-cols-2" // Single column on mobile for more space
       )}>
-        {/* Color settings */}
-        <div className="flex items-center">
-          <label className="text-xs text-gray-400 w-14">Color:</label>
-          <div className="flex-1">
-            <ColorPicker 
-              color={editColor} 
-              onChange={setEditColor}
-              className="h-7 w-7"
-            />
-          </div>
-        </div>
-        
+
         {/* Time settings */}
         <div className="flex items-center">
           <label className="text-xs text-gray-400 w-14">Time:</label>
@@ -955,7 +943,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             selectedNote?.id === note.id ? "selected-note border-primary ring-2 ring-primary ring-opacity-70" : "border-gray-700 hover:bg-opacity-90",
             isDragging && "opacity-50"
           )}
-          style={note.color ? { backgroundColor: `${note.color}25` } : {}} // Apply a light background color based on the note's color
+
           onClick={() => selectNote(note)}
         >
           {/* Unfold children button in bottom-left corner, far from all delete buttons */}
@@ -1020,18 +1008,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
 
                 {/* Properties section (compact, single-line items) */}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-3">
-                  {/* Color settings */}
-                  <div className="flex items-center">
-                    <label className="text-xs text-gray-400 w-14">Color:</label>
-                    <div className="flex-1">
-                      <ColorPicker 
-                        color={editColor} 
-                        onChange={setEditColor}
-                        className="h-7 w-7"
-                      />
-                    </div>
-                  </div>
-                  
+
                   {/* Time settings */}
                   <div className="flex items-center">
                     <label className="text-xs text-gray-400 w-14">Time:</label>
@@ -1363,22 +1340,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           {/* Action buttons - below text on mobile, hover on desktop */}
           {!isEditing && (
             <div className="flex space-x-1 sm:opacity-0 sm:group-hover:opacity-100 transition justify-end">
-              {/* Color Picker */}
-              <ColorPicker
-                color={note.color || null}
-                onChange={(color) => {
-                  // Update the note in memory with the new color
-                  const updatedNote = {
-                    ...note,
-                    color: color
-                  };
-                  // Update in local state
-                  updateNote(updatedNote);
-                  // Save to server
-                  saveProject();
-                }}
-                className="h-8 w-8 mr-1"
-              />
+
               
               {/* Edit Button */}
               <Button
