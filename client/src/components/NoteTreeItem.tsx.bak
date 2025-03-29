@@ -672,7 +672,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         youtube_url: editYoutubeUrl,
         url: editUrl,
         url_display_text: editUrlDisplayText,
-        // color property removed
+        color: editColor
       };
 
       // First update in local state
@@ -860,8 +860,19 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
         "grid gap-x-4 gap-y-2 mb-3",
         isMobile ? "grid-cols-1" : "grid-cols-2" // Single column on mobile for more space
       )}>
-        {/* Color settings removed */}
-                  {/* Time settings */}
+        {/* Color settings */}
+        <div className="flex items-center">
+          <label className="text-xs text-gray-400 w-14">Color:</label>
+          <div className="flex-1">
+            <ColorPicker 
+              colorValue={editColor} 
+              onChange={setEditColor}
+              className="h-7 w-7"
+            />
+          </div>
+        </div>
+        
+        {/* Time settings */}
         <div className="flex items-center">
           <label className="text-xs text-gray-400 w-14">Time:</label>
           <input 
@@ -953,7 +964,10 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             selectedNote?.id === note.id ? "selected-note border-primary ring-2 ring-primary ring-opacity-70" : "border-gray-700 hover:bg-opacity-90",
             isDragging && "opacity-50"
           )}
-          // Background color styling removed as requested
+          style={getNoteBackgroundStyle(
+            typeof note.color === 'number' ? note.color : 
+            (note.color ? convertLegacyColorToValue(note.color) : 0)
+          )} // Apply a light background color based on the note's color
           onClick={() => selectNote(note)}
         >
           {/* Unfold children button in bottom-left corner, far from all delete buttons */}
@@ -1018,7 +1032,17 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
 
                 {/* Properties section (compact, single-line items) */}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-3">
-                  {/* Color settings - removed as requested */}
+                  {/* Color settings */}
+                  <div className="flex items-center">
+                    <label className="text-xs text-gray-400 w-14">Color:</label>
+                    <div className="flex-1">
+                      <ColorPicker 
+                        colorValue={editColor} 
+                        onChange={setEditColor}
+                        className="h-7 w-7"
+                      />
+                    </div>
+                  </div>
                   
                   {/* Time settings */}
                   <div className="flex items-center">
@@ -1352,7 +1376,21 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           {!isEditing && (
             <div className="flex space-x-1 sm:opacity-0 sm:group-hover:opacity-100 transition justify-end">
               {/* Color Picker */}
-              // ColorPicker component removed
+              <ColorPicker
+                colorValue={typeof note.color === 'number' ? note.color : (note.color ? convertLegacyColorToValue(note.color) : 0)}
+                onChange={(color) => {
+                  // Update the note in memory with the new color
+                  const updatedNote = {
+                    ...note,
+                    color: color
+                  };
+                  // Update in local state
+                  updateNote(updatedNote);
+                  // Save to server
+                  saveProject();
+                }}
+                className="h-8 w-8 mr-1"
+              />
               
               {/* Edit Button */}
               <Button
