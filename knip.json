@@ -1,0 +1,26 @@
+{
+  "$schema": "https://unpkg.com/knip@3/schema.json",
+  "entry": [
+    "server/index.ts",
+    "client/src/main.tsx"
+  ],
+  "project": [
+    "**/*.ts",
+    "**/*.tsx", 
+    "**/*.js",
+    "**/*.jsx"
+  ],
+  "ignore": [
+    "**/*.d.ts",
+    "dist/**",
+    "build/**",
+    "node_modules/**",
+    ".git/**"
+  ],
+  "ignoreDependencies": [
+    "@replit/**",
+    "tailwindcss",
+    "postcss",
+    "autoprefixer"
+  ]
+}
