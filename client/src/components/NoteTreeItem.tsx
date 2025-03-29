@@ -617,10 +617,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
     setEditYoutubeUrl(note.youtube_url);
     setEditUrl(note.url);
     setEditUrlDisplayText(note.url_display_text);
-    setEditColor(
-      typeof note.color === 'number' ? note.color : 
-      (note.color ? convertLegacyColorToValue(note.color) : 0)
-    );
+    // Color picker functionality removed as requested
     selectNote(note); // Select the note when editing
   };
 
@@ -633,10 +630,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
     setEditYoutubeUrl(note.youtube_url);
     setEditUrl(note.url);
     setEditUrlDisplayText(note.url_display_text);
-    setEditColor(
-      typeof note.color === 'number' ? note.color : 
-      (note.color ? convertLegacyColorToValue(note.color) : 0)
-    );
+    // Color picker functionality removed as requested
   }, [
     // note.content, - removed to prevent controlled/uncontrolled conflict
     note.time_set,
@@ -706,10 +700,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
     setEditYoutubeUrl(note.youtube_url);
     setEditUrl(note.url);
     setEditUrlDisplayText(note.url_display_text);
-    setEditColor(
-      typeof note.color === 'number' ? note.color : 
-      (note.color ? convertLegacyColorToValue(note.color) : 0)
-    );
+    // Color picker functionality removed as requested
   };
 
   // Create edit form content that will be used in both mobile dialog and inline editing
