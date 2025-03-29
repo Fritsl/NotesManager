@@ -168,7 +168,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
 
     // Reassign positions sequentially starting from 0
     const cleanedNotes = sortedNotes.map((note, index) => {
-      // Preserve all original note properties including images
+      // Preserve all original note properties including images and color
       return {
         ...note,
         position: index,
@@ -176,6 +176,8 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         children: note.children.length > 0 ? cleanNotePositions(note.children) : [],
         // CRITICAL: Explicitly preserve images array if it exists
         images: note.images || [],
+        // CRITICAL: Explicitly preserve color value
+        color: typeof note.color === 'number' ? note.color : (note.color === null ? 0 : note.color),
       };
     });
 
@@ -312,6 +314,8 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           youtube_url: note.youtube_url,
           url: note.url,
           url_display_text: note.url_display_text,
+          // Include the color value
+          color: note.color,
           // First include images (before children)
           images: simplifiedImages,
           // Then include children (after images)
@@ -429,6 +433,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       url: null,
       url_display_text: null,
       children: [],
+      color: 0, // Default color (transparent)
     };
 
     if (!parent) {
@@ -517,11 +522,18 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
               formattedNote.images = nodes[i].images || [];
             }
 
-            // Update the node with the formatted note that preserves images
+            // Ensure color property is preserved if not explicitly set in the update
+            if (typeof formattedNote.color !== 'number' && formattedNote.color !== 0) {
+              formattedNote.color = nodes[i].color || 0;
+            }
+
+            // Update the node with the formatted note that preserves images and color
             nodes[i] = { 
               ...formattedNote,
               // Double ensure images are preserved by explicitly setting them
-              images: formattedNote.images
+              images: formattedNote.images,
+              // Double ensure color is preserved by explicitly setting it
+              color: formattedNote.color
             };
             return true;
           }
