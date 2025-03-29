@@ -3,7 +3,6 @@ import { Note, NotesData, NoteImage } from "@/types/notes";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import { createProject, updateProject, addImageToNote, removeImageFromNote, updateImagePosition, getProject, generateUniqueProjectName } from "@/lib/projectService";
-import { createMoveDescription, showMoveIndicator } from "@/lib/movement-utils";
 
 // State to track pending note movements that need to be saved
 let pendingNoteMoves = false;
@@ -169,7 +168,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
 
     // Reassign positions sequentially starting from 0
     const cleanedNotes = sortedNotes.map((note, index) => {
-      // Preserve all original note properties including images and color
+      // Preserve all original note properties including images
       return {
         ...note,
         position: index,
@@ -177,8 +176,6 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         children: note.children.length > 0 ? cleanNotePositions(note.children) : [],
         // CRITICAL: Explicitly preserve images array if it exists
         images: note.images || [],
-        // CRITICAL: Explicitly preserve color value
-        color: typeof note.color === 'number' ? note.color : (note.color === null ? 0 : note.color),
       };
     });
 
@@ -315,8 +312,6 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
           youtube_url: note.youtube_url,
           url: note.url,
           url_display_text: note.url_display_text,
-          // Include the color value
-          color: note.color,
           // First include images (before children)
           images: simplifiedImages,
           // Then include children (after images)
@@ -434,7 +429,6 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
       url: null,
       url_display_text: null,
       children: [],
-      color: 0, // Default color (transparent)
     };
 
     if (!parent) {
@@ -523,18 +517,11 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
               formattedNote.images = nodes[i].images || [];
             }
 
-            // Ensure color property is preserved if not explicitly set in the update
-            if (formattedNote.color === undefined || formattedNote.color === null) {
-              formattedNote.color = nodes[i].color || 0;
-            }
-
-            // Update the node with the formatted note that preserves images and color
+            // Update the node with the formatted note that preserves images
             nodes[i] = { 
               ...formattedNote,
               // Double ensure images are preserved by explicitly setting them
-              images: formattedNote.images,
-              // Double ensure color is preserved by explicitly setting it
-              color: formattedNote.color
+              images: formattedNote.images
             };
             return true;
           }
@@ -827,18 +814,6 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
 
       // Add to the start of the array, keep only the 20 most recent moves
       setUndoHistory(prev => [undoItem, ...prev.slice(0, 19)]);
-      
-      // Create and show a movement indicator with descriptive text
-      const moveDescription = createMoveDescription(
-        foundNote,
-        sourceParentId,
-        sourcePosition,
-        targetParentId,
-        position
-      );
-      
-      // Display the movement indicator
-      showMoveIndicator(noteId, moveDescription);
 
       // Check if trying to move a note to one of its own descendants (which would create a cycle)
       const isTargetADescendantOfSource = (sourceId: string, targetParentId: string | null): boolean => {
@@ -931,7 +906,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
 
       return resultNotes;
     });
-  }, [findNoteAndParent, findNoteAndPath, cleanNotePositions, truncateNoteContent, createMoveDescription, showMoveIndicator]);
+  }, [findNoteAndParent, findNoteAndPath, cleanNotePositions, truncateNoteContent]);
 
   // Toggle expansion for a single node
   const toggleExpand = useCallback((noteId: string) => {
