@@ -1255,7 +1255,7 @@ export function NotesProvider({ children, urlParams }: { children: ReactNode; ur
         console.log('Description mismatch detected - correcting from', 
           `"${currentProjectDescription}" to database value "${updatedProject.description}"`
         );
-        setCurrentProjectDescription(updatedProject.description);
+        setCurrentProjectDescription(updatedProject.description || '');
       }
 
       // Dispatch a custom event to notify components that a project has been updated
