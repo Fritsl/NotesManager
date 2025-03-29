@@ -1,0 +1,125 @@
+Unused files (41)
+HeaderWithSearch_new.tsx                      
+update_notesitem.js                           
+public/pwa-register.js                        
+public/service-worker.js                      
+server/setup.ts                               
+client/src/components/Header.tsx              
+client/src/components/NoteEditor.tsx          
+client/src/context/NotesContext_fixed.tsx     
+client/src/hooks/use-mobile.tsx               
+client/src/pages/ImageDiagnostics.tsx         
+client/src/pages/ImageTestPage.tsx            
+client/src/types/supabase.ts                  
+client/src/components/ui/accordion.tsx        
+client/src/components/ui/aspect-ratio.tsx     
+client/src/components/ui/breadcrumb.tsx       
+client/src/components/ui/calendar.tsx         
+client/src/components/ui/carousel.tsx         
+client/src/components/ui/chart.tsx            
+client/src/components/ui/checkbox.tsx         
+client/src/components/ui/collapsible.tsx      
+client/src/components/ui/command.tsx          
+client/src/components/ui/context-menu.tsx     
+client/src/components/ui/drawer.tsx           
+client/src/components/ui/form.tsx             
+client/src/components/ui/hover-card.tsx       
+client/src/components/ui/input-otp.tsx        
+client/src/components/ui/menubar.tsx          
+client/src/components/ui/navigation-menu.tsx  
+client/src/components/ui/pagination.tsx       
+client/src/components/ui/popover.tsx          
+client/src/components/ui/progress.tsx         
+client/src/components/ui/radio-group.tsx      
+client/src/components/ui/resizable.tsx        
+client/src/components/ui/select.tsx           
+client/src/components/ui/sheet.tsx            
+client/src/components/ui/sidebar.tsx          
+client/src/components/ui/skeleton.tsx         
+client/src/components/ui/slider.tsx           
+client/src/components/ui/table.tsx            
+client/src/components/ui/toggle-group.tsx     
+client/src/components/ui/toggle.tsx
+Unused dependencies (35)
+@hookform/resolvers              package.json:14:6
+@jridgewell/trace-mapping        package.json:15:6
+@radix-ui/react-accordion        package.json:17:6
+@radix-ui/react-aspect-ratio     package.json:19:6
+@radix-ui/react-checkbox         package.json:21:6
+@radix-ui/react-collapsible      package.json:22:6
+@radix-ui/react-context-menu     package.json:23:6
+@radix-ui/react-hover-card       package.json:26:6
+@radix-ui/react-menubar          package.json:28:6
+@radix-ui/react-navigation-menu  package.json:29:6
+@radix-ui/react-popover          package.json:30:6
+@radix-ui/react-progress         package.json:31:6
+@radix-ui/react-radio-group      package.json:32:6
+@radix-ui/react-select           package.json:34:6
+@radix-ui/react-slider           package.json:36:6
+@radix-ui/react-toggle           package.json:41:6
+@radix-ui/react-toggle-group     package.json:42:6
+@supabase/auth-helpers-react     package.json:45:6
+cmdk                             package.json:52:6
+connect-pg-simple                package.json:53:6
+date-fns                         package.json:54:6
+embla-carousel-react             package.json:57:6
+express-session                  package.json:59:6
+framer-motion                    package.json:60:6
+input-otp                        package.json:61:6
+memorystore                      package.json:63:6
+passport                         package.json:65:6
+passport-local                   package.json:66:6
+react-day-picker                 package.json:69:6
+react-hook-form                  package.json:73:6
+react-resizable-panels           package.json:75:6
+recharts                         package.json:76:6
+vaul                             package.json:81:6
+ws                               package.json:83:6
+zod-validation-error             package.json:85:6
+Unused devDependencies (5)
+@types/connect-pg-simple  package.json:91:6
+@types/express-session    package.json:93:6
+@types/passport           package.json:95:6
+@types/passport-local     package.json:96:6
+@types/ws                 package.json:99:6
+Unlisted dependencies (1)
+nanoid  server/vite.ts
+Unused exports (31)
+AlertDialogPortal                   client/src/components/ui/alert-dialog.tsx:128:15 
+AlertDialogOverlay                  client/src/components/ui/alert-dialog.tsx:129:21 
+AvatarImage                         client/src/components/ui/avatar.tsx:48:17        
+badgeVariants                       client/src/components/ui/badge.tsx:36:16         
+DialogPortal                        client/src/components/ui/dialog.tsx:110:10       
+DialogOverlay                       client/src/components/ui/dialog.tsx:111:16       
+DialogClose                         client/src/components/ui/dialog.tsx:112:17       
+DialogTrigger                       client/src/components/ui/dialog.tsx:113:15       
+DropdownMenuCheckboxItem            client/src/components/ui/dropdown-menu.tsx:186:20
+DropdownMenuShortcut                client/src/components/ui/dropdown-menu.tsx:190:25
+DropdownMenuGroup                   client/src/components/ui/dropdown-menu.tsx:191:24
+DropdownMenuPortal                  client/src/components/ui/dropdown-menu.tsx:192:21
+ScrollBar                           client/src/components/ui/scroll-area.tsx:46:21   
+ToastAction                         client/src/components/ui/toast.tsx:127:14        
+reducer                             client/src/components/ui/use-toast.tsx:75:14     
+toast                               client/src/components/ui/use-toast.tsx:192:19    
+reducer                             client/src/hooks/use-toast.ts:74:14              
+useMediaQuery             function  client/src/hooks/useMediaQuery.ts:8:17           
+useIsTablet               function  client/src/hooks/useMediaQuery.ts:44:17          
+useIsDesktop              function  client/src/hooks/useMediaQuery.ts:52:17          
+migrateLocalImages                  client/src/lib/projectService.ts:23:14           
+syncNoteCounts            function  client/src/lib/projectService.ts:29:23           
+buildNoteHierarchy        function  client/src/lib/projectService.ts:82:17           
+flattenNoteHierarchy      function  client/src/lib/projectService.ts:202:17          
+deleteProject             function  client/src/lib/projectService.ts:914:23          
+apiRequest                function  client/src/lib/queryClient.ts:10:23              
+getQueryFn                          client/src/lib/queryClient.ts:33:14              
+uniqueId                  function  client/src/lib/utils.ts:9:17                     
+safeJsonParse             function  client/src/lib/utils.ts:14:17                    
+truncateText              function  client/src/lib/utils.ts:42:17                    
+MemStorage                class     server/storage.ts:12:14
+Unused exported types (5)
+BadgeProps     interface  client/src/components/ui/badge.tsx:26:18  
+ButtonProps    interface  client/src/components/ui/button.tsx:36:18 
+InputProps     interface  client/src/components/ui/input.tsx:5:18   
+TextareaProps  interface  client/src/components/ui/textarea.tsx:5:18
+IStorage       interface  server/storage.ts:6:18
+Configuration hints

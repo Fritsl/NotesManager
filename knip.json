@@ -18,7 +18,9 @@
     ".git/**"
   ],
   "ignoreDependencies": [
-    "@replit/**",
+    "@replit/vite-plugin-cartographer",
+    "@replit/vite-plugin-runtime-error-modal",
+    "@replit/vite-plugin-shadcn-theme-json",
     "tailwindcss",
     "postcss",
     "autoprefixer"
