@@ -1342,8 +1342,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           {/* Action buttons - below text on mobile, hover on desktop */}
           {!isEditing && (
             <div className="flex space-x-1 sm:opacity-0 sm:group-hover:opacity-100 transition justify-end">
-              {/* Color Picker */}
-              // ColorPicker component removed
+              {/* Color Picker component removed */}
               
               {/* Edit Button */}
               <Button
