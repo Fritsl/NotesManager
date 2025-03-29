@@ -18,14 +18,7 @@ export interface Note {
   url_display_text: string | null;
   children: Note[];
   images?: NoteImage[];
-  
-  // Color is now a numeric value (0-5)
-  // 0 or null = transparent (default)
-  // 1 = red, 2 = yellow, 3 = green, 4 = blue, 5 = purple
-  color?: number | null;
-  
-  // Legacy support for string color values (will be converted to numeric)
-  color_str?: string | null;
+  color?: string | null;
 }
 
 export interface NotesData {

@@ -9,7 +9,6 @@ import DropZone from "./DropZone";
 import { levelColors } from "@/lib/level-colors";
 import MoveNoteModal from "./MoveNoteModal";
 import ColorPicker from "./ColorPicker";
-import { convertLegacyColorToValue, getColorFromValue, getNoteBackgroundStyle } from "@/lib/color-utils";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
@@ -300,10 +299,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
   const [editYoutubeUrl, setEditYoutubeUrl] = useState<string | null>(note.youtube_url);
   const [editUrl, setEditUrl] = useState<string | null>(note.url);
   const [editUrlDisplayText, setEditUrlDisplayText] = useState<string | null>(note.url_display_text);
-  const [editColor, setEditColor] = useState<number | null>(
-    typeof note.color === 'number' ? note.color : 
-    (note.color ? convertLegacyColorToValue(note.color) : 0)
-  );
+  const [editColor, setEditColor] = useState<string | null>(note.color || null);
   const [isSaving, setIsSaving] = useState(false);
 
   // Set up drag
@@ -621,10 +617,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
     setEditYoutubeUrl(note.youtube_url);
     setEditUrl(note.url);
     setEditUrlDisplayText(note.url_display_text);
-    setEditColor(
-      typeof note.color === 'number' ? note.color : 
-      (note.color ? convertLegacyColorToValue(note.color) : 0)
-    );
+    setEditColor(note.color || null);
     selectNote(note); // Select the note when editing
   };
 
@@ -637,10 +630,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
     setEditYoutubeUrl(note.youtube_url);
     setEditUrl(note.url);
     setEditUrlDisplayText(note.url_display_text);
-    setEditColor(
-      typeof note.color === 'number' ? note.color : 
-      (note.color ? convertLegacyColorToValue(note.color) : 0)
-    );
+    setEditColor(note.color || null);
   }, [
     // note.content, - removed to prevent controlled/uncontrolled conflict
     note.time_set,
@@ -710,10 +700,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
     setEditYoutubeUrl(note.youtube_url);
     setEditUrl(note.url);
     setEditUrlDisplayText(note.url_display_text);
-    setEditColor(
-      typeof note.color === 'number' ? note.color : 
-      (note.color ? convertLegacyColorToValue(note.color) : 0)
-    );
+    setEditColor(note.color || null);
   };
 
   // Create edit form content that will be used in both mobile dialog and inline editing
@@ -869,7 +856,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
           <label className="text-xs text-gray-400 w-14">Color:</label>
           <div className="flex-1">
             <ColorPicker 
-              colorValue={editColor} 
+              color={editColor} 
               onChange={setEditColor}
               className="h-7 w-7"
             />
@@ -968,7 +955,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             selectedNote?.id === note.id ? "selected-note border-primary ring-2 ring-primary ring-opacity-70" : "border-gray-700 hover:bg-opacity-90",
             isDragging && "opacity-50"
           )}
-          // No longer applying background color to notes
+          style={note.color ? { backgroundColor: `${note.color}25` } : {}} // Apply a light background color based on the note's color
           onClick={() => selectNote(note)}
         >
           {/* Unfold children button in bottom-left corner, far from all delete buttons */}
@@ -1038,7 +1025,7 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
                     <label className="text-xs text-gray-400 w-14">Color:</label>
                     <div className="flex-1">
                       <ColorPicker 
-                        colorValue={editColor} 
+                        color={editColor} 
                         onChange={setEditColor}
                         className="h-7 w-7"
                       />
@@ -1378,12 +1365,12 @@ export default function NoteTreeItem({ note, level, toggleExpand, isExpanded, in
             <div className="flex space-x-1 sm:opacity-0 sm:group-hover:opacity-100 transition justify-end">
               {/* Color Picker */}
               <ColorPicker
-                colorValue={typeof note.color === 'number' ? note.color : (note.color ? convertLegacyColorToValue(note.color) : 0)}
-                onChange={(colorValue) => {
+                color={note.color || null}
+                onChange={(color) => {
                   // Update the note in memory with the new color
                   const updatedNote = {
                     ...note,
-                    color: colorValue
+                    color: color
                   };
                   // Update in local state
                   updateNote(updatedNote);

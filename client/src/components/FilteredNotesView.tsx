@@ -296,8 +296,6 @@ export default function FilteredNotesView({ filteredNotes, filterType }: Filtere
         return "Discussion notes";
       case "link":
         return "Notes with links";
-      case "color":
-        return "Notes by color";
       default:
         return "Filtered notes";
     }
